@@ -22,7 +22,7 @@ WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
 # Configuration variables
-SCRIPT_VERSION="1.1.0"
+SCRIPT_VERSION="1.2.0"
 APP_USER="brainstormx"
 APP_DIR="/home/${APP_USER}/BrainStormX"
 REPO_URL="https://github.com/broadcomms/BrainStormX.git"
@@ -330,21 +330,123 @@ install_tts_models() {
     fi
 }
 
+# Collect user configuration
+collect_user_configuration() {
+    print_header "USER CONFIGURATION SETUP"
+    
+    echo -e "${CYAN}BrainStormX requires AWS Bedrock credentials to provide AI features.${NC}"
+    echo -e "${CYAN}You'll also have the option to configure email settings for user registration.${NC}"
+    echo ""
+    
+    # AWS Credentials (Mandatory)
+    print_step "Configuring AWS Bedrock credentials..."
+    echo -e "${YELLOW}AWS credentials are REQUIRED for AI functionality.${NC}"
+    echo ""
+    
+    while true; do
+        echo -e "${WHITE}Please enter your AWS Access Key ID:${NC}"
+        read -r AWS_ACCESS_KEY_ID
+        
+        if [[ -n "$AWS_ACCESS_KEY_ID" ]]; then
+            break
+        else
+            echo -e "${RED}AWS Access Key ID cannot be empty. Please try again.${NC}"
+        fi
+    done
+    
+    while true; do
+        echo -e "${WHITE}Please enter your AWS Secret Access Key:${NC}"
+        read -rs AWS_SECRET_ACCESS_KEY  # -s flag hides input
+        echo ""  # Add newline since input was hidden
+        
+        if [[ -n "$AWS_SECRET_ACCESS_KEY" ]]; then
+            break
+        else
+            echo -e "${RED}AWS Secret Access Key cannot be empty. Please try again.${NC}"
+        fi
+    done
+    
+    print_success "AWS credentials configured"
+    
+    # Mail Configuration (Optional)
+    print_step "Configuring email settings..."
+    echo -e "${YELLOW}Email configuration is OPTIONAL but recommended for user registration and notifications.${NC}"
+    echo -e "${CYAN}Press Enter to skip any field to use default settings.${NC}"
+    echo ""
+    
+    echo -e "${WHITE}Enter SMTP server (or press Enter for default: server108.web-hosting.com):${NC}"
+    read -r MAIL_SERVER_INPUT
+    MAIL_SERVER="${MAIL_SERVER_INPUT:-server108.web-hosting.com}"
+    
+    echo -e "${WHITE}Enter SMTP username (or press Enter for default: no-reply@broadcomms.net):${NC}"
+    read -r MAIL_USERNAME_INPUT
+    MAIL_USERNAME="${MAIL_USERNAME_INPUT:-no-reply@broadcomms.net}"
+    
+    if [[ -n "$MAIL_USERNAME_INPUT" ]]; then
+        echo -e "${WHITE}Enter SMTP password:${NC}"
+        read -rs MAIL_PASSWORD
+        echo ""
+        MAIL_SUPPRESS_SEND="False"
+    else
+        MAIL_PASSWORD="5i-8v@S4y$Y?"
+        MAIL_SUPPRESS_SEND="True"
+    fi
+    
+    print_success "Email configuration completed"
+    
+    # AgentCore Configuration (Optional)
+    echo ""
+    echo -e "${WHITE}Do you have AWS Bedrock AgentCore Memory configured? (y/N):${NC}"
+    read -n 1 -r AGENTCORE_RESPONSE
+    echo ""
+    
+    if [[ $AGENTCORE_RESPONSE =~ ^[Yy]$ ]]; then
+        echo -e "${WHITE}Enter AgentCore Memory ID:${NC}"
+        read -r AGENTCORE_MEMORY_ID
+        
+        echo -e "${WHITE}Enter AgentCore Memory ARN:${NC}"
+        read -r AGENTCORE_MEMORY_ARN
+        
+        AGENTCORE_MEMORY_ENABLED="true"
+    else
+        AGENTCORE_MEMORY_ID=""
+        AGENTCORE_MEMORY_ARN=""
+        AGENTCORE_MEMORY_ENABLED="false"
+    fi
+    
+    print_success "Configuration collection completed"
+    
+    # Display configuration summary
+    echo ""
+    echo -e "${CYAN}Configuration Summary:${NC}"
+    echo -e "  AWS Region: ${WHITE}us-east-1${NC}"
+    echo -e "  AWS Access Key: ${WHITE}${AWS_ACCESS_KEY_ID}${NC}"
+    echo -e "  Mail Server: ${WHITE}${MAIL_SERVER}${NC}"
+    echo -e "  Mail Username: ${WHITE}${MAIL_USERNAME}${NC}"
+    echo -e "  AgentCore Memory: ${WHITE}${AGENTCORE_MEMORY_ENABLED}${NC}"
+    echo ""
+}
+
 # Setup environment configuration
 setup_environment_config() {
-    print_header "CONFIGURING APPLICATION ENVIRONMENT"
+    print_header "CREATING APPLICATION ENVIRONMENT FILE"
     
-    print_step "Creating production environment file..."
-    sudo -u "${APP_USER}" bash -c "cat > ${APP_DIR}/.env << 'EOF'
+    print_step "Generating production environment configuration..."
+    
+    # Generate a secure secret key
+    SECRET_KEY=$(openssl rand -hex 32)
+    
+    # Create the .env file with collected configuration
+    cat > /tmp/brainstormx_env << EOF
 # Production Configuration
 FLASK_ENV=production
-SECRET_KEY=$(openssl rand -hex 32)
+SECRET_KEY=${SECRET_KEY}
 DEBUG=false
 
 # AWS Bedrock Configuration
 AWS_REGION=us-east-1
-# AWS_ACCESS_KEY_ID=your_access_key_here
-# AWS_SECRET_ACCESS_KEY=your_secret_key_here
+AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 BEDROCK_MODEL_ID=amazon.nova-lite-v1:0
 BEDROCK_NOVA_MICRO=amazon.nova-micro-v1:0
 BEDROCK_NOVA_LITE=amazon.nova-lite-v1:0
@@ -360,20 +462,36 @@ BEDROCK_TITAN_IMAGE=amazon.titan-embed-image-v1:0
 PORT=5001
 DEFAULT_TIMEZONE=America/Toronto
 
-# Mail settings (configure with your SMTP server)
-# MAIL_SERVER=your.smtp.server.com
-# MAIL_PORT=587
-# MAIL_USE_TLS=True
-# MAIL_USE_SSL=False
-# MAIL_USERNAME=your-email@domain.com
-# MAIL_PASSWORD=your-email-password
-# MAIL_DEFAULT_SENDER=your-email@domain.com
-MAIL_SUPPRESS_SEND=True
+# Mail settings
+MAIL_SERVER=${MAIL_SERVER}
+MAIL_PORT=587
+MAIL_USE_TLS=True
+MAIL_USE_SSL=False
+MAIL_USERNAME=${MAIL_USERNAME}
+MAIL_PASSWORD=${MAIL_PASSWORD}
+MAIL_DEFAULT_SENDER=${MAIL_USERNAME}
+MAIL_SUPPRESS_SEND=${MAIL_SUPPRESS_SEND}
+MAIL_USE_RELAXED_SSL=True
 
-# AgentCore settings (configure if using AWS Bedrock AgentCore)
-AGENTCORE_MEMORY_ENABLED=false
-# AGENTCORE_MEMORY_ID=your-memory-id
-# AGENTCORE_MEMORY_ARN=your-memory-arn
+# AgentCore settings
+AGENTCORE_MEMORY_ENABLED=${AGENTCORE_MEMORY_ENABLED}
+EOF
+    
+    # Add AgentCore settings conditionally
+    if [[ -n "$AGENTCORE_MEMORY_ID" ]]; then
+        echo "AGENTCORE_MEMORY_ID=${AGENTCORE_MEMORY_ID}" >> /tmp/brainstormx_env
+    else
+        echo "# AGENTCORE_MEMORY_ID=your-memory-id" >> /tmp/brainstormx_env
+    fi
+    
+    if [[ -n "$AGENTCORE_MEMORY_ARN" ]]; then
+        echo "AGENTCORE_MEMORY_ARN=${AGENTCORE_MEMORY_ARN}" >> /tmp/brainstormx_env
+    else
+        echo "# AGENTCORE_MEMORY_ARN=your-memory-arn" >> /tmp/brainstormx_env
+    fi
+    
+    # Add the rest of the configuration
+    cat >> /tmp/brainstormx_env << 'EOF'
 AGENTCORE_MEMORY_TOP_K=5
 AGENTCORE_MEMORY_TIMEOUT_SECONDS=3
 AGENTCORE_MEMORY_DEBUG_LOG=true
@@ -390,10 +508,7 @@ WORKSHOP_RECORDING_ENABLED=True
 
 # TTS and STT Configuration
 TRANSCRIPTION_PROVIDER=vosk
-VOSK_MODEL_PATH=${APP_DIR}/stt_models/vosk-model-en-us-0.22-lgraph
 TTS_PROVIDER=piper
-PIPER_BIN=${APP_DIR}/venv/bin/piper
-PIPER_MODEL=${APP_DIR}/tts_models/en_US-hfc_male-medium.onnx
 STT_PROVIDER=vosk
 
 # AWS Transcribe settings
@@ -410,13 +525,28 @@ CIRCUIT_BREAKER_RESET_SECONDS=60
 # Assistant Configuration
 ASSISTANT_THREADS_ENABLED=true
 ASSISTANT_STRICT_JSON=true
-EOF"
+EOF
+    
+    # Add dynamic paths that need to be resolved at runtime
+    echo "VOSK_MODEL_PATH=${APP_DIR}/stt_models/vosk-model-en-us-0.22-lgraph" >> /tmp/brainstormx_env
+    echo "PIPER_BIN=${APP_DIR}/venv/bin/piper" >> /tmp/brainstormx_env
+    echo "PIPER_MODEL=${APP_DIR}/tts_models/en_US-hfc_male-medium.onnx" >> /tmp/brainstormx_env
+    
+    # Move the file to the application directory with proper ownership
+    sudo cp /tmp/brainstormx_env "${APP_DIR}/.env"
+    rm /tmp/brainstormx_env
     
     chmod 600 "${APP_DIR}/.env"
     chown "${APP_USER}:${APP_USER}" "${APP_DIR}/.env"
     
-    print_success "Environment configuration created"
-    print_warning "Remember to configure AWS credentials and mail settings in ${APP_DIR}/.env"
+    print_success "Production environment file created with your configuration"
+    print_success "AWS Bedrock AI features are now ready to use"
+    
+    if [[ "$MAIL_SUPPRESS_SEND" == "False" ]]; then
+        print_success "Email notifications are enabled with your SMTP settings"
+    else
+        print_warning "Using default email settings - user registration emails will be suppressed"
+    fi
 }
 
 # Test application
@@ -898,6 +1028,7 @@ main() {
     echo "The process will take approximately 10-15 minutes depending on network speed."
     echo ""
     echo "What this script will do:"
+    echo "  ✓ Collect your AWS and email configuration"
     echo "  ✓ Install all system dependencies"
     echo "  ✓ Create application user and environment"
     echo "  ✓ Download and configure BrainStormX"
@@ -918,6 +1049,7 @@ main() {
     
     get_system_info
     pre_flight_checks
+    collect_user_configuration
     install_system_dependencies
     create_app_user
     download_application
@@ -950,8 +1082,12 @@ main() {
     
     echo -e "${YELLOW}⚠️  Important Notes:${NC}"
     echo -e "  • Browsers will show security warning for self-signed SSL certificate"
-    echo -e "  • Configure AWS credentials in: ${WHITE}${APP_DIR}/.env${NC}"
-    echo -e "  • Configure mail settings for user registration"
+    echo -e "  • AWS Bedrock AI features are configured and ready to use"
+    if [[ "$MAIL_SUPPRESS_SEND" == "False" ]]; then
+        echo -e "  • Email notifications are enabled with your SMTP settings"
+    else
+        echo -e "  • Email notifications are using default settings (suppressed)"
+    fi
     echo -e "  • Deployment report saved to: ${WHITE}/home/${APP_USER}/deployment_report.txt${NC}"
     echo ""
     
