@@ -1,7 +1,18 @@
 #!/bin/bash
 
 # =============================================================================
-# BrainStormX EC2 Automated Deployment Script
+#!/bin/bash
+
+# BrainStormX EC2 Auto Deployment Script
+# Version: 1.3.1
+# Description: Automated deployment of BrainStormX on Ubuntu 24.04 LTS
+# 
+# CHANGELOG:
+# v1.3.1 - Fixed variable scope issue causing "unbound variable" error in email configuration
+# v1.3.0 - Added EC2 instance reset functionality and enhanced user experience
+# v1.2.0 - Enhanced with interactive configuration collection for AWS and email settings
+# v1.1.0 - Added IMDSv2 support and improved error handling
+# v1.0.0 - Initial release with basic deployment functionality
 # =============================================================================
 # This script fully automates the deployment of BrainStormX on Ubuntu EC2
 # Usage: Run this script on a fresh Ubuntu 24.04 LTS EC2 instance
@@ -22,7 +33,7 @@ WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
 # Configuration variables
-SCRIPT_VERSION="1.3.0"
+SCRIPT_VERSION="1.3.1"
 APP_USER="brainstormx"
 APP_DIR="/home/${APP_USER}/BrainStormX"
 REPO_URL="https://github.com/broadcomms/BrainStormX.git"
@@ -333,6 +344,10 @@ install_tts_models() {
 # Collect user configuration
 collect_user_configuration() {
     print_header "USER CONFIGURATION SETUP"
+    
+    # Declare variables as global to ensure they persist outside function scope
+    declare -g AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY MAIL_SERVER MAIL_USERNAME MAIL_PASSWORD MAIL_SUPPRESS_SEND
+    declare -g AGENTCORE_MEMORY_ENABLED AGENTCORE_MEMORY_ID AGENTCORE_MEMORY_ARN
     
     echo -e "${CYAN}BrainStormX requires AWS Bedrock credentials to provide AI features.${NC}"
     echo -e "${CYAN}You'll also have the option to configure email settings for user registration.${NC}"
