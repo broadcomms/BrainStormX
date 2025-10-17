@@ -236,6 +236,6 @@ Before going live, confirm the following:
 
 - **License:** See root `LICENSE` (Apache 2.0).
 - **Commercial Inquiries & Support:** patrick@broadcomms.net
-- **Status Page & Updates:** Follow release notes in `SUBMISSION.md` or GitHub Releases tab.
+- **Status Page & Updates:** Follow release notes in `README.md` or GitHub Releases tab.
 
 For feedback or contributions, please open an issue or submit a pull request on GitHub. Happy brainstorming!
