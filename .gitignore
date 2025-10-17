@@ -248,6 +248,9 @@ copilot-instructions.md
 # .env.local
 .env
 
+# Deployment files containing sensitive information
+EC2-DEPLOYMENT-WITH-DOMAIN.md
+
 # Speech-to-Text Model files (large files)
 stt_models/
 stt_models/**
