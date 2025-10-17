@@ -22,29 +22,61 @@ WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
 # Configuration variables
-SCRIPT_VERSION="1.0.0"
+SCRIPT_VERSION="1.1.0"
 APP_USER="brainstormx"
 APP_DIR="/home/${APP_USER}/BrainStormX"
 REPO_URL="https://github.com/broadcomms/BrainStormX.git"
 REPO_BRANCH="main"
 LOG_FILE="/tmp/brainstormx_deploy.log"
 
-# Auto-detect EC2 metadata
-if curl -s --max-time 3 http://169.254.169.254/latest/meta-data/public-hostname > /dev/null 2>&1; then
-    PUBLIC_HOSTNAME=$(curl -s http://169.254.169.254/latest/meta-data/public-hostname)
-    PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
-    INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-    AVAILABILITY_ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
-    echo -e "${GREEN}✓ Detected EC2 environment:${NC}"
-    echo -e "  Instance ID: ${CYAN}${INSTANCE_ID}${NC}"
-    echo -e "  Public IP: ${CYAN}${PUBLIC_IP}${NC}"
-    echo -e "  Public DNS: ${CYAN}${PUBLIC_HOSTNAME}${NC}"
-    echo -e "  AZ: ${CYAN}${AVAILABILITY_ZONE}${NC}"
-else
-    echo -e "${YELLOW}⚠ Warning: Not running on EC2 or metadata service unavailable${NC}"
-    PUBLIC_HOSTNAME="localhost"
-    PUBLIC_IP="127.0.0.1"
-fi
+# Auto-detect EC2 metadata (supports both IMDSv1 and IMDSv2)
+detect_ec2_metadata() {
+    # Try IMDSv2 first (token-based)
+    local TOKEN
+    TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" \
+        -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" \
+        -s --max-time 3 2>/dev/null)
+    
+    if [[ -n "$TOKEN" ]]; then
+        # IMDSv2 available, use token-based requests
+        PUBLIC_HOSTNAME=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" \
+            -s --max-time 3 http://169.254.169.254/latest/meta-data/public-hostname 2>/dev/null)
+        PUBLIC_IP=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" \
+            -s --max-time 3 http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null)
+        INSTANCE_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" \
+            -s --max-time 3 http://169.254.169.254/latest/meta-data/instance-id 2>/dev/null)
+        AVAILABILITY_ZONE=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" \
+            -s --max-time 3 http://169.254.169.254/latest/meta-data/placement/availability-zone 2>/dev/null)
+    else
+        # Fall back to IMDSv1 (direct requests)
+        if curl -s --max-time 3 http://169.254.169.254/latest/meta-data/ > /dev/null 2>&1; then
+            PUBLIC_HOSTNAME=$(curl -s --max-time 3 http://169.254.169.254/latest/meta-data/public-hostname 2>/dev/null)
+            PUBLIC_IP=$(curl -s --max-time 3 http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null)
+            INSTANCE_ID=$(curl -s --max-time 3 http://169.254.169.254/latest/meta-data/instance-id 2>/dev/null)
+            AVAILABILITY_ZONE=$(curl -s --max-time 3 http://169.254.169.254/latest/meta-data/placement/availability-zone 2>/dev/null)
+        fi
+    fi
+    
+    # Validate that we got meaningful data
+    if [[ -n "$PUBLIC_HOSTNAME" && -n "$PUBLIC_IP" && -n "$INSTANCE_ID" ]]; then
+        echo -e "${GREEN}✓ Detected EC2 environment:${NC}"
+        echo -e "  Instance ID: ${CYAN}${INSTANCE_ID}${NC}"
+        echo -e "  Public IP: ${CYAN}${PUBLIC_IP}${NC}"
+        echo -e "  Public DNS: ${CYAN}${PUBLIC_HOSTNAME}${NC}"
+        echo -e "  AZ: ${CYAN}${AVAILABILITY_ZONE}${NC}"
+        return 0
+    else
+        echo -e "${YELLOW}⚠ Warning: Not running on EC2 or metadata service unavailable${NC}"
+        PUBLIC_HOSTNAME="localhost"
+        PUBLIC_IP="127.0.0.1"
+        INSTANCE_ID="unknown"
+        AVAILABILITY_ZONE="unknown"
+        return 1
+    fi
+}
+
+# Call the metadata detection function
+detect_ec2_metadata
 
 # Logging function
 log() {
