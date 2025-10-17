@@ -18,9 +18,26 @@ This directory contains automated deployment and management scripts for BrainSto
   - Sets up firewall, backups, and monitoring
 
 **Usage:**
+
 ```bash
-# On your EC2 instance
-wget https://raw.githubusercontent.com/broadcomms/BrainStormX/scripts/ec2_auto_deploy.sh
+# Remove old script
+rm ec2_auto_deploy.sh
+
+# Download new script (use cache-busting URL to avoid CDN cache)
+wget "https://raw.githubusercontent.com/broadcomms/BrainStormX/main/scripts/ec2_auto_deploy.sh?$(date +%s)"
+
+# Make executable
+chmod +x ec2_auto_deploy.sh
+
+# Verify version
+sudo ./ec2_auto_deploy.sh --help
+```
+
+
+
+```bash
+# On your EC2 instance (IMPORTANT: Always use sudo!)
+wget "https://raw.githubusercontent.com/broadcomms/BrainStormX/main/scripts/ec2_auto_deploy.sh?$(date +%s)"
 chmod +x ec2_auto_deploy.sh
 sudo ./ec2_auto_deploy.sh
 ```
@@ -98,8 +115,8 @@ Ensure your EC2 security group allows:
 # 2. SSH to instance
 ssh -i "your-key.pem" ubuntu@your-ec2-dns.amazonaws.com
 
-# 3. Run deployment script
-wget https://raw.githubusercontent.com/broadcomms/BrainStormX/scripts/ec2_auto_deploy.sh
+# 3. Run deployment script (IMPORTANT: Always use sudo!)
+wget "https://raw.githubusercontent.com/broadcomms/BrainStormX/main/scripts/ec2_auto_deploy.sh?$(date +%s)"
 chmod +x ec2_auto_deploy.sh
 sudo ./ec2_auto_deploy.sh
 
