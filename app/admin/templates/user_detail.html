@@ -1,0 +1,100 @@
+{% extends "admin_base.html" %}
+
+{% block title %}{{ user.display_name }} · Users · BrainStorm X{% endblock %}
+{% block header_title %}{{ user.display_name }}{% endblock %}
+{% block header_subtitle %}Role: {{ user.role|capitalize }} · Joined {{ user.created_timestamp.strftime('%Y-%m-%d') if user.created_timestamp else '—' }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <div class="d-flex flex-column flex-md-row gap-2">
+        <a class="btn btn-primary" href="{{ url_for('admin.edit_user', user_id=user.user_id) }}">
+            <i class="bi bi-pencil-square me-2"></i>Edit profile
+        </a>
+        <form
+            method="post"
+            action="{{ url_for('admin.delete_user', user_id=user.user_id) }}"
+            onsubmit="return confirm('Delete {{ user.display_name }}? This cannot be undone.');"
+        >
+            {{ delete_form.hidden_tag() }}
+            <button type="submit" class="btn btn-outline-danger">
+                <i class="bi bi-trash me-2"></i>Delete
+            </button>
+        </form>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0">
+                    <h2 class="h5 mb-0">Profile</h2>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4 text-body-secondary">Email</dt>
+                        <dd class="col-sm-8">{{ user.email }}</dd>
+
+                        <dt class="col-sm-4 text-body-secondary">Username</dt>
+                        <dd class="col-sm-8">{{ user.username or '—' }}</dd>
+
+                        <dt class="col-sm-4 text-body-secondary">Job title</dt>
+                        <dd class="col-sm-8">{{ user.job_title or '—' }}</dd>
+
+                        <dt class="col-sm-4 text-body-secondary">Organization</dt>
+                        <dd class="col-sm-8">{{ user.organization or '—' }}</dd>
+
+                        <dt class="col-sm-4 text-body-secondary">Email verified</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge text-bg-{{ 'success' if user.email_verified else 'secondary' }}">
+                                {{ 'Yes' if user.email_verified else 'No' }}
+                            </span>
+                        </dd>
+
+                        <dt class="col-sm-4 text-body-secondary">Public profile</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge text-bg-{{ 'primary' if user.is_public_profile else 'secondary' }}">
+                                {{ 'Visible' if user.is_public_profile else 'Hidden' }}
+                            </span>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0">
+                    <h2 class="h5 mb-0">Engagement</h2>
+                </div>
+                <div class="card-body">
+                    <div class="row row-cols-1 row-cols-sm-2 g-3">
+                        <div class="col">
+                            <div class="border rounded-3 p-3 h-100 text-center">
+                                <div class="fs-2 fw-semibold">{{ metrics.workspaces }}</div>
+                                <div class="text-body-secondary small text-uppercase">Active workspaces</div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="border rounded-3 p-3 h-100 text-center">
+                                <div class="fs-2 fw-semibold">{{ metrics.workshops_created }}</div>
+                                <div class="text-body-secondary small text-uppercase">Workshops created</div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="border rounded-3 p-3 h-100 text-center">
+                                <div class="fs-2 fw-semibold">{{ metrics.workshops_participated }}</div>
+                                <div class="text-body-secondary small text-uppercase">Workshops participated</div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="border rounded-3 p-3 h-100 text-center">
+                                <div class="fs-5 fw-semibold">{{ metrics.last_activity.strftime('%Y-%m-%d %H:%M') if metrics.last_activity else '—' }}</div>
+                                <div class="text-body-secondary small text-uppercase">Last activity</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

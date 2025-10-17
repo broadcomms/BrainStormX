@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Workshop Invitation</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+  <div class="container maxw-720 my-2rem">
+      <h1>Workshop Invitation</h1>
+      <p>You have been invited to join the workshop: <strong>{{ participant_record.workshop.title }}</strong></p>
+      <p>Would you like to accept the invitation?</p>
+  <div class="mt-1rem">
+        <a class="btn btn-primary" href="{{ url_for('workshop_bp.respond_invitation', token=participant_record.invitation_token, action='accept') }}">Accept</a>
+        <a class="btn btn-secondary" href="{{ url_for('workshop_bp.respond_invitation', token=participant_record.invitation_token, action='decline') }}">Decline</a>
+      </div>
+    </div>
+  </body>
+</html>

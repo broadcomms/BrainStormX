@@ -1,0 +1,285 @@
+<!-- app/account/templates/account_edit.html -->
+{% extends "main_template.html" %}
+{% block title %}Edit Account{% endblock %}
+
+{% block content %}
+{% set editing_self = (user.user_id == current_user.user_id) %}
+<section class="py-4 bg-body-tertiary">
+  <div class="container">
+    <!-- Header + Breadcrumbs -->
+    <div class="d-flex flex-wrap justify-content-between align-items-start mb-3">
+      <div class="me-2">
+        <h1 class="h5 fw-bold mb-1 d-flex flex-wrap align-items-center gap-2">
+          <i class="bi bi-person-gear"></i>
+          <span class="text-truncate d-inline-block truncate-48ch" title="{{ editing_self and 'Your Profile' or (user.first_name ~ ' ' ~ user.last_name) }}">{{ editing_self and 'Edit Profile' or ('Edit: ' ~ (user.first_name ~ ' ' ~ user.last_name)) }}</span>
+          <span class="badge text-bg-light d-inline-flex align-items-center gap-1"><i class="bi bi-pencil-square"></i>Edit</span>
+        </h1>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item"><a href="{{ url_for('main_bp.index') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('account_bp.account') }}">Account</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Edit</li>
+          </ol>
+        </nav>
+      </div>
+      <div class="d-flex gap-2 mt-3 mt-sm-0">
+        <a href="{{ url_for('account_bp.account') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Cancel</a>
+        <a href="{{ url_for('account_bp.update_photo') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-camera"></i> Photo</a>
+        <a href="{{ url_for('auth_bp.change_password') }}" class="btn btn-outline-warning btn-sm"><i class="bi bi-key"></i> Password</a>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- Main Form Column -->
+      <div class="col-lg-8 d-flex flex-column gap-4">
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-sliders text-primary"></i>
+            <span class="fw-semibold">Profile Information</span>
+          </div>
+          <form method="POST" action="{{ url_for('account_bp.edit_account', user_id=user.user_id) }}" novalidate>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="email" class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-at"></i></span>
+                    <input type="email" class="form-control" id="email" name="email" required maxlength="120"
+                           value="{{ request.form.get('email', user.email) }}" aria-describedby="emailHelp" placeholder="you@example.com">
+                  </div>
+                  <div id="emailHelp" class="form-text small text-body-secondary">Login + notifications.</div>
+                </div>
+                <div class="col-md-6">
+                  <label for="username" class="form-label fw-semibold">Username</label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
+                    <input type="text" class="form-control" id="username" name="username" maxlength="40" placeholder="optional"
+                           value="{{ request.form.get('username', user.username or '') }}" aria-describedby="userHelp userCount">
+                  </div>
+                  <div class="d-flex justify-content-between small mt-1">
+                    <div id="userHelp" class="text-body-secondary">Public handle (optional).</div>
+                    <div id="userCount" class="text-body-secondary">0 / 40</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                  <label for="first_name" class="form-label fw-semibold">First Name</label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-type"></i></span>
+                    <input type="text" class="form-control" id="first_name" name="first_name" maxlength="60" value="{{ request.form.get('first_name', user.first_name or '') }}" aria-describedby="fnCount">
+                  </div>
+                  <div class="text-end small text-body-secondary" id="fnCount">0 / 60</div>
+                </div>
+                <div class="col-md-6">
+                  <label for="last_name" class="form-label fw-semibold">Last Name</label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-type"></i></span>
+                    <input type="text" class="form-control" id="last_name" name="last_name" maxlength="60" value="{{ request.form.get('last_name', user.last_name or '') }}" aria-describedby="lnCount">
+                  </div>
+                  <div class="text-end small text-body-secondary" id="lnCount">0 / 60</div>
+                </div>
+              </div>
+
+              <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                  <label for="job_title" class="form-label fw-semibold">Job Title</label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-briefcase"></i></span>
+                    <input type="text" class="form-control" id="job_title" name="job_title" maxlength="80" value="{{ request.form.get('job_title', user.job_title or '') }}" aria-describedby="jobCount">
+                  </div>
+                  <div class="text-end small text-body-secondary" id="jobCount">0 / 80</div>
+                </div>
+                <div class="col-md-6">
+                  <label for="organization" class="form-label fw-semibold">Organization</label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-building"></i></span>
+                    <input type="text" class="form-control" id="organization" name="organization" maxlength="100" value="{{ request.form.get('organization', user.organization or '') }}" aria-describedby="orgCount">
+                  </div>
+                  <div class="text-end small text-body-secondary" id="orgCount">0 / 100</div>
+                </div>
+              </div>
+
+              <div class="mt-3">
+                <label class="form-label fw-semibold">Profile Visibility</label>
+                <div class="card bg-body-secondary border-0">
+                  <div class="card-body py-2 small">
+                    <div class="form-check form-switch d-flex align-items-center gap-2">
+                      <input class="form-check-input" type="checkbox" role="switch" id="is_public_profile" name="is_public_profile" value="1" {% if (request.form.get('is_public_profile') is not none and request.form.get('is_public_profile')|int == 1) or (request.form.get('is_public_profile') is none and user.is_public_profile) %}checked{% endif %}>
+                      <label class="form-check-label" for="is_public_profile">
+                        <strong>Public Profile</strong>
+                      </label>
+                    </div>
+                    <div class="mt-2 text-body-secondary">
+                      <ul class="small ps-3 mb-0">
+                        <li>Public: Appears in the People directory for discovery & collaboration.</li>
+                        <li>Private: Hidden from People listing. Others can only invite you via email or existing workspace/workshop participation.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-3">
+                <label for="phone_number" class="form-label fw-semibold">Phone</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                  <input type="text" class="form-control" id="phone_number" name="phone_number" maxlength="40" placeholder="+1 555 000 1234" value="{{ request.form.get('phone_number', user.phone_number or '') }}" aria-describedby="phoneHelp phoneCount">
+                </div>
+                <div class="d-flex justify-content-between small mt-1">
+                  <div id="phoneHelp" class="text-body-secondary">Optional; used for time‑sensitive notifications later.</div>
+                  <div id="phoneCount" class="text-body-secondary">0 / 40</div>
+                </div>
+              </div>
+
+              <div class="border-top pt-3 mt-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="small text-body-secondary d-flex align-items-center gap-2"><i class="bi bi-shield-check text-success"></i><span>All changes apply on save.</span></div>
+                <div class="d-flex gap-2">
+                  <a href="{{ url_for('account_bp.account') }}" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Cancel</a>
+                  <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle"></i> Save Changes</button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Future Enhancements Placeholder -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-gear-wide-connected text-secondary"></i>
+            <span class="fw-semibold">Upcoming Enhancements</span>
+          </div>
+          <div class="card-body small text-body-secondary">
+            <p class="mb-2">Planned additions:</p>
+            <ul class="ps-3 mb-0">
+              <li>Multi‑factor authentication settings</li>
+              <li>Notification preferences</li>
+              <li>AI assistant tone & context</li>
+              <li>Session & device management</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side Column -->
+      <div class="col-lg-4 d-flex flex-column gap-4">
+        <!-- Profile Preview -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-person-circle text-primary"></i>
+            <span class="fw-semibold">Profile Preview</span>
+          </div>
+          <div class="card-body text-center small">
+            <span class="avatar-circle d-inline-block overflow-hidden avatar-96">
+              <img src="{{ profile_url(user.profile_pic_url) }}" alt="Profile picture" class="avatar-img">
+            </span>
+            <div class="fw-semibold mb-1">{{ (user.first_name ~ ' ' ~ user.last_name)|trim or user.username or user.email }}</div>
+            <div class="text-body-secondary mb-2">{{ user.organization or user.job_title or 'Add role context' }}</div>
+            <div class="d-flex flex-wrap justify-content-center gap-2">
+              <a href="{{ url_for('account_bp.update_photo') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-camera"></i> Update Photo</a>
+              <a href="{{ url_for('auth_bp.change_password') }}" class="btn btn-outline-warning btn-sm"><i class="bi bi-key"></i> Password</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Data Quality Tips -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-lightbulb text-warning"></i>
+            <span class="fw-semibold">Profile Tips</span>
+          </div>
+          <div class="card-body small lh-sm">
+            <ul class="list-unstyled mb-0">
+              <li class="mb-2"><i class="bi bi-check2-circle text-success"></i> Use real name for trust & collaboration.</li>
+              <li class="mb-2"><i class="bi bi-check2-circle text-success"></i> Add org + role to appear in people lists.</li>
+              <li class="mb-2"><i class="bi bi-check2-circle text-success"></i> Keep email current for invitations.</li>
+              <li><i class="bi bi-check2-circle text-success"></i> Username is optional & can be changed later.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Security Guidance -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-shield-lock text-secondary"></i>
+            <span class="fw-semibold">Security & Identity</span>
+          </div>
+          <div class="card-body small text-body-secondary">
+            <p class="mb-2">We’ll introduce enhanced security soon.</p>
+            <ul class="ps-3 mb-2">
+              <li>Strong password (rotate periodically)</li>
+              <li>Unique email for account recovery</li>
+              <li>Multi‑factor (coming soon)</li>
+            </ul>
+            <p class="mb-0">Report suspicious activity to support.</p>
+            {% if editing_self %}
+            <hr class="my-3">
+            <div class="alert alert-danger" role="alert">
+              <div class="d-flex align-items-start gap-2">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>
+                  <div class="fw-semibold">Danger Zone</div>
+                  <div class="mt-1">
+                    Deleting your account removes your memberships and personal data. Completed workshops, reports,
+                    and immutable records will retain anonymized references to preserve system integrity.
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="d-grid gap-2">
+              <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('account_bp.export_my_data', include_reclaim=1) }}">
+                <i class="bi bi-box-arrow-down"></i> Export My Data (JSON) + Reclaim Token
+              </a>
+
+              <button class="btn btn-outline-danger btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#deleteAccountCollapse" aria-expanded="false" aria-controls="deleteAccountCollapse">
+                <i class="bi bi-person-x"></i> Delete My Account
+              </button>
+              <div class="collapse" id="deleteAccountCollapse">
+                <div class="card card-body border-danger-subtle">
+                  <form method="POST" action="{{ url_for('account_bp.delete_account') }}" onsubmit="return confirm('This will delete your account and anonymize immutable records. Continue?');">
+                    <div class="mb-2">
+                      <label for="confirm_email" class="form-label">Type your email to confirm</label>
+                      <input type="email" required class="form-control form-control-sm" id="confirm_email" name="confirm_email" placeholder="{{ user.email }}">
+                    </div>
+                    <div class="small text-body-secondary mb-2">
+                      • Your memberships, invites, and active participations will be removed.
+                      • Workshops you created will be reassigned to the workspace owner.
+                      • Completed workshops/reports keep anonymized references.
+                    </div>
+                    <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash3"></i> Permanently Delete Account</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const fields = [
+        { id: 'username', max: 40, count: 'userCount' },
+        { id: 'first_name', max: 60, count: 'fnCount' },
+        { id: 'last_name', max: 60, count: 'lnCount' },
+        { id: 'job_title', max: 80, count: 'jobCount' },
+        { id: 'organization', max: 100, count: 'orgCount' },
+        { id: 'phone_number', max: 40, count: 'phoneCount' }
+      ];
+      fields.forEach(f => {
+        const el = document.getElementById(f.id);
+        const counter = document.getElementById(f.count);
+        if (!el || !counter) return;
+        const update = () => { counter.textContent = `${el.value.length} / ${f.max}`; };
+        el.addEventListener('input', update); update();
+      });
+    });
+  </script>
+{% endblock %}

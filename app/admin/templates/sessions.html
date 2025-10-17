@@ -1,0 +1,51 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Sessions · BrainStorm X{% endblock %}
+{% block header_title %}Active sessions{% endblock %}
+{% block header_subtitle %}Monitor logins and terminate suspicious activity in real time{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Session token</th>
+                        <th scope="col">User</th>
+                        <th scope="col">Created</th>
+                        <th scope="col">Last activity</th>
+                        <th scope="col">IP address</th>
+                        <th scope="col" class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for session in sessions %}
+                        <tr class="{% if not session.is_active %}table-secondary{% endif %}">
+                            <td><code class="small">{{ session.session_token[:12] }}…</code></td>
+                            <td>{{ session.user.display_name if session.user else '—' }}</td>
+                            <td>{{ session.created_at.strftime('%Y-%m-%d %H:%M') if session.created_at else '—' }}</td>
+                            <td>{{ session.last_activity.strftime('%Y-%m-%d %H:%M') if session.last_activity else '—' }}</td>
+                            <td>{{ session.ip_address or '—' }}</td>
+                            <td class="text-end">
+                                {% if session.is_active %}
+                                    <form method="post" action="{{ url_for('admin.revoke_session', session_id=session.id) }}" onsubmit="return confirm('Revoke this session?');" class="d-inline">
+                                        {{ revoke_form.hidden_tag() }}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Revoke</button>
+                                    </form>
+                                {% else %}
+                                    <span class="badge text-bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-body-secondary py-4">No recorded sessions.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

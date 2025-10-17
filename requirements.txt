@@ -1,0 +1,58 @@
+Flask
+dotenv
+Flask-SocketIO
+eventlet
+python-dotenv
+SQLAlchemy
+passlib
+bcrypt==4.0.1
+flask-talisman
+Flask-Mail
+flask-cors
+flask-sqlalchemy
+flask-login
+flask-migrate
+PyJWT
+langgraph
+langchain
+langgraph-checkpoint-sqlite
+itsdangerous
+Flask-Markdown
+boto3
+botocore
+langchain-aws
+bedrock-agentcore<=0.1.5
+jsonschema
+Pillow
+opencv-python
+pdfminer.six==20231228
+PyPDF2>=3.0.0
+reportlab>=4.0,<5.0
+pydantic>=2,<3
+
+# --- Offline/local Transcription Provider (Vosk) ---
+vosk
+
+# --- Optional Speech Transcription Provider ---
+# amazon-transcribe  # Uncomment to enable AWS Transcribe streaming (Async SDK)
+amazon-transcribe
+# --- Dev / Test Dependencies ---
+pytest
+pytest-cov
+pytest-asyncio
+Flask-Testing
+requests
+python-socketio
+
+# Static type checking
+mypy
+pgvector
+sentence_transformers
+pytesseract
+types-Markdown
+python-pptx
+jsonschema
+gunicorn
+flask-wtf
+WTForms
+psutil

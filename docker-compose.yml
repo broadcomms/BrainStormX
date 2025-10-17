@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  brainstormx:
+    build: .
+    container_name: brainstormx-app
+    command: python run.py
+    environment:
+      FLASK_ENV: ${FLASK_ENV:-production}
+      TOOL_TIMEOUT_SECONDS: ${TOOL_TIMEOUT_SECONDS:-5}
+      TOOL_MAX_WORKERS: ${TOOL_MAX_WORKERS:-4}
+      CIRCUIT_BREAKER_THRESHOLD: ${CIRCUIT_BREAKER_THRESHOLD:-3}
+      CIRCUIT_BREAKER_RESET_SECONDS: ${CIRCUIT_BREAKER_RESET_SECONDS:-60}
+      DEFAULT_TIMEZONE: ${DEFAULT_TIMEZONE:-America/Toronto}
+      WORKSHOP_DEFAULT_DURATION_MINUTES: ${WORKSHOP_DEFAULT_DURATION_MINUTES:-90}
+      PHASE_DEFAULT_DURATION_MINUTES: ${PHASE_DEFAULT_DURATION_MINUTES:-15}
+      HEARTBEAT_INTERVAL_SECONDS: ${HEARTBEAT_INTERVAL_SECONDS:-60}
+      IDLE_THRESHOLD_MINUTES: ${IDLE_THRESHOLD_MINUTES:-10}
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./logs:/app/logs
+    depends_on:
+      - prometheus
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: brainstormx-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro

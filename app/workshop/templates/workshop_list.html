@@ -1,0 +1,182 @@
+<!-- app/workshop/templates/workshop_list.html -->
+{% extends "main_template.html" %}
+{% block title %}Workshops{% endblock %}
+{% block content %}
+
+<section class="py-4 bg-body-tertiary">
+    <div class="container">
+        <!-- Header & Breadcrumbs -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+            <div class="me-2">
+                <h1 class="h4 fw-bold mb-1"><i class="bi bi-easel2 me-2"></i>Workshops</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('main_bp.index') }}">Home</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Workshops</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex gap-2 mt-3 mt-sm-0">
+                <a href="{{ url_for('workshop_bp.create_workshop_general') }}" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>Create Workshop</a>
+            </div>
+        </div>
+
+        <!-- Utility Bar -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body py-3">
+                <form class="row g-2 align-items-center" onsubmit="return false;">
+                    <div class="col-md-5">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-body-secondary"><i class="bi bi-search"></i></span>
+                            <input id="workshopFilter" type="text" class="form-control" placeholder="Search workshops..." aria-label="Search workshops" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="btn-group btn-group-sm w-100" role="group" aria-label="Status filter" id="statusFilterGroup">
+                            <button type="button" class="btn btn-outline-secondary active" data-filter-status="all">All</button>
+                            <button type="button" class="btn btn-outline-secondary" data-filter-status="scheduled">Upcoming</button>
+                            <button type="button" class="btn btn-outline-secondary" data-filter-status="inprogress">Live</button>
+                            <button type="button" class="btn btn-outline-secondary" data-filter-status="completed">Done</button>
+                        </div>
+                    </div>
+                    <div class="col-md-3 d-flex justify-content-md-end">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-sort-alpha-down me-1"></i>Sort
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" id="sortMenu">
+                                <li><button type="button" class="dropdown-item" data-sort="title">Title</button></li>
+                                <li><button type="button" class="dropdown-item" data-sort="date">Date</button></li>
+                                <li><button type="button" class="dropdown-item" data-sort="status">Status</button></li>
+                            </ul>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% set scheduled_count = workshops|selectattr('status','equalto','scheduled')|list|length %}
+        {% set inprogress_count = workshops|selectattr('status','equalto','inprogress')|list|length %}
+        {% set paused_count = workshops|selectattr('status','equalto','paused')|list|length %}
+        {% set completed_count = workshops|selectattr('status','equalto','completed')|list|length %}
+        {% set cancelled_count = workshops|selectattr('status','equalto','cancelled')|list|length %}
+
+        <!-- Status Overview Badges -->
+        <div class="d-flex flex-wrap gap-2 mb-4 small">
+            <span class="badge text-bg-info text-dark">Upcoming {{ scheduled_count }}</span>
+            <span class="badge text-bg-success">Live {{ inprogress_count }}</span>
+            <span class="badge text-bg-warning text-dark">Paused {{ paused_count }}</span>
+            <span class="badge text-bg-secondary">Completed {{ completed_count }}</span>
+            <span class="badge text-bg-danger">Cancelled {{ cancelled_count }}</span>
+            <span class="badge text-bg-light text-dark">Total {{ workshops|length }}</span>
+        </div>
+
+        {% if workshops %}
+            <div class="row g-4" id="workshopGrid">
+                {% for workshop in workshops %}
+                    {% set status = workshop.status or 'unknown' %}
+                    {% set status_map = {
+                        'scheduled': ('info text-dark','calendar-event','Upcoming'),
+                        'inprogress': ('success','play-circle','Live'),
+                        'paused': ('warning text-dark','pause-circle','Paused'),
+                        'completed': ('secondary','check2-circle','Completed'),
+                        'cancelled': ('danger','x-octagon','Cancelled')
+                    } %}
+                    {% set status_style, status_icon, status_label = status_map.get(status, ('light text-dark','question-circle','Unknown')) %}
+                    <div class="col-md-6 col-xl-4 workshop-card" data-title="{{ workshop.title|lower }}" data-status="{{ status }}" data-date="{{ workshop.date_time.strftime('%Y-%m-%dT%H:%M:%S') if workshop.date_time else '' }}" data-status-label="{{ status_label }}">
+                        <div class="card h-100 shadow-sm border-0">
+                            <div class="card-body d-flex flex-column">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h2 class="h6 mb-0 text-truncate" title="{{ workshop.title }}">{{ workshop.title }}</h2>
+                                    <span class="badge text-bg-{{ status_style }} d-inline-flex align-items-center gap-1">
+                                        <i class="bi bi-{{ status_icon }}"></i>{{ status_label }}
+                                    </span>
+                                </div>
+                                <div class="small text-body-secondary mb-2">
+                                    <i class="bi bi-diagram-3 me-1"></i>
+                                    <a class="text-decoration-none text-reset" href="{{ url_for('workspace_bp.view_workspace', workspace_id=workshop.workspace.workspace_id) }}">{{ workshop.workspace.name }}</a>
+                                </div>
+                                <div class="small mb-3 d-flex flex-wrap gap-2">
+                                    <span class="badge text-bg-light"><i class="bi bi-calendar-week me-1"></i>{{ workshop.date_time.strftime('%Y-%m-%d %H:%M') if workshop.date_time else 'TBD' }}</span>
+                                    <span class="badge text-bg-light"><i class="bi bi-person-circle me-1"></i>{{ workshop.creator.first_name or workshop.creator.email }}</span>
+                                </div>
+                                <div class="mt-auto d-flex gap-2">
+                                    <a href="{{ url_for('workshop_bp.view_workshop', workshop_id=workshop.id) }}" class="btn btn-sm btn-primary flex-grow-1"><i class="bi bi-box-arrow-in-right me-1"></i>Open</a>
+                                    {% if workshop.created_by_id == current_user.user_id %}
+                                        <a href="{{ url_for('workshop_bp.edit_workshop', workshop_id=workshop.id) }}" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
+                                        <form action="{{ url_for('workshop_bp.delete_workshop', workshop_id=workshop.id) }}" method="post" onsubmit="return confirm('Delete this workshop permanently?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center py-5">
+                    <div class="mb-3"><i class="bi bi-easel2 display-6 text-primary"></i></div>
+                    <h2 class="h5 mb-2">No Workshops Yet</h2>
+                        <p class="text-body-secondary mb-4">Create your first workshop to start collaborating and generating outcomes.</p>
+                        <a href="{{ url_for('workshop_bp.create_workshop_general') }}" class="btn btn-primary btn-lg"><i class="bi bi-plus-circle me-1"></i>Create Workshop</a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<script>
+// Client-side filtering and sorting for workshops
+(function(){
+    const searchInput = document.getElementById('workshopFilter');
+    const statusButtons = document.querySelectorAll('[data-filter-status]');
+    const sortMenu = document.getElementById('sortMenu');
+    const cards = () => Array.from(document.querySelectorAll('.workshop-card'));
+    let activeStatus = 'all';
+    let activeSort = null;
+
+    function apply(){
+        const q = (searchInput?.value || '').trim().toLowerCase();
+        cards().forEach(card => {
+            const title = card.getAttribute('data-title');
+            const status = card.getAttribute('data-status');
+            const show = (!q || title.includes(q)) && (activeStatus === 'all' || status === activeStatus);
+            card.style.display = show ? '' : 'none';
+        });
+        if(activeSort){ sortCards(activeSort); }
+    }
+
+    function sortCards(mode){
+        const grid = document.getElementById('workshopGrid');
+        if(!grid) return;
+        const sorted = cards().filter(c => c.style.display !== 'none');
+        sorted.sort((a,b)=>{
+            if(mode==='title'){
+                return a.getAttribute('data-title').localeCompare(b.getAttribute('data-title'));
+            } else if(mode==='status') {
+                return a.getAttribute('data-status').localeCompare(b.getAttribute('data-status'));
+            } else if(mode==='date') {
+                return (a.getAttribute('data-date')||'').localeCompare(b.getAttribute('data-date')||'');
+            }
+            return 0;
+        });
+        sorted.forEach(el => grid.appendChild(el));
+    }
+
+    searchInput?.addEventListener('input', apply);
+    statusButtons.forEach(btn => btn.addEventListener('click', function(){
+        statusButtons.forEach(b=>b.classList.remove('active'));
+        this.classList.add('active');
+        activeStatus = this.getAttribute('data-filter-status');
+        apply();
+    }));
+    sortMenu?.querySelectorAll('[data-sort]').forEach(item => item.addEventListener('click', function(){
+        activeSort = this.getAttribute('data-sort');
+        apply();
+    }));
+})();
+</script>
+
+{% endblock %}

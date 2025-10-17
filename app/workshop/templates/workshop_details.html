@@ -1,0 +1,643 @@
+<!-- app/workshop/templates/workshop_details.html -->
+{% extends "main_template.html" %}
+{% block title %}Workshop: {{ workshop.title }}{% endblock %}
+{% block content %}
+
+{% set status = workshop.status or 'unknown' %}
+{% set status_map = {
+  'scheduled': ('info text-dark','calendar-event','Upcoming'),
+  'inprogress': ('success','play-circle','Live'),
+  'paused': ('warning text-dark','pause-circle','Paused'),
+  'completed': ('secondary','check2-circle','Completed'),
+  'cancelled': ('danger','x-octagon','Cancelled')
+} %}
+{% set status_style, status_icon, status_label = status_map.get(status, ('light text-dark','question-circle','Unknown')) %}
+
+<section class="py-4 bg-body-tertiary">
+  <div class="container">
+    <!-- Header + Breadcrumbs -->
+    <div class="d-flex flex-wrap justify-content-between align-items-start mb-3">
+      <div class="me-2">
+        <h1 class="h4 fw-bold mb-1 d-flex align-items-center gap-2">
+          <i class="bi bi-easel2"></i><span class="text-truncate truncate-48ch" title="{{ workshop.title }}">{{ workshop.title }}</span>
+          <span class="badge text-bg-{{ status_style }} d-inline-flex align-items-center gap-1">
+            <i class="bi bi-{{ status_icon }}"></i>{{ status_label }}
+          </span>
+        </h1>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{{ url_for('main_bp.index') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('workshop_bp.list_workshops') }}">Workshops</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Details</li>
+          </ol>
+        </nav>
+      </div>
+      <div class="d-flex gap-2 mt-3 mt-sm-0">
+        {% if user_is_organizer %}
+          <a href="{{ url_for('workshop_bp.edit_workshop', workshop_id=workshop.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Edit</a>
+          <form action="{{ url_for('workshop_bp.delete_workshop', workshop_id=workshop.id) }}" method="POST" onsubmit="return confirm('Delete this workshop permanently?');">
+            <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Delete</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Invitation Alert -->
+    {% if user_is_invited %}
+      {% set current_user_p_record = participants | selectattr('user_id', 'equalto', current_user.user_id) | first %}
+      <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div class="d-flex align-items-center gap-2"><i class="bi bi-envelope-open"></i><strong>Invitation:</strong> You've been invited to join this workshop.</div>
+        <div class="d-flex gap-2">
+          <a class="btn btn-sm btn-success" href="{{ url_for('workshop_bp.respond_invitation', token=current_user_p_record.invitation_token, action='accept') }}"><i class="bi bi-check-circle"></i> Accept</a>
+          <a class="btn btn-sm btn-outline-danger" href="{{ url_for('workshop_bp.respond_invitation', token=current_user_p_record.invitation_token, action='decline') }}"><i class="bi bi-x-circle"></i> Decline</a>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Participation Request (self-service) -->
+    {% if user_can_request_participation %}
+      <div class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4" role="status">
+        <div class="d-flex align-items-center gap-2"><i class="bi bi-person-plus"></i><strong>Not a participant:</strong> Request to join this workshop.</div>
+        <form method="POST" action="{{ url_for('workshop_bp.request_participation', workshop_id=workshop.id) }}" class="m-0">
+          <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-send"></i> Request Participation</button>
+        </form>
+      </div>
+    {% elif user_participation_requested %}
+      <div class="alert alert-warning small mb-4" role="status">
+        <i class="bi bi-hourglass-split"></i> Your participation request is pending organizer approval.
+      </div>
+    {% endif %}
+
+    {% if user_is_organizer and pending_participation_requests|length > 0 %}
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-transparent py-3 fw-semibold d-inline-flex align-items-center gap-2">
+          <i class="bi bi-inbox"></i><span>Pending Participation Requests ({{ pending_participation_requests|length }})</span>
+        </div>
+        <div class="list-group list-group-flush small">
+          {% for p in pending_participation_requests %}
+            {% set u = p.user %}
+            <div class="list-group-item d-flex align-items-center gap-2">
+              <span class="avatar-circle avatar-40 d-inline-block overflow-hidden border"><img src="{{ profile_url(u.profile_pic_url) }}" class="avatar-img" alt="{{ u.first_name or 'User' }}"></span>
+              <div class="flex-grow-1">
+                <div class="fw-semibold text-truncate">{{ u.first_name }} {{ u.last_name }}</div>
+                <div class="text-body-secondary small">Requested {{ p.joined_timestamp.strftime('%Y-%m-%d') if p.joined_timestamp else (p.created_timestamp.strftime('%Y-%m-%d') if p.created_timestamp else '') }}</div>
+              </div>
+              <form method="POST" action="{{ url_for('workshop_bp.approve_participation_request', workshop_id=workshop.id, participant_id=p.id) }}" class="d-inline">
+                <button type="submit" class="btn btn-success btn-sm" title="Approve" aria-label="Approve"><i class="bi bi-check-lg"></i></button>
+              </form>
+              <form method="POST" action="{{ url_for('workshop_bp.reject_participation_request', workshop_id=workshop.id, participant_id=p.id) }}" class="d-inline ms-1">
+                <button type="submit" class="btn btn-outline-danger btn-sm" title="Reject" aria-label="Reject"><i class="bi bi-x-lg"></i></button>
+              </form>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Summary Stats -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="card shadow-sm h-100 border-0">
+          <div class="card-body py-3 d-flex flex-column justify-content-center text-center small">
+            <div class="text-body-secondary mb-1"><i class="bi bi-people"></i> Participants</div>
+            <div class="fw-semibold fs-5">{{ participants|length }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card shadow-sm h-100 border-0">
+          <div class="card-body py-3 d-flex flex-column justify-content-center text-center small">
+            <div class="text-body-secondary mb-1"><i class="bi bi-file-earmark-text"></i> Documents</div>
+            <div class="fw-semibold fs-5">{{ linked_documents|length }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card shadow-sm h-100 border-0">
+          <div class="card-body py-3 d-flex flex-column justify-content-center text-center small">
+            <div class="text-body-secondary mb-1"><i class="bi bi-calendar-week"></i> Date</div>
+            <div class="fw-semibold fs-6">{{ workshop.date_time.strftime('%Y-%m-%d %H:%M') if workshop.date_time else 'TBD' }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card shadow-sm h-100 border-0">
+          <div class="card-body py-3 d-flex flex-column justify-content-center text-center small">
+            <div class="text-body-secondary mb-1"><i class="bi bi-hourglass-split"></i> Duration</div>
+            <div class="fw-semibold fs-5">{{ workshop.duration or '—' }}<span class="fs-6 ms-1">min</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="row g-4">
+      <!-- Left Column -->
+      <div class="col-lg-8 d-flex flex-column gap-4">
+        <!-- Plan (Read-only) -->
+        <div class="card shadow-sm border-0" id="planReadOnlyCard">
+          <div class="card-header bg-transparent d-flex align-items-center gap-2 py-3">
+            <i class="bi bi-diagram-3 text-primary"></i><span class="fw-semibold">Session Plan</span>
+            {% if user_is_organizer %}
+              <a href="{{ url_for('workshop_bp.edit_workshop', workshop_id=workshop.id) }}" class="btn btn-sm btn-outline-secondary ms-auto"><i class="bi bi-pencil"></i> Edit Plan</a>
+            {% endif %}
+          </div>
+          <div class="card-body">
+            <div id="planReadOnlyContainer" class="small"></div>
+          </div>
+        </div>
+
+        <!-- Details Card -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent d-flex align-items-center gap-2 py-3">
+            <i class="bi bi-info-circle text-primary"></i><span class="fw-semibold">Details</span>
+          </div>
+          <div class="card-body">
+            <div class="small">
+              <div class="row mb-1">
+                <div class="col-sm-3 fw-semibold">Workspace</div>
+                <div class="col-sm-9"><i class="bi bi-diagram-3 me-1"></i><a class="text-decoration-none text-reset" href="{{ url_for('workspace_bp.view_workspace', workspace_id=workshop.workspace.workspace_id) }}">{{ workshop.workspace.name }}</a></div>
+              </div>
+              <div class="row mb-1">
+                <div class="col-sm-3 fw-semibold">Organizer</div>
+                <div class="col-sm-9"><i class="bi bi-person-circle me-1"></i>{{ workshop.creator.first_name or workshop.creator.email }}</div>
+              </div>
+              <div class="row mb-1">
+                <div class="col-sm-3 fw-semibold">Status</div>
+                <div class="col-sm-9">
+                  <span class="badge text-bg-{{ status_style }} d-inline-flex align-items-center gap-1"><i class="bi bi-{{ status_icon }}"></i>{{ status_label }}</span>
+                </div>
+              </div>
+              <div class="row mb-1">
+                <div class="col-sm-3 fw-semibold">Scheduled</div>
+                <div class="col-sm-9">{{ workshop.date_time.strftime('%Y-%m-%d %H:%M') if workshop.date_time else 'Not set' }}</div>
+              </div>
+              <div class="row mb-1">
+                <div class="col-sm-3 fw-semibold">Duration</div>
+                <div class="col-sm-9">{{ workshop.duration or '—' }} minutes</div>
+              </div>
+              {% if workshop.objective %}
+              <div class="row mb-1">
+                <div class="col-sm-3 fw-semibold">Objective</div>
+                <div class="col-sm-9">{{ workshop.objective }}</div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- AI / Agenda Card -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent d-flex align-items-center gap-2 py-3">
+            <i class="bi bi-list-check text-primary"></i><span class="fw-semibold">Agenda</span>
+          </div>
+          <div class="card-body">
+            {% include 'service_agenda.html' %}
+          </div>
+        </div>
+
+        <!-- Action Toolbar -->
+        <div class="card shadow-sm border-0" id="action-toolbar-card">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-lightning-charge text-primary"></i><span class="fw-semibold">Actions</span>
+          </div>
+          <div class="card-body d-flex flex-wrap gap-2">
+            {% if current_user.user_id == workshop.created_by_id %}
+              {% if workshop.status == 'scheduled' %}
+                <form id="start-workshop-form" method="POST" action="{{ url_for('workshop_bp.start_workshop', workshop_id=workshop.id) }}">
+                  <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-play-fill"></i> Start</button>
+                </form>
+                <a href="{{ url_for('workshop_bp.join_workshop', workshop_id=workshop.id) }}" class="btn btn-primary btn-sm"><i class="bi bi-door-open-fill"></i> Join</a>
+              {% elif workshop.status == 'inprogress' %}
+                <form id="pause-workshop-form" method="POST" action="{{ url_for('workshop_bp.pause_workshop', workshop_id=workshop.id) }}">
+                  <button type="submit" class="btn btn-warning btn-sm"><i class="bi bi-pause-fill"></i> Pause</button>
+                </form>
+                <form id="stop-workshop-form" method="POST" action="{{ url_for('workshop_bp.stop_workshop', workshop_id=workshop.id) }}">
+                  <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-stop-fill"></i> Stop</button>
+                </form>
+                <a href="{{ url_for('workshop_bp.join_workshop', workshop_id=workshop.id) }}" class="btn btn-primary btn-sm"><i class="bi bi-door-open-fill"></i> Join</a>
+              {% elif workshop.status == 'paused' %}
+                <form id="resume-workshop-form" method="POST" action="{{ url_for('workshop_bp.resume_workshop', workshop_id=workshop.id) }}">
+                  <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-play-fill"></i> Resume</button>
+                </form>
+                <form id="stop-workshop-form" method="POST" action="{{ url_for('workshop_bp.stop_workshop', workshop_id=workshop.id) }}">
+                  <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-stop-fill"></i> Stop</button>
+                </form>
+                <a href="{{ url_for('workshop_bp.join_workshop', workshop_id=workshop.id) }}" class="btn btn-primary btn-sm"><i class="bi bi-door-open-fill"></i> Join</a>
+              {% elif workshop.status == 'completed' %}
+                <a href="{{ url_for('workshop_bp.workshop_report', workshop_id=workshop.id) }}" class="btn btn-info btn-sm"><i class="bi bi-file-earmark-text"></i> Report</a>
+              {% elif workshop.status == 'cancelled' %}
+                <form id="restart-workshop-form" method="POST" action="{{ url_for('workshop_bp.restart_workshop', workshop_id=workshop.id) }}">
+                  <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-arrow-clockwise"></i> Restart</button>
+                </form>
+              {% endif %}
+            {% endif %}
+
+            {% if user_is_accepted_participant and not user_is_organizer %}
+              {% if workshop.status in ['scheduled','inprogress','paused'] %}
+                <a href="{{ url_for('workshop_bp.join_workshop', workshop_id=workshop.id) }}" class="btn btn-primary btn-sm"><i class="bi bi-door-open-fill"></i> Join</a>
+              {% elif workshop.status == 'completed' %}
+                <a href="{{ url_for('workshop_bp.workshop_report', workshop_id=workshop.id) }}" class="btn btn-info btn-sm"><i class="bi bi-file-earmark-text"></i> Report</a>
+              {% endif %}
+            {% endif %}
+
+            {% if current_user.user_id == workshop.created_by_id and workshop.status == 'scheduled' %}
+              <a href="{{ url_for('workshop_bp.edit_workshop', workshop_id=workshop.id) }}" class="btn btn-outline-secondary btn-sm ms-auto"><i class="bi bi-pencil-square"></i> Edit</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="col-lg-4 d-flex flex-column gap-4">
+        <!-- Participants -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-3">
+            <div class="d-flex align-items-center gap-2"><i class="bi bi-people text-primary"></i><span class="fw-semibold">Participants ({{ participants|length }})</span></div>
+            {% if user_is_organizer %}
+              <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addParticipantModal" title="Add participant" aria-label="Add participant"><i class="bi bi-person-plus"></i></button>
+            {% endif %}
+          </div>
+          <div class="list-group list-group-flush small">
+            {% if participants %}
+              {% for p in participants %}
+                <div class="list-group-item d-flex align-items-start gap-2">
+                  <span class="avatar-circle avatar-32 d-inline-block overflow-hidden border"><img src="{{ profile_url(p.user.profile_pic_url) }}" alt="avatar" class="avatar-img"></span>
+                  <div class="flex-grow-1">
+                    <a class="text-decoration-none text-reset fw-semibold" href="{{ url_for('account_bp.public_profile', user_id=p.user_id) }}">{{ p.user.first_name or '' }} {{ p.user.last_name or '' }}</a>
+                    <div class="text-body-secondary">{{ p.user.email }}</div>
+                    <div class="mt-1 d-flex flex-wrap gap-1">
+                      {% if p.role == 'organizer' %}<span class="badge text-bg-primary">Organizer</span>{% endif %}
+                      <span class="badge
+                          {% if p.status == 'accepted' %} text-bg-success
+                          {% elif p.status == 'invited' %} text-bg-warning text-dark
+                          {% elif p.status == 'declined' %} text-bg-danger
+                          {% else %} text-bg-secondary {% endif %}">{{ p.status|capitalize }}</span>
+                    </div>
+                  </div>
+                  {% if user_is_organizer and p.role != 'organizer' %}
+                    <form action="{{ url_for('workshop_bp.remove_participant', workshop_id=workshop.id, participant_id=p.id) }}" method="POST" onsubmit="return confirm('Remove {{ p.user.email }}?');">
+                      <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove"><i class="bi bi-x-lg"></i></button>
+                    </form>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="p-3 text-center text-body-secondary">No participants yet.</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Documents -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-3">
+            <div class="d-flex align-items-center gap-2"><i class="bi bi-file-earmark-text text-primary"></i><span class="fw-semibold">Documents ({{ linked_documents|length }})</span></div>
+            {% if user_is_organizer %}
+              <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addDocumentModal" title="Link document" aria-label="Link document"><i class="bi bi-file-earmark-plus"></i></button>
+            {% endif %}
+          </div>
+          <div class="list-group list-group-flush small">
+            {% if linked_documents %}
+              {% for link in linked_documents %}
+                <div class="list-group-item d-flex justify-content-between align-items-start gap-2">
+                  <div class="flex-grow-1">
+                    <a class="text-decoration-none text-reset fw-semibold" href="{{ url_for('document_bp.preview_document', document_id=link.document.id) }}"><i class="bi bi-file-earmark-text me-1"></i>{{ link.document.title }}</a>
+                    <div class="text-body-secondary">{{ link.document.file_name }}</div>
+                    <div class="text-body-secondary small">Added {{ link.added_at.strftime('%Y-%m-%d') }}</div>
+                  </div>
+                  {% if user_is_organizer %}
+                    <form action="{{ url_for('workshop_bp.remove_document_link', workshop_id=workshop.id, link_id=link.id) }}" method="POST" onsubmit="return confirm('Remove this link?');">
+                      <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove"><i class="bi bi-unlink"></i></button>
+                    </form>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="p-3 text-center text-body-secondary">No documents linked.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </section>
+
+  <!-- Hidden metadata for safe JS access -->
+  <div id="workshop-meta"
+       data-workshop-id="{{ workshop.id }}"
+       data-is-organizer="{{ 'true' if user_is_organizer else 'false' }}"
+       data-current-user-id="{{ current_user.user_id }}"
+       class="d-none"></div>
+
+<!-- =================== Modals =================== -->
+{% if user_is_organizer %}
+<!-- Add Participant Modal -->
+<div class="modal fade" id="addParticipantModal" tabindex="-1" aria-labelledby="addParticipantModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <form action="{{ url_for('workshop_bp.add_participant', workshop_id=workshop.id) }}" method="POST" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addParticipantModalLabel">Add Participant</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        {% if potential_participants %}
+          <div class="mb-3">
+            <label for="participantUserId" class="form-label">Select member</label>
+            <select name="user_id" id="participantUserId" class="form-select" required>
+              <option value="" disabled selected>-- Choose a member --</option>
+              {% for user in potential_participants %}
+                <option value="{{ user.user_id }}">{{ user.first_name or '' }} {{ user.last_name or '' }} ({{ user.email }})</option>
+              {% endfor %}
+            </select>
+          </div>
+        {% else %}
+          <p class="text-body-secondary">All workspace members have been invited or added.</p>
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        {% if potential_participants %}<button type="submit" class="btn btn-primary">Send Invitation</button>{% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Add Document Modal -->
+<div class="modal fade" id="addDocumentModal" tabindex="-1" aria-labelledby="addDocumentModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <form action="{{ url_for('workshop_bp.add_document_link', workshop_id=workshop.id) }}" method="POST" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addDocumentModalLabel">Link Document</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        {% if available_documents %}
+          <div class="mb-3">
+            <label for="documentId" class="form-label">Select document</label>
+            <select name="document_id" id="documentId" class="form-select" required>
+              <option value="" disabled selected>-- Choose a document --</option>
+              {% for doc in available_documents %}
+                <option value="{{ doc.id }}">{{ doc.title }} ({{ doc.file_name }}) - Uploaded {{ doc.uploaded_at.strftime('%Y-%m-%d') }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        {% else %}
+          <p class="text-body-secondary">All workspace documents are already linked or none exist.</p>
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        {% if available_documents %}<button type="submit" class="btn btn-primary">Link</button>{% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit AI Content Modal (retained for AI editing) -->
+<div class="modal fade" id="editAiContentModal" tabindex="-1" aria-labelledby="editAiContentModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editAiContentModalLabel">Edit Content</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editAiContentType">
+        <textarea id="editAiContentTextarea" class="form-control" rows="15"></textarea>
+        <div id="editAiContentError" class="text-danger mt-2 small"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="saveAiContentButton">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- =================== JS: Workshop Controls (unchanged core logic, structured) =================== -->
+<script>
+  const metaEl = document.getElementById('workshop-meta');
+  const workshopId = Number(metaEl?.dataset.workshopId || 0);
+  const isOrganizer = (metaEl?.dataset.isOrganizer === 'true');
+  const currentUserId = Number(metaEl?.dataset.currentUserId || 0);
+  const planContainer = document.getElementById('planReadOnlyContainer');
+
+  function getCsrfToken(){
+    const el = document.querySelector('input[name="csrf_token"]');
+    return el ? el.value : null;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    ['start','stop','pause','resume','restart'].forEach(action => {
+      const form = document.getElementById(`${action}-workshop-form`);
+      if(form) form.addEventListener('submit', e => handleAction(e, form));
+    });
+    if(isOrganizer){
+      setupAiControls();
+      setupActionPlanDelete();
+    }
+
+  // Load read-only plan
+  loadReadOnlyPlan();
+  });
+
+  async function handleAction(evt, form){
+    evt.preventDefault();
+    const btn = form.querySelector('button[type="submit"]');
+    if(!btn) return;
+    const original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing…';
+    try {
+      const r = await fetch(form.action, { method:'POST', headers:{ 'X-Requested-With':'XMLHttpRequest','Accept':'application/json','X-CSRFToken': getCsrfToken() } });
+      const j = await r.json();
+      if(r.ok && j.success){ window.location.href = j.redirect_url || window.location.href; }
+      else throw new Error(j.message || `HTTP ${r.status}`);
+    } catch(err){ alert(err.message); btn.disabled=false; btn.innerHTML=original; }
+  }
+
+  function setupAiControls(){
+    document.querySelectorAll('.regenerate-btn').forEach(b => b.addEventListener('click', handleRegenerateClick));
+    const modalEl = document.getElementById('editAiContentModal');
+    if(!modalEl) return;
+    const modal      = new bootstrap.Modal(modalEl);
+    const textarea   = document.getElementById('editAiContentTextarea');
+    const typeInput  = document.getElementById('editAiContentType');
+    const label      = document.getElementById('editAiContentModalLabel');
+    const saveBtn    = document.getElementById('saveAiContentButton');
+    const errDiv     = document.getElementById('editAiContentError');
+    document.querySelectorAll('.edit-ai-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.dataset.type; if(type==='action_plan') return;
+        const display = document.getElementById(`${type}-content-display`); if(!display) return;
+        textarea.value = display.innerText.trim();
+        typeInput.value = type;
+        label.textContent = `Edit ${type.replace('_',' ').replace(/\b\w/g,m=>m.toUpperCase())}`;
+        errDiv.textContent='';
+        modal.show();
+      });
+    });
+    saveBtn.addEventListener('click', async () => {
+      const type = typeInput.value; const url = `/workshop/${workshopId}/edit/${type}`;
+      saveBtn.disabled=true; const orig = saveBtn.innerHTML; saveBtn.innerHTML='<span class="spinner-border spinner-border-sm"></span> Saving…';
+      try {
+        const r = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest','Accept':'application/json','X-CSRFToken':getCsrfToken()},body:JSON.stringify({content: textarea.value})});
+        const j = await r.json(); if(r.ok && j.success){ updateAiContentElement(type,j.content); modal.hide(); } else throw new Error(j.message||`HTTP ${r.status}`);
+      } catch(err){ errDiv.textContent = err.message; } finally { saveBtn.disabled=false; saveBtn.innerHTML=orig; }
+    });
+  }
+
+  function setupActionPlanDelete(){
+    const btn = document.getElementById('delete-action-plan-items-btn');
+    const container = document.getElementById('action_plan-content-display');
+    if(!btn || !container) return;
+    btn.addEventListener('click', async () => {
+      const indices = [...container.querySelectorAll('.action-plan-list input[type="checkbox"]:checked')].map(cb=>Number(cb.value));
+      if(!indices.length) return alert('Select items to delete first.');
+      let current=[]; try { current = JSON.parse(container.dataset.rawJson||'[]'); } catch(e){ return alert('Invalid action-plan JSON'); }
+      const updated = current.filter((_,i)=>!indices.includes(i));
+      await saveActionPlan(updated, btn);
+    });
+  }
+
+  async function saveActionPlan(planArray, btn){
+    const url = `/workshop/${workshopId}/edit/action_plan`; const orig = btn.innerHTML;
+    btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm"></span> Deleting…';
+    try {
+      const r = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest','Accept':'application/json','X-CSRFToken':getCsrfToken()},body:JSON.stringify({content: JSON.stringify(planArray,null,2)})});
+      const j = await r.json(); if(r.ok && j.success){ updateAiContentElement('action_plan', j.content); document.getElementById('action_plan-content-display').dataset.rawJson=JSON.stringify(planArray); } else throw new Error(j.message||`HTTP ${r.status}`);
+    } catch(err){ alert(`Delete failed: ${err.message}`); } finally { btn.disabled=false; btn.innerHTML=orig; }
+  }
+
+  async function handleRegenerateClick(evt){
+    const btn = evt.currentTarget;
+    const type = btn.dataset.type;
+    const url = `/workshop/${workshopId}/regenerate/${type}`;
+    const pane = document.getElementById(`${type}-content-display`);
+    const orig = btn.innerHTML;
+    let previousPaneHtml = null;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Regenerating…';
+
+    if (pane) {
+      if (type === 'agenda') {
+        pane.classList.add('opacity-50');
+      } else {
+        previousPaneHtml = pane.innerHTML;
+        pane.innerHTML = '<div class="text-center p-3"><span class="spinner-border spinner-border-sm"></span></div>';
+      }
+    }
+
+    try {
+      const r = await fetch(url, { method: 'POST', headers: { 'Accept': 'application/json', 'X-CSRFToken': getCsrfToken() } });
+      const j = await r.json();
+      if (r.ok && j.success) {
+        updateAiContentElement(type, j.content);
+        if (type === 'action_plan' && pane) {
+          const raw = await fetch(`/workshop/${workshopId}/get_raw_action_plan`).then(x => x.json());
+          if (raw.success) pane.dataset.rawJson = raw.raw_json;
+        }
+      } else {
+        throw new Error(j.message || `HTTP ${r.status}`);
+      }
+    } catch(err) {
+      alert(`Regeneration failed: ${err.message}`);
+      if (pane && previousPaneHtml !== null) {
+        pane.innerHTML = previousPaneHtml;
+      }
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = orig;
+      if (pane) {
+        pane.classList.remove('opacity-50');
+      }
+    }
+  }
+
+  function updateAiContentElement(type, payload){
+    if (type === 'agenda') {
+      if (typeof window.renderAgendaContent === 'function') {
+        window.renderAgendaContent(payload);
+      }
+      return;
+    }
+    const el = document.getElementById(`${type}-content-display`);
+    if (el) {
+      el.innerHTML = payload;
+    }
+  }
+
+  async function loadReadOnlyPlan(){
+    if(!planContainer || !workshopId) return;
+    try {
+      planContainer.innerHTML = '<div class="text-body-secondary">Loading plan…</div>';
+      const r = await fetch(`/workshop/${workshopId}/plan`, { headers: { 'Accept': 'application/json' } });
+      if(!r.ok) throw new Error(`HTTP ${r.status}`);
+      const j = await r.json();
+      const plan = (j.current_plan||[]).filter(n => n.enabled !== false);
+      if(!plan.length){ planContainer.innerHTML = '<div class="text-body-secondary">No plan configured.</div>'; return; }
+      // Render compact list
+      const ol = document.createElement('ol');
+      ol.className = 'list-group list-group-numbered';
+      let totalSec = 0;
+      plan.forEach(n => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+        const left = document.createElement('div');
+
+        // Optional phase badge (high-level label users set in editor)
+        const phaseBadge = n.phase ? ` <span class=\"badge text-bg-secondary ms-2\">${n.phase}</span>` : '';
+
+        // Optional stage badge for vote_generic (what we are voting over)
+        let stageBadge = '';
+        if ((n.task_type || '').toLowerCase() === 'vote_generic') {
+          const cfg = (n.config_json && typeof n.config_json === 'object') ? n.config_json : {};
+          // Mirror server default: if unspecified, assume 'clusters'
+          let stage = cfg.stage || (cfg.items ? 'manual' : 'clusters');
+          // Friendly label + variant
+          let label = stage;
+          if (stage === 'ideas_from_top_cluster') label = 'ideas: top cluster';
+          let variant = 'secondary';
+          if (stage === 'clusters') variant = 'primary';
+          else if (stage === 'ideas' || stage === 'ideas_from_top_cluster') variant = 'info';
+          else if (stage === 'manual') variant = 'warning text-dark';
+          stageBadge = ` <span class=\"badge text-bg-${variant} ms-2\">stage: ${label}</span>`;
+        }
+
+        left.innerHTML = `<span class=\"fw-semibold\">${n.task_type}</span>${phaseBadge}${stageBadge}`;
+        const right = document.createElement('span');
+        right.className = 'badge text-bg-light text-dark';
+        const durSec = Number(n.duration||60);
+        totalSec += durSec;
+        const mins = Math.max(0, Math.round(durSec/60));
+        right.textContent = `${mins} min`;
+        li.appendChild(left); li.appendChild(right);
+        ol.appendChild(li);
+      });
+      planContainer.innerHTML = '';
+      planContainer.appendChild(ol);
+  const totalMin = Math.max(0, Math.round(totalSec/60));
+      const totalDiv = document.createElement('div');
+      totalDiv.className = 'text-end mt-2 text-body-secondary';
+      totalDiv.innerHTML = `<small>Total estimated time: <span class=\"fw-semibold\">${totalMin} min</span></small>`;
+      planContainer.appendChild(totalDiv);
+    } catch(e){
+      planContainer.innerHTML = `<div class="text-danger">Failed to load plan: ${e.message}</div>`;
+    }
+  }
+</script>
+
+<script>
+  const socket = io();
+  socket.emit('join_room', { room: `workshop_lobby_${workshopId}`, workshop_id: workshopId, user_id: currentUserId });
+  socket.on('ai_content_update', (data) => {
+    if (data.workshop_id === workshopId && data.type === 'agenda' && data.content) {
+      updateAiContentElement('agenda', data.content);
+    }
+  });
+</script>
+
+{% endblock %}
+

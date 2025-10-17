@@ -1,0 +1,408 @@
+{% extends "main_template.html" %}
+{% block title %}Document: {{ document.title }}{% endblock %}
+
+{% block content %}
+{% set status_map = {
+        'completed': ('text-bg-success', 'Completed'),
+        'processing': ('text-bg-warning text-dark', 'Processing'),
+        'queued': ('text-bg-info text-dark', 'Queued'),
+        'failed': ('text-bg-danger', 'Failed'),
+        'pending': ('text-bg-secondary', 'Pending')
+} %}
+{% set status_key = document.processing_status or 'pending' %}
+{% set badge_class, status_label = status_map.get(status_key, ('text-bg-secondary', status_key | title)) %}
+
+<section class="py-4 bg-body-tertiary">
+        <div
+        class="container"
+        id="document-processing-root"
+        data-document-id="{{ document.id }}"
+        data-workspace-id="{{ document.workspace_id }}"
+            data-user-id="{{ current_user.user_id }}"
+        data-process-url="{{ url_for('document_bp.process_document', document_id=document.id) }}"
+        data-chunks-url="{{ url_for('document_bp.document_chunks', document_id=document.id) }}"
+        data-logs-url="{{ url_for('document_bp.document_processing_logs', document_id=document.id) }}"
+            data-detail-url="{{ url_for('document_bp.document_detail', document_id=document.id) }}"
+        data-generate-audio-url="{{ url_for('document_bp.generate_document_audio', document_id=document.id) }}"
+        data-processing-status="{{ document.processing_status or 'pending' }}"
+        data-last-processed="{{ document.last_processed_at.isoformat() if document.last_processed_at else '' }}"
+            data-content-sha="{{ document.content_sha256 or '' }}"
+            data-audio-url="{{ audio_url or '' }}"
+            data-audio-duration="{{ (latest_audio.duration_seconds|string) if latest_audio and latest_audio.duration_seconds else '' }}"
+    >
+        <!-- Header & Breadcrumbs -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+            <div class="me-2">
+                <h1 class="h4 fw-bold mb-1 d-flex align-items-center gap-2">
+                    <i class="bi bi-file-earmark-text"></i><span>{{ document.title }}</span>
+                </h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0 small">
+                        <li class="breadcrumb-item"><a href="{{ url_for('main_bp.index') }}">Home</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('document_bp.list_documents') }}">Documents</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Details</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-3 mt-sm-0 align-items-center">
+                <span class="badge {{ badge_class }} px-3 py-2 text-uppercase small fw-semibold" id="document-status-badge">
+                    <i class="bi bi-activity me-1"></i>{{ status_label }}
+                </span>
+                <div class="text-body-secondary small" id="document-status-meta">
+                    {% if document.last_processed_at %}
+                        Last processed {{ document.last_processed_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC
+                    {% else %}
+                        Not processed yet
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% set file_ext = (document.file_name.rsplit('.',1)[1]|lower) if '.' in document.file_name else '' %}
+        {% set human_size = (document.file_size // 1048576) ~ ' MB' if document.file_size and document.file_size > 1048576 else ( (document.file_size // 1024) ~ ' KB' if document.file_size else '—') %}
+        {% set doc_url = url_for('document_bp.serve_document_file', document_id=document.id) %}
+        {% set download_url = url_for('document_bp.serve_document_file', document_id=document.id, download=1) %}
+        {% set is_pdf = (file_ext == 'pdf') %}
+
+        {% if not file_exists %}
+            <div class="alert alert-warning d-flex align-items-start gap-2 small" role="alert">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div><strong>File Missing:</strong> The physical file could not be located on the server. Metadata remains in the system.</div>
+            </div>
+        {% endif %}
+
+        <div class="row g-4">
+            <!-- Main Column -->
+            <div class="col-lg-8">
+                <!-- Processing Controls -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-transparent py-3 fw-semibold d-flex align-items-center justify-content-between gap-2">
+                        <div class="d-inline-flex align-items-center gap-2">
+                            <i class="bi bi-stars text-primary"></i><span>AI Processing</span>
+                        </div>
+                        <div class="d-inline-flex align-items-center gap-2">
+                            <a href="{{ url_for('document_bp.list_documents') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
+                            <a href="{{ url_for('workspace_bp.view_workspace', workspace_id=document.workspace.workspace_id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-diagram-3 me-1"></i>Workspace</a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+                            <div class="btn-group" role="group" aria-label="Document processing actions">
+                                <button class="btn btn-primary" id="process-document-btn">
+                                    <span class="spinner-border spinner-border-sm me-2 d-none" id="process-spinner" aria-hidden="true"></span>
+                                    <i class="bi bi-magic me-1"></i>Process with AI
+                                </button>
+                                <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span class="visually-hidden">Toggle Dropdown</span>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <button class="dropdown-item" data-action="force-process" type="button">
+                                            <i class="bi bi-arrow-repeat me-1"></i>Reprocess now (force)
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="text-body-secondary small" id="document-summary-meta">
+                                <i class="bi bi-hash me-1"></i>SHA: {{ document.content_sha256 or '—' }}
+                            </div>
+                        </div>
+
+                        <div id="processing-feedback" class="small"></div>
+                                    <div class="progress d-none" id="processing-progress">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                                 role="progressbar"
+                                                 aria-label="Document processing progress"
+                                                 aria-valuemin="0"
+                                                 aria-valuemax="100"
+                                                 aria-valuenow="0">Starting…</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Insights Tabs -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-transparent py-3 fw-semibold d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-layers text-primary"></i><span>Document Intelligence</span>
+                    </div>
+                    <div class="card-body">
+                        <ul class="nav nav-tabs small" id="document-tabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="tab-summary" data-bs-toggle="tab" data-bs-target="#tab-pane-summary" type="button" role="tab" aria-controls="tab-pane-summary" aria-selected="true">Summary</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="tab-markdown" data-bs-toggle="tab" data-bs-target="#tab-pane-markdown" type="button" role="tab" aria-controls="tab-pane-markdown" aria-selected="false">Markdown</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="tab-chunks" data-bs-toggle="tab" data-bs-target="#tab-pane-chunks" type="button" role="tab" aria-controls="tab-pane-chunks" aria-selected="false">Chunks</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="tab-logs" data-bs-toggle="tab" data-bs-target="#tab-pane-logs" type="button" role="tab" aria-controls="tab-pane-logs" aria-selected="false">Progress Log</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content pt-3" id="document-tab-content">
+                            <div class="tab-pane fade show active" id="tab-pane-summary" role="tabpanel" aria-labelledby="tab-summary">
+                                                <div id="document-summary" class="small">
+                                                    {% if document.summary %}
+                                                        <p class="lead fs-6" id="document-summary-text">{{ document.summary }}</p>
+                                                    {% else %}
+                                                        <p class="text-body-secondary" id="document-summary-fallback">No AI summary yet. Run processing to generate insights.</p>
+                                                    {% endif %}
+
+                                    <div class="mt-4">
+                                        <h6 class="text-uppercase text-body-secondary small mb-2">Original Description</h6>
+                                        {% if document.description %}
+                                                                <div class="text-body" id="document-description-text">{{ document.description | safe }}</div>
+                                        {% else %}
+                                                                <div class="text-body-secondary" id="document-description-text">No description provided.</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="mt-4" id="tts-script-section">
+                                        <h6 class="text-uppercase text-body-secondary small mb-2">Narration Script</h6>
+                                        {% if document.tts_script %}
+                                            <pre class="bg-body-tertiary rounded p-3 small" id="tts-script-text">{{ document.tts_script }}</pre>
+                                        {% else %}
+                                            <p class="text-body-secondary mb-0">Narration script will appear after processing.</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="tab-pane-markdown" role="tabpanel" aria-labelledby="tab-markdown">
+                                <div id="document-markdown" class="markdown-body small">
+                                    {% if document.markdown %}
+                                        {{ document.markdown | markdown | safe }}
+                                    {% else %}
+                                        <p class="text-body-secondary">Markdown representation will be available after processing.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="tab-pane-chunks" role="tabpanel" aria-labelledby="tab-chunks">
+                                <div id="document-chunks" class="list-group small scrollable-pane">
+                                    {% if chunks %}
+                                        {% for chunk in chunks|sort(attribute='id') %}
+                                            <div class="list-group-item" data-chunk-id="{{ chunk.id }}">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <strong>Chunk {{ loop.index }}</strong>
+                                                    {% if chunk.meta_data and chunk.meta_data.order is defined %}
+                                                        <span class="badge text-bg-light">Order {{ chunk.meta_data.order }}</span>
+                                                    {% endif %}
+                                                </div>
+                                                <p class="mb-1 text-body">{{ chunk.content[:400] ~ ('…' if chunk.content|length > 400 else '') }}</p>
+                                                {% if chunk.meta_data and chunk.meta_data.headings %}
+                                                    <div class="text-body-secondary">Headings: {{ chunk.meta_data.headings | join(', ') }}</div>
+                                                {% endif %}
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="text-body-secondary">No chunks generated yet.</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="tab-pane-logs" role="tabpanel" aria-labelledby="tab-logs">
+                                <div id="processing-log" class="small scrollable-pane">
+                                    {% if processing_logs %}
+                                        <div class="table-responsive">
+                                            <table class="table table-sm align-middle">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th scope="col">Stage</th>
+                                                        <th scope="col">Status</th>
+                                                        <th scope="col">Started</th>
+                                                        <th scope="col">Completed</th>
+                                                        <th scope="col">Notes</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for log in processing_logs %}
+                                                        <tr>
+                                                            <td class="text-capitalize">{{ log.stage or '—' }}</td>
+                                                            <td>
+                                                                {% set log_class = 'text-bg-secondary' %}
+                                                                {% if log.status == 'completed' %}{% set log_class = 'text-bg-success' %}{% elif log.status == 'processing' %}{% set log_class = 'text-bg-warning text-dark' %}{% elif log.status == 'failed' %}{% set log_class = 'text-bg-danger' %}{% endif %}
+                                                                <span class="badge {{ log_class }}">{{ log.status or 'pending' }}</span>
+                                                            </td>
+                                                            <td>{{ log.started_at.strftime('%Y-%m-%d %H:%M:%S') if log.started_at else '—' }}</td>
+                                                            <td>{{ log.completed_at.strftime('%Y-%m-%d %H:%M:%S') if log.completed_at else '—' }}</td>
+                                                            <td>
+                                                                {% if log.error_message %}
+                                                                    <span class="text-danger">{{ log.error_message }}</span>
+                                                                {% else %}
+                                                                    <span class="text-body-tertiary">processed {{ log.processed_pages or '—' }} / {{ log.total_pages or '—' }} units</span>
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    {% else %}
+                                        <p class="text-body-secondary">Stage progression will appear after processing begins.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audio Preview -->
+                <div class="card shadow-sm border-0 mb-4" id="tts-audio-card">
+                    <div class="card-header bg-transparent py-3 fw-semibold d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-soundwave text-warning"></i><span>Audio Preview</span>
+                    </div>
+                    <div class="card-body">
+                                    <p class="small text-body-secondary mb-2" id="audio-status-text">
+                                        {% if audio_url %}Latest narration ready for playback.{% else %}Audio playback will be available once narration is generated.{% endif %}
+                                    </p>
+                                    <audio id="document-audio" class="w-100" controls preload="none" {% if not audio_url %}data-disabled="true"{% endif %}>
+                                        <source id="document-audio-source" src="{{ audio_url or '' }}" type="audio/wav" />
+                            Your browser does not support audio playback.
+                        </audio>
+                        <div class="d-flex justify-content-between align-items-center mt-2 small text-body-secondary" id="audio-meta">
+                                        <span id="audio-duration">Duration: {% if latest_audio and latest_audio.duration_seconds %}{{ latest_audio.duration_seconds }}s{% else %}—{% endif %}</span>
+                                        <button class="btn btn-sm btn-outline-primary" type="button" id="refresh-audio-btn"><i class="bi bi-broadcast me-1"></i>{% if audio_url %}Regenerate audio{% else %}Generate audio{% endif %}</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Document Viewer -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-transparent py-3 fw-semibold d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-display text-primary"></i><span>Document Viewer</span>
+                    </div>
+                    <div class="card-body">
+                        {% if file_exists %}
+                            {% if is_pdf %}
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    <a class="btn btn-sm btn-outline-primary" href="{{ doc_url }}" target="_blank" rel="noopener">
+                                        <i class="bi bi-box-arrow-up-right me-1"></i>Open in new tab
+                                    </a>
+                                    <a class="btn btn-sm btn-primary" href="{{ download_url }}">
+                                        <i class="bi bi-cloud-download me-1"></i>Download
+                                    </a>
+                                </div>
+                                <div class="ratio ratio-4x3 border rounded overflow-hidden shadow-sm">
+                                    <iframe src="{{ doc_url }}#toolbar=0&navpanes=0&scrollbar=1" title="Document preview" loading="lazy" class="w-100 h-100 border-0"></iframe>
+                                </div>
+                                <p class="text-body-secondary small mt-2 mb-0">Having trouble viewing? Use the buttons above to open or download the file.</p>
+                            {% else %}
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    <a class="btn btn-sm btn-outline-primary" href="{{ doc_url }}" target="_blank" rel="noopener">
+                                        <i class="bi bi-box-arrow-up-right me-1"></i>Open
+                                    </a>
+                                    <a class="btn btn-sm btn-primary" href="{{ download_url }}">
+                                        <i class="bi bi-cloud-download me-1"></i>Download
+                                    </a>
+                                </div>
+                                <p class="text-body-secondary small mb-0">Inline preview is only available for PDF documents. Use the actions above to access this file.</p>
+                            {% endif %}
+                        {% else %}
+                            <p class="text-body-secondary small mb-0">The stored file could not be located. Contact an administrator if this is unexpected.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Technical Details -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-transparent py-3 fw-semibold d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-gear text-primary"></i><span>Technical</span>
+                    </div>
+                    <div class="card-body small">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="text-body-secondary">Stored Path</div>
+                                <div class="truncate-full"><code class="small">{{ document.file_path }}</code></div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="text-body-secondary">Record ID</div>
+                                <div>{{ document.id }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="text-body-secondary">Uploaded (UTC)</div>
+                                <div>{{ document.uploaded_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="text-body-secondary">File Exists</div>
+                                <div>
+                                    {% if file_exists %}
+                                        <span class="badge text-bg-success"><i class="bi bi-check-circle me-1"></i>Yes</span>
+                                    {% else %}
+                                        <span class="badge text-bg-danger"><i class="bi bi-x-octagon me-1"></i>No</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Side Column -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-transparent py-3 fw-semibold d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-info-circle text-primary"></i><span>Document Info</span>
+                    </div>
+                    <div class="card-body small">
+                        <div class="mb-3">
+                            <div class="text-body-secondary">Original Filename</div>
+                            <div class="fw-semibold text-break">{{ document.file_name }}</div>
+                        </div>
+                        <div class="mb-3 d-flex flex-wrap gap-2">
+                            <span class="badge text-bg-light"><i class="bi bi-database me-1"></i>{{ human_size }}</span>
+                            {% if file_ext %}<span class="badge text-bg-secondary text-uppercase">{{ file_ext }}</span>{% endif %}
+                            <span class="badge text-bg-light"><i class="bi bi-clock-history me-1"></i>{{ document.uploaded_at.strftime('%Y-%m-%d') }}</span>
+                        </div>
+                        <div class="mb-3">
+                            <div class="text-body-secondary">Workspace</div>
+                            <div>
+                                <a class="text-decoration-none" href="{{ url_for('workspace_bp.view_workspace', workspace_id=document.workspace.workspace_id) }}">
+                                    <i class="bi bi-diagram-3 me-1"></i>{{ document.workspace.name }}
+                                </a>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="text-body-secondary">Uploaded By</div>
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-person-circle fs-5 text-secondary"></i>
+                                <div>
+                                    <div class="fw-semibold">{{ document.uploader.first_name or document.uploader.email }} {{ document.uploader.last_name or '' }}</div>
+                                    <div class="text-body-secondary">{{ document.uploader.email }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="text-body-secondary">Access Count</div>
+                            <div>{{ document.access_count or 0 }}</div>
+                        </div>
+                        <div class="border-top pt-3 d-flex flex-column gap-2">
+                            <a href="{{ url_for('document_bp.list_documents') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-files me-1"></i>Library</a>
+                            <form action="{{ url_for('document_bp.delete_document', document_id=document.id) }}" method="post" onsubmit="return confirm('Delete \'{{ document.title }}\'? This cannot be undone.');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger w-100"><i class="bi bi-trash me-1"></i>Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-transparent py-3 fw-semibold d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-lightbulb text-warning"></i><span>Usage Tip</span>
+                    </div>
+                    <div class="card-body small">
+                        <p class="mb-2">Keep related documents within the same workspace to simplify collaboration and traceability.</p>
+                        <p class="mb-0 text-body-secondary">Consider adding a descriptive summary so others immediately understand the purpose.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script defer src="{{ url_for('static', filename='js/document_processing.js') }}"></script>
+{% endblock %}
+

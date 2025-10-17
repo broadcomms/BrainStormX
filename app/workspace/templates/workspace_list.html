@@ -1,0 +1,166 @@
+<!-- app/workspace/templates/workspace_list.html -->
+{% extends "main_template.html" %}
+{% block title %}Workspaces{% endblock %}
+{% block content %}
+
+<section class="py-4 bg-body-tertiary">
+  <div class="container">
+    <!-- Page Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+      <div class="me-2">
+        <h1 class="h4 fw-bold mb-1"><i class="bi bi-diagram-3 me-2"></i>Workspaces</h1>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{{ url_for('main_bp.index') }}">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Workspaces</li>
+          </ol>
+        </nav>
+      </div>
+      <div class="d-flex gap-2 mt-3 mt-sm-0">
+        <a href="{{ url_for('workspace_bp.create_workspace') }}" class="btn btn-primary"><i class="bi bi-building-add me-1"></i>Create Workspace</a>
+      </div>
+    </div>
+
+    <!-- Search / Filter Bar -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-body py-3">
+        <form class="row g-2 align-items-center" onsubmit="return false;">
+          <div class="col-md-6">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-body-secondary"><i class="bi bi-search"></i></span>
+              <input id="workspaceFilter" type="text" class="form-control" placeholder="Filter workspaces by name..." aria-label="Filter workspaces" />
+            </div>
+          </div>
+          <div class="col-md-6 d-flex justify-content-md-end gap-2">
+            <div class="btn-group btn-group-sm" role="group" aria-label="Privacy filter">
+              <button type="button" class="btn btn-outline-secondary active" data-filter-privacy="all">All</button>
+              <button type="button" class="btn btn-outline-secondary" data-filter-privacy="private">Private</button>
+              <button type="button" class="btn btn-outline-secondary" data-filter-privacy="public">Public</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-pills mb-3" id="workspaceTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="tab-mine" data-bs-toggle="pill" data-bs-target="#pane-mine" type="button" role="tab" aria-controls="pane-mine" aria-selected="true"><i class="bi bi-person-workspace me-1"></i>My Workspaces</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-public" data-bs-toggle="pill" data-bs-target="#pane-public" type="button" role="tab" aria-controls="pane-public" aria-selected="false"><i class="bi bi-globe2 me-1"></i>Discover Public</button>
+      </li>
+    </ul>
+
+    <div class="tab-content" id="workspaceTabsContent">
+      <!-- MY WORKSPACES -->
+      <div class="tab-pane fade show active" id="pane-mine" role="tabpanel" aria-labelledby="tab-mine">
+        {% if my_workspaces %}
+          <div class="row g-4" id="myWorkspaceGrid">
+            {% for workspace in my_workspaces %}
+              <div class="col-md-6 col-xl-4 workspace-card" data-name="{{ workspace.name|lower }}" data-privacy="{{ 'private' if workspace.is_private else 'public' }}">
+                <div class="card h-100 shadow-sm border-0">
+                  <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-start justify-content-between mb-2">
+                      <h2 class="h6 mb-0 text-truncate" title="{{ workspace.name }}">{{ workspace.name }}</h2>
+                      {% if workspace.is_private %}
+                        <span class="badge text-bg-secondary">Private</span>
+                      {% else %}
+                        <span class="badge text-bg-info text-dark">Public</span>
+                      {% endif %}
+                    </div>
+                    <div class="mb-3 small text-body-secondary line-clamp-2">
+                      {% if workspace.description %}{{ workspace.description|truncate(110) }}{% else %}<em>No description provided.</em>{% endif %}
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 small mb-3">
+                      <span class="badge text-bg-light"><i class="bi bi-people me-1"></i>{{ workspace.members|selectattr('status','equalto','active')|list|length }} Members</span>
+                      <span class="badge text-bg-light"><i class="bi bi-calendar-event me-1"></i>{{ workspace.workshops.count() }} Workshops</span>
+                      <span class="badge text-bg-light"><i class="bi bi-files me-1"></i>{{ workspace.documents.count() }} Docs</span>
+                    </div>
+                    <div class="mt-auto d-flex gap-2">
+                      <a href="{{ url_for('workspace_bp.view_workspace', workspace_id=workspace.workspace_id) }}" class="btn btn-sm btn-primary flex-grow-1"><i class="bi bi-box-arrow-in-right me-1"></i>Open</a>
+                      <a href="{{ url_for('workspace_bp.edit_workspace', workspace_id=workspace.workspace_id) }}" class="btn btn-sm btn-outline-secondary" title="Edit" aria-label="Edit"><i class="bi bi-pencil"></i></a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="card shadow-sm border-0">
+            <div class="card-body text-center py-5">
+              <div class="mb-3"><i class="bi bi-diagram-3 display-6 text-primary"></i></div>
+              <h2 class="h5 mb-2">You have no workspaces yet</h2>
+              <p class="text-body-secondary mb-4">Create a workspace to start organizing workshops, documents and collaborators.</p>
+              <a href="{{ url_for('workspace_bp.create_workspace') }}" class="btn btn-primary btn-lg"><i class="bi bi-building-add me-1"></i>Create Workspace</a>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- PUBLIC WORKSPACES -->
+      <div class="tab-pane fade" id="pane-public" role="tabpanel" aria-labelledby="tab-public">
+        {% if public_workspaces %}
+          <div class="row g-4" id="publicWorkspaceGrid">
+            {% for workspace in public_workspaces %}
+              <div class="col-md-6 col-xl-4 workspace-card" data-name="{{ workspace.name|lower }}" data-privacy="public">
+                <div class="card h-100 border border-info-subtle">
+                  <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-start justify-content-between mb-2">
+                      <h2 class="h6 mb-0 text-truncate" title="{{ workspace.name }}">{{ workspace.name }}</h2>
+                      <span class="badge text-bg-info text-dark">Public</span>
+                    </div>
+                    <div class="mb-3 small text-body-secondary line-clamp-2">
+                      {% if workspace.description %}{{ workspace.description|truncate(110) }}{% else %}<em>No description provided.</em>{% endif %}
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 small mb-3">
+                      <span class="badge text-bg-light"><i class="bi bi-people me-1"></i>{{ workspace.members|selectattr('status','equalto','active')|list|length }} Members</span>
+                      <span class="badge text-bg-light"><i class="bi bi-calendar-event me-1"></i>{{ workspace.workshops.count() }} Workshops</span>
+                      <span class="badge text-bg-light"><i class="bi bi-files me-1"></i>{{ workspace.documents.count() }} Docs</span>
+                    </div>
+                    <form action="{{ url_for('workspace_bp.request_join', workspace_id=workspace.workspace_id) }}" method="POST" class="mt-auto">
+                      <button type="submit" class="btn btn-sm btn-success w-100"><i class="bi bi-patch-plus me-1"></i>Request to Join</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="alert alert-info">No public workspaces available (or you've joined them all).</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+// Client-side filtering for workspace cards
+(function(){
+  const filterInput = document.getElementById('workspaceFilter');
+  if(!filterInput) return;
+  const privacyButtons = document.querySelectorAll('[data-filter-privacy]');
+  let activePrivacy = 'all';
+
+  function applyFilter(){
+    const query = filterInput.value.trim().toLowerCase();
+    document.querySelectorAll('.workspace-card').forEach(card => {
+      const name = card.getAttribute('data-name');
+      const priv = card.getAttribute('data-privacy');
+      const matchName = !query || name.includes(query);
+      const matchPrivacy = (activePrivacy === 'all') || (priv === activePrivacy);
+      card.style.display = (matchName && matchPrivacy) ? '' : 'none';
+    });
+  }
+
+  filterInput.addEventListener('input', applyFilter);
+  privacyButtons.forEach(btn => btn.addEventListener('click', function(){
+    privacyButtons.forEach(b=>b.classList.remove('active'));
+    this.classList.add('active');
+    activePrivacy = this.getAttribute('data-filter-privacy');
+    applyFilter();
+  }));
+})();
+</script>
+
+{% endblock %}

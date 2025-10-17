@@ -1,0 +1,18 @@
+<div id="icebreaker-text">
+    <h6 class="mb-2">Icebreaker</h6>
+    {# Add ID to the content div #}
+    <figure class="mb-3" id="ai-icebreaker-content">
+      <blockquote class="blockquote mb-0">{{ ai_icebreaker|safe or "Thinking of a fun question…" }}</blockquote>
+    </figure>
+     {# Add controls for organizer #}
+    {% if user_is_organizer %}
+    <div class="text-end mb-3">
+      <button class="btn btn-sm btn-outline-primary me-1 regenerate-btn" data-type="icebreaker" title="Regenerate Icebreaker">
+        <i class="bi bi-arrow-clockwise"></i> <span class="d-none d-md-inline">Regenerate</span>
+      </button>
+      <button class="btn btn-sm btn-outline-secondary edit-btn" data-type="icebreaker" data-bs-toggle="modal" data-bs-target="#editModal" title="Edit Icebreaker">
+        <i class="bi bi-pencil-square"></i> <span class="d-none d-md-inline">Edit</span>
+      </button>
+    </div>
+    {% endif %}
+  </div>

@@ -1,0 +1,152 @@
+<!--
+app/workshop/templates/_workshop_form.html
+################################################
+Partial for create and edit workshop
+-->
+{# Common form fields for creating and editing workshops #}
+{# Expects:
+   - workshop: Object (can be None for create)
+   - form_data: Dict (optional, for repopulating on error)
+   - show_workspace_select: Boolean (optional, default False)
+   - workspaces: List of Workspace objects (optional, needed if show_workspace_select is True)
+#}
+
+{# --- Conditionally show Workspace Selection (Only on General Create) --- #}
+{% if show_workspace_select and workspaces %}
+<div class="mb-3">
+    <label for="workspace_id" class="form-label">Workspace *</label>
+    <select name="workspace_id" id="workspace_id" class="form-select" required>
+        {# Add a placeholder option #}
+        <option value="" disabled {% if not form_data or not form_data.workspace_id %}selected{% endif %}>-- Select a Workspace --</option>
+        {% for ws in workspaces %}
+            {# Check form_data for repopulation - compare as strings if needed #}
+            <option value="{{ ws.workspace_id }}" {% if form_data and form_data.workspace_id == ws.workspace_id|string %}selected{% endif %}>
+                {{ ws.name }}
+            </option>
+        {% endfor %}
+    </select>
+    {% if not workspaces %}
+     <div class="form-text text-danger">You must be a member of a workspace to create a workshop.</div>
+    {% endif %}
+</div>
+{% elif not workshop and not show_workspace_select %}
+    {# Hidden input if creating from specific workspace view (optional, could rely on route param) #}
+    {# <input type="hidden" name="workspace_id" value="{{ workspace.workspace_id }}"> #}
+    {# Usually not needed as the workspace_id is in the form action URL #}
+{% endif %}
+
+
+<div class="mb-3">
+  <label for="title" class="form-label">Workshop Title *</label>
+  {# Use form_data first, then workshop data, then empty #}
+  <input type="text" name="title" id="title" class="form-control"
+         value="{{ form_data.title if form_data else (workshop.title if workshop else '') }}" required>
+</div>
+
+<div class="mb-3">
+  <label for="objective" class="form-label">Objective</label>
+  <textarea name="objective" id="objective" class="form-control" rows="3">{{ form_data.objective if form_data else (workshop.objective if workshop else '') }}</textarea>
+</div>
+
+<div class="mb-3">
+  <label for="date_time" class="form-label">Date & Time *</label>
+  {# Use form_data first, then workshop.date_time_str (set in GET route), then empty #}
+  <input type="text" name="date_time" id="date_time" class="form-control flatpickr-datetime"
+         placeholder="YYYY-MM-DD HH:MM"
+         value="{{ form_data.date_time if form_data else (workshop.date_time_str if workshop and workshop.date_time_str else '') }}" required>
+  <small class="form-text text-muted">Use YYYY-MM-DD HH:MM format.</small>
+</div>
+
+<div class="mb-3">
+  <label for="duration" class="form-label">Duration (minutes)</label>
+  <input type="number" name="duration" id="duration" class="form-control" min="1"
+         value="{{ form_data.duration if form_data else (workshop.duration if workshop else '') }}">
+</div>
+
+<div class="mb-3">
+  <label for="agenda" class="form-label">Agenda</label>
+  <textarea name="agenda" id="agenda" class="form-control" rows="5">{{ form_data.agenda if form_data else (workshop.agenda_draft_plaintext if workshop and workshop.agenda_draft_plaintext else (workshop.agenda if workshop else '')) }}</textarea>
+  <small class="form-text text-muted">Use Markdown for formatting.</small>
+</div>
+
+{# --- Only show Status field on Edit --- #}
+{% if workshop %}
+<div class="mb-3">
+    <label for="status" class="form-label">Status</label>
+    <select name="status" id="status" class="form-select">
+        {# Prioritize form_data for status repopulation #}
+        {% set current_status = form_data.status if form_data else workshop.status %}
+        <option value="scheduled" {% if current_status == 'scheduled' %}selected{% endif %}>Scheduled</option>
+        <option value="inprogress" {% if current_status == 'inprogress' %}selected{% endif %}>In Progress</option>
+        <option value="paused" {% if current_status == 'paused' %}selected{% endif %}>Paused</option>
+        <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
+        <option value="cancelled" {% if current_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+    </select>
+</div>
+{% endif %}
+
+<script>
+  // Initialize Flatpickr for datetime input
+  flatpickr(".flatpickr-datetime", {
+    enableTime: true,
+    dateFormat: "Y-m-d H:i", // Match the format expected by Python strptime
+    time_24hr: true
+  });
+</script>
+
+<!-- DEBUG AUTO‑FILL SCRIPT – Remove or disable in production -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('Workshop auto-fill script loaded.');
+
+    window.toggleWorkshopAutoFill = (enable) => {
+      localStorage.setItem('autoFillWorkshop', enable);
+      console.log(`Workshop auto-fill ${(enable ? 'enabled' : 'disabled')}`);
+      applyWorkshopAutoFill();
+    };
+
+    function applyWorkshopAutoFill() {
+      const enabled = localStorage.getItem('autoFillWorkshop') === 'true';
+      if (!enabled) return;
+
+      // 1. Workspace selector (if present)
+      const wsSelect = document.querySelector('select[name="workspace_id"]');
+      if (wsSelect) {
+        // pick the first non-placeholder option
+        const opts = Array.from(wsSelect.options).filter(o => !o.disabled);
+        if (opts.length > 0) wsSelect.value = opts[0].value;
+      }
+
+      // 2. Title
+      const titleInput = document.querySelector('input[name="title"]');
+      if (titleInput) titleInput.value = 'Test Workshop Title';
+
+      // 3. Objective
+      const objField = document.querySelector('textarea[name="objective"]');
+      if (objField) objField.value = 'This workshop will demonstrate how to auto-fill form fields with JavaScript.';
+
+      // 4. Date & Time
+      const dtInput = document.querySelector('input[name="date_time"]');
+      if (dtInput) dtInput.value = '2025-04-20 15:00';
+
+      // 5. Duration
+      const durInput = document.querySelector('input[name="duration"]');
+      if (durInput) durInput.value = '60';
+
+      // 6. Agenda
+      const agendaField = document.querySelector('textarea[name="agenda"]');
+      if (agendaField) {
+        agendaField.value =
+`1. Introduction and Setup
+2. Walk‑through of Code
+3. Live Demo
+4. Q&A and Next Steps`;
+      }
+    }
+
+    // apply on load
+    applyWorkshopAutoFill();
+
+    console.log('Call toggleWorkshopAutoFill(true) to enable or toggleWorkshopAutoFill(false) to disable.');
+  });
+</script>

@@ -1,0 +1,216 @@
+{% extends "main_template.html" %}
+{% block title %}Documents{% endblock %}
+
+{% block content %}
+
+<section class="py-4 bg-body-tertiary">
+    <div class="container">
+        <!-- Page Header -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+            <div class="me-2">
+                <h1 class="h4 fw-bold mb-1"><i class="bi bi-files me-2"></i>Documents</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('main_bp.index') }}">Home</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Documents</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex gap-2 mt-3 mt-sm-0">
+                <a href="{{ url_for('document_bp.show_upload_form') }}" class="btn btn-primary"><i class="bi bi-upload me-1"></i>Upload Document</a>
+            </div>
+        </div>
+
+        <!-- Filter / Search / Sort Bar -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body py-3">
+                <form class="row g-2 align-items-center" onsubmit="return false;" id="docUtilityForm">
+                    <div class="col-lg-5">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-body-secondary"><i class="bi bi-search"></i></span>
+                            <input id="docSearch" type="text" class="form-control" placeholder="Search documents by title or file name..." aria-label="Search documents" />
+                        </div>
+                    </div>
+                    <div class="col-lg-3">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-body-secondary"><i class="bi bi-diagram-3"></i></span>
+                            <select id="workspaceFilter" class="form-select" aria-label="Filter by workspace">
+                                <option value="all" selected>All Workspaces</option>
+                                {% set workspace_names = documents|map(attribute='workspace.name')|list %}
+                                {% for w in workspace_names|unique|sort %}
+                                    <option value="{{ w|lower }}">{{ w }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-lg-2">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary w-100 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-sort-alpha-down me-1"></i>Sort
+                            </button>
+                            <ul class="dropdown-menu" id="docSortMenu">
+                                <li><button type="button" class="dropdown-item" data-sort="title">Title</button></li>
+                                <li><button type="button" class="dropdown-item" data-sort="date">Date</button></li>
+                                <li><button type="button" class="dropdown-item" data-sort="workspace">Workspace</button></li>
+                                <li><button type="button" class="dropdown-item" data-sort="size">Size</button></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-lg-2 d-flex justify-content-lg-end">
+                        <div class="btn-group btn-group-sm" role="group" aria-label="File type filter" id="typeFilterGroup">
+                            <button type="button" class="btn btn-outline-secondary active" data-type="all">All</button>
+                            <button type="button" class="btn btn-outline-secondary" data-type="pdf">PDF</button>
+                            <button type="button" class="btn btn-outline-secondary" data-type="doc">DOC</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% set total_docs = documents|length %}
+        {% set today = namespace(count=0) %}
+        {% for d in documents %}
+            {% if d.uploaded_at.strftime('%Y-%m-%d') == (now() if false else d.uploaded_at.strftime('%Y-%m-%d')) %}{% endif %}
+        {% endfor %}
+
+        <!-- Summary Badges -->
+        <div class="d-flex flex-wrap gap-2 mb-4 small">
+            <span class="badge text-bg-light text-dark">Total {{ total_docs }}</span>
+            {# Additional badges could be added here dynamically if needed #}
+        </div>
+
+        {% if documents %}
+            <!-- Document List -->
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-transparent py-3 fw-semibold d-flex align-items-center gap-2">
+                    <i class="bi bi-files text-primary"></i><span>Library</span>
+                </div>
+                <div class="list-group list-group-flush" id="documentList" data-count="{{ documents|length }}">
+                    {% for document in documents %}
+                        {% set file_ext = (document.file_name.rsplit('.',1)[1]|lower) if '.' in document.file_name else '' %}
+                        {% set human_size = (document.file_size // 1048576) ~ ' MB' if document.file_size and document.file_size > 1048576 else ( (document.file_size // 1024) ~ ' KB' if document.file_size else '—') %}
+                        <div class="list-group-item list-group-item-action d-flex align-items-start gap-3 doc-row"
+                                 data-title="{{ document.title|lower }}"
+                                 data-file="{{ document.file_name|lower }}"
+                                 data-workspace="{{ document.workspace.name|lower }}"
+                                 data-date="{{ document.uploaded_at.strftime('%Y-%m-%dT%H:%M:%S') }}"
+                                 data-size="{{ document.file_size or 0 }}"
+                                 data-ext="{{ file_ext }}">
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+                                    <div class="me-2">
+                                        <div class="fw-semibold text-truncate" title="{{ document.title }}">
+                                            <i class="bi bi-file-earmark-text me-1"></i>{{ document.title }}
+                                        </div>
+                                        <div class="small text-body-secondary text-truncate" title="{{ document.file_name }}">{{ document.file_name }}</div>
+                                    </div>
+                                    <div class="d-flex flex-column align-items-end small text-body-secondary">
+                                        <span title="Uploaded at">{{ document.uploaded_at.strftime('%Y-%m-%d') }}</span>
+                                        <span class="text-muted">{{ human_size }}</span>
+                                    </div>
+                                </div>
+                                <div class="mt-2 d-flex flex-wrap gap-2 small">
+                                    <span class="badge text-bg-light"><i class="bi bi-diagram-3 me-1"></i>{{ document.workspace.name }}</span>
+                                    <span class="badge text-bg-light"><i class="bi bi-person-circle me-1"></i>{{ document.uploader.first_name or document.uploader.email }}</span>
+                                    {% if file_ext %}<span class="badge text-bg-secondary text-uppercase">{{ file_ext }}</span>{% endif %}
+                                </div>
+                                {% if document.description %}
+                                    <div class="small text-body-secondary mt-2 line-clamp-2">{{ document.description|truncate(180) }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex flex-column align-items-end gap-2">
+                                                <a href="{{ url_for('document_bp.preview_document', document_id=document.id) }}" class="btn btn-sm btn-outline-primary" title="Preview {{ document.title }}" aria-label="Preview {{ document.title }}"><i class="bi bi-eye" aria-hidden="true"></i></a>
+                                                <form action="{{ url_for('document_bp.delete_document', document_id=document.id) }}" method="post" onsubmit="return confirm('Delete \'{{ document.title }}\'? This cannot be undone.');">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete {{ document.title }}" aria-label="Delete {{ document.title }}"><i class="bi bi-trash" aria-hidden="true"></i></button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <!-- Empty State -->
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center py-5">
+                    <div class="mb-3"><i class="bi bi-file-earmark-text display-6 text-primary"></i></div>
+                    <h2 class="h5 mb-2">No Documents Yet</h2>
+                    <p class="text-body-secondary mb-4">Upload documents to share knowledge and collaborate within your workspaces.</p>
+                    <a href="{{ url_for('document_bp.show_upload_form') }}" class="btn btn-primary btn-lg"><i class="bi bi-upload me-1"></i>Upload Document</a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<script>
+// Client-side filtering & sorting for documents (mirrors pattern from workshops/workspaces)
+(function(){
+    const searchInput = document.getElementById('docSearch');
+    const workspaceSelect = document.getElementById('workspaceFilter');
+    const sortMenu = document.getElementById('docSortMenu');
+    const typeButtons = document.querySelectorAll('#typeFilterGroup [data-type]');
+    const rows = () => Array.from(document.querySelectorAll('#documentList .doc-row'));
+    let activeType = 'all';
+    let activeSort = null;
+
+    function matchesType(ext){
+        if(activeType==='all') return true;
+        if(activeType==='pdf') return ext==='pdf';
+        if(activeType==='doc') return ['doc','docx'].includes(ext);
+        return true;
+    }
+
+    function apply(){
+        const q = (searchInput?.value || '').trim().toLowerCase();
+        const ws = workspaceSelect?.value || 'all';
+        rows().forEach(row => {
+            const title = row.getAttribute('data-title');
+            const file = row.getAttribute('data-file');
+            const workspace = row.getAttribute('data-workspace');
+            const ext = row.getAttribute('data-ext');
+            const matchesQuery = !q || title.includes(q) || file.includes(q);
+            const matchesWorkspace = (ws==='all') || workspace === ws;
+            const matchesExt = matchesType(ext);
+            const show = matchesQuery && matchesWorkspace && matchesExt;
+            row.style.display = show ? '' : 'none';
+        });
+        if(activeSort) sortRows(activeSort);
+    }
+
+    function sortRows(mode){
+        const container = document.getElementById('documentList');
+        if(!container) return;
+        const visible = rows().filter(r => r.style.display !== 'none');
+        visible.sort((a,b) => {
+            if(mode==='title'){
+                return a.getAttribute('data-title').localeCompare(b.getAttribute('data-title'));
+            } else if(mode==='date') {
+                return b.getAttribute('data-date').localeCompare(a.getAttribute('data-date')); // newest first
+            } else if(mode==='workspace') {
+                return a.getAttribute('data-workspace').localeCompare(b.getAttribute('data-workspace'));
+            } else if(mode==='size') {
+                return (parseInt(b.getAttribute('data-size'))||0) - (parseInt(a.getAttribute('data-size'))||0);
+            }
+            return 0;
+        });
+        visible.forEach(el => container.appendChild(el));
+    }
+
+    searchInput?.addEventListener('input', apply);
+    workspaceSelect?.addEventListener('change', apply);
+    typeButtons.forEach(btn => btn.addEventListener('click', function(){
+        typeButtons.forEach(b=>b.classList.remove('active'));
+        this.classList.add('active');
+        activeType = this.getAttribute('data-type');
+        apply();
+    }));
+    sortMenu?.querySelectorAll('[data-sort]').forEach(item => item.addEventListener('click', function(){
+        activeSort = this.getAttribute('data-sort');
+        apply();
+    }));
+})();
+</script>
+
+{% endblock %}
+
+

@@ -1,0 +1,229 @@
+<!-- app/main/templates/main_template.html -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <!-- Mobile responsiveness -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}BrainStormX{% endblock %}</title>
+
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/x-icon" />
+
+    <!-- Bootstrap CSS (5.3.1) -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      crossorigin="anonymous"
+    />
+
+    <!-- Bootstrap Icons -->
+    <!-- Updated Bootstrap Icons (was 1.3.0; newer version required for bi-diagram-3, bi-easel2, bi-files) -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/v4-shims.min.css">
+
+    <!-- Devicon (optional brand icons) -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css"
+    />
+
+    <!-- Optional app styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+
+    <!-- Flatpickr (optional) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+    <!-- FullCalendar (optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+    <!-- Marked (optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+      // Configure marked if needed
+      marked.setOptions({});
+    </script>
+
+    <!-- Socket.IO (optional; load early if other scripts depend on io()) -->
+    <script
+      src="https://cdn.socket.io/4.8.1/socket.io.min.js"
+      integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+
+  <!-- Use Bootstrap layout utilities for a sticky footer page layout -->
+  <body class="d-flex flex-column min-vh-100">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom sticky-top">
+      <div class="container">
+        <a class="navbar-brand d-inline-flex align-items-center" href="{{ url_for('main_bp.index') }}">
+          <i class="fa fa-brain text-primary me-1" aria-hidden="true"></i>
+          <span class="fw-bold text-primary">Brain</span><span>StormX</span>
+
+        </a>
+
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+          {% if current_user.is_authenticated %}
+          <ul class="navbar-nav align-items-lg-center">
+
+            <li class="nav-item">
+              <a class="nav-link d-inline-flex align-items-center gap-1" href="{{ url_for('ideas_bp.list_ideas') }}">
+                <i class="bi bi-lightbulb" aria-hidden="true"></i><span>Ideas</span>
+                <span class="badge rounded-pill text-bg-primary ms-1">{{ nav_idea_count }}</span>
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link d-inline-flex align-items-center gap-1" href="{{ url_for('workshop_bp.list_workshops') }}">
+                <i class="bi bi-easel2" aria-hidden="true"></i><span>Workshops</span>
+                <span class="badge rounded-pill text-bg-success ms-1">{{ nav_workshop_count }}</span>
+              </a>
+            </li>
+
+
+
+            <li class="nav-item">
+              <a class="nav-link d-inline-flex align-items-center gap-1" href="{{ url_for('document_bp.list_documents') }}">
+                <i class="bi bi-files" aria-hidden="true"></i><span>Documents</span>
+                <span class="badge rounded-pill text-bg-info text-dark ms-1">{{ nav_document_count }}</span>
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link d-inline-flex align-items-center gap-1" href="{{ url_for('workspace_bp.list_workspaces') }}">
+                <i class="bi bi-diagram-3" aria-hidden="true"></i><span>Workspaces</span>
+                <span class="badge rounded-pill text-bg-primary ms-1">{{ nav_workspace_count }}</span>
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link d-inline-flex align-items-center gap-1" href="{{ url_for('account_bp.account_people') }}">
+                <i class="bi bi-people" aria-hidden="true"></i><span>People</span>
+                <span class="badge rounded-pill text-bg-info text-dark ms-1">{{ nav_people_count }}</span>
+              </a>
+            </li>
+
+
+
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="accountDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="avatar-circle avatar-32 d-inline-block overflow-hidden">
+                  <img src="{{ profile_url(current_user.profile_pic_url) }}" alt="Account" class="avatar-img" width="32" height="32">
+                </span>
+                <span class="d-none d-lg-inline">{{ current_user.first_name }}</span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountDropdown">
+                <li class="px-3 py-2 small text-muted">Signed in as<br><strong><a class="text-decoration-none" href="{{ url_for('account_bp.account') }}">{{ current_user.first_name  }} {{ current_user.last_name or current_user.email }}</a></strong></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item d-flex justify-content-between align-items-center" href="{{ url_for('account_bp.edit_account') }}"><span><i class="bi bi-gear-fill me-2" aria-hidden="true"></i>Account Settings</span></a></li>
+                <li><a class="dropdown-item" href="{{ url_for('auth_bp.change_password') }}"><i class="bi bi-key me-2" aria-hidden="true"></i>Change Password</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('auth_bp.logout') }}"><i class="bi bi-box-arrow-right me-2" aria-hidden="true"></i>Logout</a></li>
+              </ul>
+            </li>
+          </ul>
+          {% else %}
+          <ul class="navbar-nav align-items-lg-center">
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('auth_bp.login') }}">Login</a></li>
+            <li class="nav-item ms-lg-2"><a class="btn btn-primary btn-sm" href="{{ url_for('auth_bp.register') }}">Register</a></li>
+          </ul>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+
+    <!-- Toasts / Notification Area (pure Bootstrap) -->
+  <div id="notification-area" class="toast-container position-fixed top-0 end-0 p-3 mt-5 notification-area">
+      <!-- JS can append .toast elements here -->
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-fill bg-body-tertiary" role="main" b>
+      <div class="container-fluid px-0">
+        <!-- Flash messages as Bootstrap Toasts -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="toast-container position-fixed top-0 end-0 p-3 mt-5 z-3">
+              {% set icon_map = {'success':'check-circle','danger':'x-octagon','warning':'exclamation-triangle','info':'info-circle','primary':'info-circle','secondary':'bell'} %}
+              {% for category, message in messages %}
+                {% set tone = category if category in ['success','danger','warning','info','primary','secondary'] else 'secondary' %}
+                <div class="toast flash-toast text-bg-{{ tone }} border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="6000" data-bs-autohide="true">
+                  <div class="toast-body d-flex align-items-start">
+                    <div class="me-2 lh-1">
+                      <i class="bi bi-{{ icon_map.get(tone,'info-circle') }}"></i>
+                    </div>
+                    <div class="flex-grow-1 small">{{ message | safe }}</div>
+                    <button type="button" class="btn-close btn-close-white ms-2 m-0" data-bs-dismiss="toast" aria-label="Close"></button>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+            {# Toasts will be initialized after Bootstrap JS loads (see bottom script) #}
+          {% endif %}
+        {% endwith %}
+
+        <!-- Page-specific content -->
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-body-tertiary border-top mt-auto">
+      <div class="container">
+        <div class="py-3 text-center">
+          <small class="text-body-secondary">
+            &copy; {{ current_year or "2025" }}
+            <a class="text-decoration-none fw-semibold" href="/">BrainStormX</a>.
+            All rights reserved.
+          </small>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Bootstrap JS (bundle includes Popper) -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- App scripts -->
+    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+    <script>
+      // Deferred toast initialization to ensure bootstrap is loaded
+      (function(){
+        function initToasts(){
+          if (!window.bootstrap || !window.bootstrap.Toast){
+            setTimeout(initToasts, 60); return;
+          }
+            document.querySelectorAll('.flash-toast').forEach(function(el){
+              try { new bootstrap.Toast(el).show(); } catch(e) { /* swallow */ }
+            });
+        }
+        if (document.readyState === 'loading'){
+          document.addEventListener('DOMContentLoaded', initToasts);
+        } else { initToasts(); }
+      })();
+    </script>
+
+  {# Page-specific scripts can be injected by child templates #}
+  {% block scripts %}{% endblock %}
+  </body>
+</html>
+<!-- End of app/main/templates/main_template.html -->

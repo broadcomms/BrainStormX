@@ -1,0 +1,375 @@
+<style>
+  .assistant-root {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 0.65rem;
+    z-index: 1030;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1rem;
+    width: min(1100px, calc(100vw - 2rem));
+    max-width: 100%;
+  }
+
+  @media (max-width: 991.98px) {
+    .assistant-root {
+      right: 0.75rem;
+      left: 0.75rem;
+      width: auto;
+      align-items: stretch;
+    }
+  }
+
+  .assistant-toggle {
+    box-shadow: 0 0.65rem 1.2rem rgba(13, 15, 45, 0.18);
+    margin-right: 40px;
+    margin-bottom: 10px;
+  }
+
+  .assistant-panel {
+    display: none;
+    width: 100%;
+  }
+
+  .assistant-panel.open {
+    display: block;
+  }
+
+  .assistant-shell {
+    width: min(1100px, calc(100vw - 2rem));
+    height: 72vh;
+    display: flex;
+    align-items: stretch;
+  }
+
+  @media (max-width: 767.98px) {
+    
+    .assistant-shell {
+      width: 100%;
+      height: auto;
+      min-height: 60vh;
+    }
+  }
+
+  .assistant-panel-surface {
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .assistant-panel-surface .row {
+    height: 100%;
+  }
+
+  .assistant-panel-surface .row > * {
+    min-height: 0;
+  }
+
+  .assistant-main-column {
+    min-height: 0;
+  }
+
+.assistant-avatar {
+  width: 40px;
+  height: 40px;
+  font-size: 1.1rem;
+}
+
+.assistant-panel .messages-scroll {
+    background-color: var(--bs-body-tertiary);
+  }
+
+  .assistant-persona-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.85rem;
+    line-height: 1;
+  }
+
+  .assistant-persona-badge i {
+    font-size: 1rem;
+  }
+
+  .assistant-persona-guide {
+    background: linear-gradient(135deg, #1D4ED8, #2563EB);
+    color: #fff;
+  }
+
+  .assistant-persona-scribe {
+    background: linear-gradient(135deg, #0F766E, #047857);
+    color: #fff;
+  }
+
+  .assistant-persona-mediator {
+    background: linear-gradient(135deg, #7C3AED, #5B21B6);
+    color: #fff;
+  }
+
+  .assistant-persona-devil {
+    background: linear-gradient(135deg, #DC2626, #B91C1C);
+    color: #fff;
+  }
+
+  .assistant-persona-badge.assistant-badge-user {
+    background: #E5E7EB;
+    color: #111827;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+  }
+
+  .assistant-panel .messages-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .assistant-panel .messages-scroll::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 4px;
+  }
+
+  .assistant-panel .accordion-button {
+    font-weight: 600;
+  }
+
+  .assistant-memory i {
+    color: var(--bs-primary);
+  }
+
+  .assistant-memory-namespace {
+    font-size: 0.75rem;
+    background-color: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.25rem;
+    padding: 0.05rem 0.35rem;
+  }
+
+  .assistant-footer-badges {
+    width: min(1100px, calc(100vw - 2rem));
+    margin: 0 auto;
+  }
+
+  .assistant-footer-badges-inner {
+    bottom: -8px;
+  }
+
+  @media (max-width: 991.98px) {
+    .assistant-footer-badges-inner {
+      position: static !important;
+      transform: none !important;
+    }
+  }
+
+  @media (min-width: 992px) {
+    .assistant-panel .accordion-button:not(.collapsed) {
+      background-color: var(--bs-body-bg);
+      box-shadow: none;
+      border-bottom: 1px solid var(--bs-border-color);
+    }
+    .assistant-shell {
+      max-width: 960px!important;
+    }
+  }
+</style>
+
+<div id="assistant-root"
+     data-workshop-id="{{ workshop.id }}"
+     data-user-id="{{ current_user.user_id }}"
+     data-participant-id="{{ (current_participant.id if current_participant else '') if current_participant is defined else '' }}"
+     data-can-add-actions="{{ 1 if (can_manage_actions if can_manage_actions is defined else False) else 0 }}"
+     data-thread-id="{{ thread_id or '' }}"
+     class="assistant-root">
+  <button id="assistant-toggle" class="btn btn-primary assistant-toggle">
+    <i class="bi bi-stars me-1"></i>Assistant
+  </button>
+
+  <div id="assistant-panel" class="assistant-panel">
+    <div class="assistant-shell position-relative mx-auto">
+      <div class="assistant-panel-surface position-relative shadow rounded-3 border bg-white m-0 h-100">
+        <div class="row g-0 h-100">
+          <div class="col-12 col-md-8 h-100 d-flex flex-column assistant-main-column">
+            <!-- Header -->
+            <header class="border-bottom p-3 d-flex justify-content-between align-items-center">
+              <div class="d-flex align-items-center gap-3">
+  <div class="assistant-avatar d-flex align-items-center justify-content-center rounded-circle bg-primary text-white flex-shrink-0">
+    <i class="bi bi-chat-dots"></i>
+  </div>
+                <div>
+                  <div class="fw-semibold">BrainStormX Assistant</div>
+                  <div class="small text-body-secondary">
+                    <span id="assistant-title">Assistant ready</span><br>
+                    <span id="assistant-subtitle">Assistant ready</span>
+                    
+                  </div>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <span id="assistant-badge-timebox" class="badge text-bg-light d-none d-md-inline-flex align-items-center gap-2">
+                  <i class="bi bi-alarm"></i>
+                  <span class="label">Timebox active</span>
+                  <span class="value">—</span>
+                </span>
+
+                <div class="form-check form-switch m-0 d-none d-md-inline-flex align-items-center">
+                  <input class="form-check-input" type="checkbox" id="assistant-autoplay-toggle">
+                  <label class="form-check-label small ms-1" for="assistant-autoplay-toggle">Autoplay Voice</label>
+                </div>
+                <button id="assistant-close" class="btn btn-sm btn-outline-danger" aria-label="Close assistant" title="Close assistant"><i class="bi bi-x"></i></button>
+              </div>
+            </header>
+
+            <div id="assistant-messages" class="messages-scroll flex-grow-1 overflow-auto bg-body-tertiary p-3"></div>
+
+            <div class="border-top p-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="d-flex align-items-center gap-2 small text-body-secondary">
+                  <span class="text-uppercase fw-semibold">Persona</span>
+                  <div id="assistant-persona-buttons" class="btn-group btn-group-sm" role="group" aria-label="Persona selector">
+                    <button type="button" class="btn btn-outline-primary active" data-persona="guide">Guide</button>
+                    <button type="button" class="btn btn-outline-secondary" data-persona="scribe">Scribe</button>
+                    <button type="button" class="btn btn-outline-secondary" data-persona="mediator">Mediator</button>
+                    <button type="button" class="btn btn-outline-secondary" data-persona="devil">Devil</button>
+                  </div>
+                </div>
+                <div class="d-none d-md-flex align-items-center gap-3 small text-body-secondary">
+                  <span id="assistant-badge-memory" class="badge text-bg-light d-none d-md-inline-flex align-items-center gap-2">
+                    <i class="bi bi-memory"></i>
+                    <span class="label">Memory</span>
+                    <span class="value">—</span>
+                  </span>
+                  <span id="assistant-badge-rbac" class="badge text-bg-light d-none d-md-inline-flex align-items-center gap-2">
+                    <i class="bi bi-shield-check"></i>
+                    <span class="label">RBAC</span>
+                    <span class="value">Guest</span>
+                  </span>
+                </div>
+              </div>
+              <div class="d-flex gap-2 align-items-end">
+                <textarea id="assistant-input" class="form-control" rows="2" placeholder="Ask the assistant…"></textarea>
+                <button id="assistant-send" class="btn btn-primary">
+                  
+                  <i class="bi bi-send"></i>
+                  <span>Send</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <aside class="col-md-4 d-none d-md-block border-start h-100">
+            <div class="p-3 h-100 d-flex flex-column gap-3">
+
+
+              <div class="accordion" id="assistantSidebarAcc">
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="assistantPhaseHeading">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#assistant-phase-collapse" aria-expanded="true" aria-controls="assistant-phase-collapse">
+                      Phase Snapshot
+                    </button>
+                  </h2>
+                  <div id="assistant-phase-collapse" class="accordion-collapse collapse show" data-bs-parent="#assistantSidebarAcc">
+                    <div class="accordion-body small" id="assistant-phase-snapshot"></div>
+                  </div>
+                </div>
+
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="assistantActionsHeading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#assistant-actions-collapse" aria-expanded="false" aria-controls="assistant-actions-collapse">
+                      Proposed Actions
+                    </button>
+                  </h2>
+                  <div id="assistant-actions-collapse" class="accordion-collapse collapse" data-bs-parent="#assistantSidebarAcc">
+                    <div class="accordion-body small" id="assistant-sidebar-actions"></div>
+                  </div>
+                </div>
+
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="assistantThreadsHeading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#assistant-threads-collapse" aria-expanded="false" aria-controls="assistant-threads-collapse">
+                      Threads
+                    </button>
+                  </h2>
+                  <div id="assistant-threads-collapse" class="accordion-collapse collapse" data-bs-parent="#assistantSidebarAcc">
+                    <div class="accordion-body small" id="assistant-sidebar-threads"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card" style="display: none;">
+                <div class="card-header py-2 small text-uppercase text-body-secondary">Context</div>
+                <div class="card-body d-flex flex-wrap gap-2" id="assistant-chips"></div>
+              </div>
+
+              <!--div class="card">
+                <div class="card-header py-2 small text-uppercase text-body-secondary">Activity Stream</div>
+                <div class="card-body d-flex flex-column gap-2" id="assistant-context"></div>
+              </div-->
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+    <div class="assistant-footer-badges position-relative mt-2">
+      <div class="assistant-footer-badges-inner position-absolute start-50 translate-middle-x">
+        <span class="badge text-bg-dark me-2"><i class="bi bi-shield-check me-1"></i>Governance-first</span>
+        <span class="badge text-bg-dark"><i class="bi bi-journal-text me-1"></i>Citations required</span>
+      </div>
+    </div>
+</div>
+</div>
+
+<script id="assistant-participants-json" type="application/json">{{ (participants_payload if participants_payload is defined else [])|tojson }}</script>
+
+<div class="modal fade" id="assistant-action-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="assistant-action-modal-title">Add Action Item</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="assistant-action-error" class="alert alert-danger d-none" role="alert"></div>
+        <form id="assistant-action-form" class="row g-3">
+          <div class="col-12">
+            <label for="assistant-action-title" class="form-label">Title</label>
+            <input type="text" class="form-control" id="assistant-action-title" name="title" required>
+          </div>
+          <div class="col-12">
+            <label for="assistant-action-description" class="form-label">Description</label>
+            <textarea class="form-control" id="assistant-action-description" name="description" rows="3"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label for="assistant-action-owner" class="form-label">Owner</label>
+            <select id="assistant-action-owner" name="owner_participant_id" class="form-select"></select>
+          </div>
+          <div class="col-md-4">
+            <label for="assistant-action-due" class="form-label">Due date</label>
+            <input type="date" class="form-control" id="assistant-action-due" name="due_date">
+          </div>
+          <div class="col-md-2">
+            <label for="assistant-action-status" class="form-label">Status</label>
+            <select id="assistant-action-status" name="status" class="form-select">
+              <option value="todo">To Do</option>
+              <option value="in_progress">In Progress</option>
+              <option value="done">Done</option>
+              <option value="blocked">Blocked</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="assistant-action-save">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous"></script>
+<script>
+  window.HEARTBEAT_INTERVAL_SECONDS = {{ config.HEARTBEAT_INTERVAL_SECONDS | default(60) }};
+</script>
+<script src="{{ url_for('static', filename='js/tts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/assistant.js') }}"></script>
+<script src="{{ url_for('static', filename='js/time_heartbeat.js') }}"></script>

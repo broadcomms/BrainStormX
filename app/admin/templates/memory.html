@@ -1,0 +1,200 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Assistant Memory · BrainStormX{% endblock %}
+{% block header_title %}Assistant memory{% endblock %}
+{% block header_subtitle %}View, update, and prune memory entries powering the assistant{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0">
+            <h2 class="h5 mb-1">AgentCore status</h2>
+            <p class="text-body-secondary small mb-0">Configuration detected from the running assistant</p>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-6 col-md-4">
+                    <span class="text-body-secondary small d-block">Enabled</span>
+                    <span class="fw-semibold">{{ memory_status.enabled and 'Yes' or 'No' }}</span>
+                </div>
+                <div class="col-6 col-md-4">
+                    <span class="text-body-secondary small d-block">Memory ID</span>
+                    <span class="fw-semibold">{{ memory_status.memory_id or '—' }}</span>
+                </div>
+                <div class="col-6 col-md-4">
+                    <span class="text-body-secondary small d-block">Region</span>
+                    <span class="fw-semibold">{{ memory_status.region or '—' }}</span>
+                </div>
+                <div class="col-6 col-md-4">
+                    <span class="text-body-secondary small d-block">Default Top K</span>
+                    <span class="fw-semibold">{{ memory_status.top_k }}</span>
+                </div>
+                <div class="col-6 col-md-4">
+                    <span class="text-body-secondary small d-block">Async storage</span>
+                    <span class="fw-semibold">{{ memory_status.store_in_background and 'Enabled' or 'Disabled' }}</span>
+                </div>
+                <div class="col-12 col-md-8">
+                    <span class="text-body-secondary small d-block">Namespace templates</span>
+                    {% if memory_status.namespaces %}
+                        <code class="d-block small">{{ memory_status.namespaces }}</code>
+                    {% else %}
+                        <span class="small text-body-secondary">None configured.</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0">
+            <h2 class="h5 mb-1">Inspect memory</h2>
+            <p class="text-body-secondary small mb-0">Query AgentCore Memory to verify what the assistant can recall</p>
+        </div>
+        <div class="card-body">
+            {% if memory_search_error %}
+                <div class="alert alert-danger" role="alert">{{ memory_search_error }}</div>
+            {% endif %}
+            <form method="get" action="{{ url_for('admin.memory_overview') }}" class="row g-3 align-items-end">
+                <div class="col-12 col-lg-3">
+                    <label for="workshop_id" class="form-label">Workshop ID</label>
+                    <input type="number" class="form-control" id="workshop_id" name="workshop_id" value="{{ search_params.workshop_id or '' }}" required>
+                    <div class="form-text">Required for namespace resolution.</div>
+                </div>
+                <div class="col-12 col-lg-3">
+                    <label for="user_id" class="form-label">User ID</label>
+                    <input type="number" class="form-control" id="user_id" name="user_id" value="{{ search_params.user_id or '' }}">
+                    <div class="form-text">Optional; narrows to participant memories.</div>
+                </div>
+                <div class="col-12 col-lg-3">
+                    <label for="thread_id" class="form-label">Thread ID</label>
+                    <input type="number" class="form-control" id="thread_id" name="thread_id" value="{{ search_params.thread_id or '' }}">
+                    <div class="form-text">Optional; target a specific assistant conversation.</div>
+                </div>
+                <div class="col-12 col-lg-3">
+                    <label for="top_k" class="form-label">Top K</label>
+                    <input type="number" min="1" class="form-control" id="top_k" name="top_k" value="{{ search_params.top_k or '' }}">
+                    <div class="form-text">Defaults to configuration top K.</div>
+                </div>
+                <div class="col-12">
+                    <label for="query" class="form-label">Search query</label>
+                    <input type="text" class="form-control" id="query" name="query" value="{{ search_params.query }}" placeholder="e.g. mission statement" required>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-outline-primary">Search memory</button>
+                </div>
+            </form>
+        </div>
+        {% if memory_search_results is not none %}
+            <div class="card-body border-top">
+                <h3 class="h6">Results</h3>
+                {% if memory_search_results %}
+                    <div class="d-flex flex-column gap-3">
+                        {% for snippet in memory_search_results %}
+                            <div class="border rounded p-3 bg-body-tertiary">
+                                <div class="d-flex justify-content-between align-items-baseline mb-2">
+                                    <span class="badge text-bg-secondary">Score {{ '%.3f'|format(snippet.score) }}</span>
+                                    <span class="small text-body-secondary">Namespace: <code>{{ snippet.namespace }}</code></span>
+                                </div>
+                                <pre class="mb-0 small">{{ snippet.content }}</pre>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-body-secondary small mb-0">No snippets found for this query.</p>
+                {% endif %}
+                {% if memory_search_meta %}
+                    <div class="row small text-body-secondary mt-3">
+                        <div class="col-sm-3 fw-semibold">Latency</div>
+                        <div class="col-sm-9">{{ memory_search_meta.latency_ms or '—' }} ms</div>
+                        <div class="col-sm-3 fw-semibold">Namespaces queried</div>
+                        <div class="col-sm-9">
+                            {% if memory_search_meta.namespaces %}
+                                <code>{{ memory_search_meta.namespaces }}</code>
+                            {% else %}
+                                <span>—</span>
+                            {% endif %}
+                        </div>
+                        {% if memory_search_meta.errors %}
+                            <div class="col-sm-3 fw-semibold">Errors</div>
+                            <div class="col-sm-9">
+                                <code>{{ memory_search_meta.errors }}</code>
+                            </div>
+                        {% endif %}
+                        <div class="col-sm-3 fw-semibold">Snippets returned</div>
+                        <div class="col-sm-9">{{ memory_search_meta.count }}</div>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0">
+            <h2 class="h5 mb-1">Update memory entry</h2>
+            <p class="text-body-secondary small mb-0">Provide an identifier and data payload to store</p>
+        </div>
+        <form method="post" action="{{ url_for('admin.memory_overview') }}">
+            {{ csrf_form.hidden_tag() }}
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12 col-lg-4">
+                        <label for="memory_id" class="form-label">Memory ID</label>
+                        <input type="text" id="memory_id" name="memory_id" class="form-control" required>
+                        <div class="form-text">Use a stable identifier (e.g. <code>profile:demo-user</code>).</div>
+                    </div>
+                    <div class="col-12 col-lg-8">
+                        <label for="memory_data" class="form-label">Memory data</label>
+                        <textarea id="memory_data" name="memory_data" class="form-control" rows="4" required></textarea>
+                        <div class="form-text">Enter a JSON object describing the memory payload.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-body-tertiary d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary">Update memory</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="h5 mb-1">Current memory entries</h2>
+                <p class="text-body-secondary small mb-0">{{ memory_entries|length }} stored records</p>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Memory ID</th>
+                            <th scope="col">Memory data</th>
+                            <th scope="col" class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in memory_entries %}
+                            <tr>
+                                <td><code class="small">{{ entry.id }}</code></td>
+                                <td>
+                                    <pre class="mb-0 small text-body-secondary">{{ entry.data }}</pre>
+                                </td>
+                                <td class="text-end">
+                                    <form method="post" action="{{ url_for('admin.delete_memory', memory_id=entry.id) }}" class="d-inline" onsubmit="return confirm('Delete memory entry {{ entry.id }}?');">
+                                        {{ csrf_form.hidden_tag() }}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center text-body-secondary py-4">No memory entries stored.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

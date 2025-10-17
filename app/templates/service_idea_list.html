@@ -1,0 +1,93 @@
+{% extends 'main_template.html' %}
+{% block title %}Ideas • BrainStormX{% endblock %}
+{% block content %}
+<div class="container py-4">
+	<div class="d-flex flex-wrap align-items-center mb-3 gap-3">
+		<div class="flex-grow-1">
+			<h1 class="h4 mb-0 d-flex align-items-center gap-2"><i class="bi bi-lightbulb"></i> Innovation Gallery</h1>
+			<p class="text-body-secondary small mb-0">Finalized ideas from completed workshops you can access.</p>
+		</div>
+		<div class="d-flex flex-wrap gap-2 small text-nowrap">
+			<span class="badge text-bg-light border"><strong>{{ total_count }}</strong> ideas</span>
+			<span class="badge text-bg-light border"><strong>{{ stat_workshops }}</strong> workshops</span>
+			<span class="badge text-bg-light border"><strong>{{ stat_clusters }}</strong> clusters</span>
+			<span class="badge text-bg-light border"><strong>{{ stat_avg_votes }}</strong> avg votes</span>
+		</div>
+	</div>
+
+	<form method="get" class="row g-2 align-items-end mb-4">
+		<div class="col-12 col-md-4">
+			<div class="input-group">
+				<span class="input-group-text"><i class="bi bi-search"></i></span>
+				<input type="text" class="form-control" name="q" value="{{ q }}" placeholder="Search ideas...">
+			</div>
+		</div>
+			<div class="col-6 col-md-3">
+				<label for="workspaceFilter" class="form-label small mb-1">Workspace</label>
+				<select class="form-select" id="workspaceFilter" name="workspace_id" aria-label="Filter by workspace">
+				<option value="">All Workspaces</option>
+				{% for ws in workspaces %}
+				<option value="{{ ws.workspace_id }}" {% if workspace_filter == ws.workspace_id %}selected{% endif %}>{{ ws.name }}</option>
+				{% endfor %}
+			</select>
+		</div>
+			<div class="col-6 col-md-3">
+				<label for="sortSelect" class="form-label small mb-1">Sort</label>
+				<select class="form-select" id="sortSelect" name="sort" aria-label="Sort ideas">
+				<option value="recent" {% if sort=='recent' %}selected{% endif %}>Most Recent</option>
+				<option value="votes" {% if sort=='votes' %}selected{% endif %}>Most Voted</option>
+				<option value="workshop" {% if sort=='workshop' %}selected{% endif %}>By Workshop</option>
+				<option value="cluster" {% if sort=='cluster' %}selected{% endif %}>By Cluster</option>
+			</select>
+		</div>
+		<div class="col-12 col-md-2 d-grid">
+			<button class="btn btn-primary" type="submit"><i class="bi bi-funnel me-1"></i>Apply</button>
+		</div>
+	</form>
+
+	{% if ideas %}
+		<div class="row g-3">
+			{% for idea in ideas %}
+			<div class="col-12 col-md-6 col-xl-4">
+				<div class="card h-100 shadow-sm idea-card border-0">
+					<div class="card-body d-flex flex-column">
+						<div class="d-flex justify-content-between align-items-start mb-2">
+							<span class="badge rounded-pill bg-warning-subtle text-warning-emphasis small"><i class="bi bi-lightning-charge-fill me-1"></i>Idea</span>
+							<span class="badge bg-body-secondary text-dark border small">{{ idea.votes }} votes</span>
+						</div>
+						<h2 class="h6 fw-semibold mb-2 text-truncate-2" title="{{ idea.content }}">{{ idea.preview }}</h2>
+						<ul class="list-inline small text-body-secondary mb-3 flex-grow-1">
+							<li class="list-inline-item"><i class="bi bi-easel2 me-1"></i>{{ idea.workshop_title }}</li>
+							<li class="list-inline-item"><i class="bi bi-diagram-3 me-1"></i>#{{ idea.workspace_id }}</li>
+							<li class="list-inline-item"><i class="bi bi-collection me-1"></i>{{ idea.cluster_name }}</li>
+						</ul>
+						<div class="d-flex justify-content-between align-items-center mt-auto">
+							<small class="text-body-tertiary">{{ idea.timestamp.strftime('%Y-%m-%d') }}</small>
+							  <a href="{{ url_for('ideas_bp.idea_detail', idea_id=idea.id) }}" class="btn btn-outline-primary btn-sm" aria-label="View idea details"><i class="bi bi-arrow-right" aria-hidden="true"></i><span class="visually-hidden">View</span></a>
+						</div>
+					</div>
+				</div>
+			</div>
+			{% endfor %}
+		</div>
+
+		{% if total_pages > 1 %}
+		<nav class="mt-4" aria-label="Ideas pagination">
+			<ul class="pagination pagination-sm mb-0">{% for p in range(1, total_pages+1) %}<li class="page-item {% if p == page %}active{% endif %}"><a class="page-link" href="?page={{ p }}&q={{ q }}&sort={{ sort }}{% if workspace_filter %}&workspace_id={{ workspace_filter }}{% endif %}">{{ p }}</a></li>{% endfor %}</ul>
+		</nav>
+		{% endif %}
+	{% else %}
+	<div class="card shadow-sm border-0">
+		<div class="card-body py-5 text-center">
+			<i class="bi bi-lightbulb display-5 text-warning"></i>
+			<h2 class="h5 mt-3">No finalized ideas yet</h2>
+			<p class="text-body-secondary small mb-0">Complete workshops to populate this innovation gallery.</p>
+		</div>
+	</div>
+	{% endif %}
+</div>
+<style>
+			.text-truncate-2 {display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+	.idea-card{transition:box-shadow .25s, transform .25s;} .idea-card:hover{box-shadow:0 .5rem 1.25rem rgba(0,0,0,.08); transform:translateY(-2px);} 
+</style>
+{% endblock %}

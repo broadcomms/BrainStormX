@@ -1,0 +1,195 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Documents · Admin{% endblock %}
+{% block header_title %}Documents{% endblock %}
+{% block header_subtitle %}Upload, review, and curate documents across every workspace.{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap gap-3 mb-4">
+  <div class="flex-grow-1">
+    <div class="row g-3">
+      <div class="col-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <h6 class="text-body-secondary text-uppercase fs-sm fw-semibold mb-2">Total documents</h6>
+            <p class="h4 fw-bold mb-0">{{ stats["count"] }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <h6 class="text-body-secondary text-uppercase fs-sm fw-semibold mb-2">Processing</h6>
+            <p class="h4 fw-bold mb-0">{{ stats["processing"] }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <h6 class="text-body-secondary text-uppercase fs-sm fw-semibold mb-2">Archived</h6>
+            <p class="h4 fw-bold mb-0">{{ stats["archived"] }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <h6 class="text-body-secondary text-uppercase fs-sm fw-semibold mb-2">Storage</h6>
+            <p class="h4 fw-bold mb-0">{{ stats["total_bytes"] | filesizeformat }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-4 col-xl-3">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-bottom-0 pb-0">
+        <h5 class="card-title h6 mb-0">Filter library</h5>
+      </div>
+      <div class="card-body pt-3">
+        <form method="get" class="d-flex flex-column gap-3">
+          <div>
+            <label for="workspace_id" class="form-label">Workspace</label>
+            <select id="workspace_id" name="workspace_id" class="form-select">
+              <option value="">All workspaces</option>
+              {% for workspace_id, label in workspace_choices %}
+                <option value="{{ workspace_id }}" {% if workspace_filter == workspace_id %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label for="status" class="form-label">Status</label>
+            <select id="status" name="status" class="form-select">
+              {% for value, label in status_options %}
+                <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label for="search" class="form-label">Search</label>
+            <input id="search" type="search" name="search" value="{{ search_query }}" class="form-control" placeholder="Title or filename" />
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary w-100">Apply filters</button>
+            <a href="{{ url_for('admin.documents') }}" class="btn btn-outline-secondary" title="Clear filters">
+              <i class="bi bi-arrow-counterclockwise"></i>
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-bottom-0 pb-0">
+        <h5 class="card-title h6 mb-0">Upload document</h5>
+        <p class="text-body-secondary small mb-0">Supported formats include PDF, Office files, plain text, audio, and more.</p>
+      </div>
+      <div class="card-body pt-3">
+        <form method="post" action="{{ url_for('admin.upload_document_admin') }}" enctype="multipart/form-data" class="d-flex flex-column gap-3">
+          {{ upload_form.hidden_tag() }}
+          <div>
+            {{ upload_form.workspace_id.label(class_='form-label') }}
+            {{ upload_form.workspace_id(class_='form-select') }}
+          </div>
+          <div>
+            {{ upload_form.title.label(class_='form-label') }}
+            {{ upload_form.title(class_='form-control', placeholder='Optional descriptive title') }}
+          </div>
+          <div>
+            {{ upload_form.description.label(class_='form-label') }}
+            {{ upload_form.description(class_='form-control', rows=3, placeholder='Optional notes about the document') }}
+          </div>
+          <div>
+            {{ upload_form.file.label(class_='form-label') }}
+            {{ upload_form.file(class_='form-control') }}
+          </div>
+          <button type="submit" class="btn btn-success">Upload</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8 col-xl-9">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-bottom-0 pb-0 d-flex justify-content-between align-items-center">
+        <h5 class="card-title h6 mb-0">Document library</h5>
+        <span class="text-body-secondary small">Showing {{ documents|length }} item(s)</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table align-middle table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th scope="col">Title</th>
+              <th scope="col">Workspace</th>
+              <th scope="col">Uploaded</th>
+              <th scope="col">Size</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="text-center">Versions</th>
+              <th scope="col" class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if documents %}
+              {% for doc in documents %}
+                <tr>
+                  <td>
+                    <div class="fw-semibold">
+                      <a href="{{ url_for('admin.document_detail', document_id=doc.id) }}" class="link-primary link-underline-opacity-0 link-underline">{{ doc.title }}</a>
+                    </div>
+                    <div class="text-body-secondary small">{{ doc.file_name }}</div>
+                  </td>
+                  <td>
+                    <span class="badge text-bg-light border">{{ workspace_lookup.get(doc.workspace_id, 'Workspace ' ~ doc.workspace_id) }}</span>
+                  </td>
+                  <td>
+                    <div class="small">{{ doc.uploaded_at.strftime('%Y-%m-%d %H:%M') if doc.uploaded_at else '—' }}</div>
+                    <div class="text-body-secondary small">{{ doc.uploader.display_name if doc.uploader else 'Unknown' }}</div>
+                  </td>
+                  <td>{{ doc.file_size | filesizeformat }}</td>
+                  <td>
+                    {% set status = (doc.processing_status or 'pending').lower() %}
+                    {% if doc.is_archived %}
+                      <span class="badge text-bg-secondary">Archived</span>
+                    {% elif status in ['processing', 'queued'] %}
+                      <span class="badge text-bg-info text-uppercase">{{ status }}</span>
+                    {% elif status == 'failed' %}
+                      <span class="badge text-bg-danger">Failed</span>
+                    {% else %}
+                      <span class="badge text-bg-success">Ready</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-center">{{ (doc.child_documents | length) + 1 if doc.child_documents else 1 }}</td>
+                  <td class="text-end">
+                    <div class="btn-group btn-group-sm" role="group">
+                      <a class="btn btn-outline-primary" href="{{ url_for('admin.document_detail', document_id=doc.id) }}" title="View details">
+                        <i class="bi bi-eye"></i>
+                      </a>
+                      <a class="btn btn-outline-secondary" href="{{ url_for('admin.document_download', document_id=doc.id) }}" title="Download">
+                        <i class="bi bi-download"></i>
+                      </a>
+                      <form method="post" action="{{ url_for('admin.document_delete', document_id=doc.id) }}" class="d-inline">
+                        {{ delete_form.hidden_tag() }}
+                        <button type="submit" class="btn btn-outline-danger" title="Delete" onclick="return confirm('Delete {{ doc.title }} and all derived versions?');">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="7" class="text-center py-5 text-body-secondary">No documents match the current filters.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

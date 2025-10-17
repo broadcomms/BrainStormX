@@ -1,0 +1,25 @@
+body {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background-color: var(--bs-body-bg);
+}
+
+.alert-stack > .alert + .alert {
+    margin-top: 0.75rem;
+}
+
+.ratio canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.admin-toast-container {
+    z-index: 1080;
+}
+
+.list-group-item code {
+    word-break: break-word;
+}
+
+.text-wrap {
+    white-space: normal !important;
+}

@@ -5,7 +5,7 @@ __pycache__/
 
 # C extensions
 *.so
-
+piper/
 # Distribution / packaging
 .Python
 build/
@@ -62,8 +62,10 @@ db.sqlite3
 db.sqlite3-journal
 
 # Flask stuff:
-instance/
+
 .webassets-cache
+# Allow for production
+# instance/
 
 # Scrapy stuff:
 .scrapy
@@ -145,7 +147,7 @@ venv.bak/
 
 # mkdocs documentation
 /site
-
+*.zip:Zone.Identifier
 # mypy
 .mypy_cache/
 .dmypy.json
@@ -190,6 +192,76 @@ Icon
 
 # Virtualenv
 .venv/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
 # dotenv
 .env
+
+# Temporary drive upload files
+.tmp.driveupload
+.tmp.drivedownload
+.tmp.driveupload-*
+.tmp.drivedownload-*
+
+/.tmp.driveupload
+# Allow for production
+#/piper
+#*.onnx
+#*.onnx.json
+#/vosk-model-small-en-us0.15
+#/stt_models
+#/tts_models
+*.mp4
+*.mp3
+*.wav
+*.ogg
+*.pdf
+app/static/videos/brainstormx-overview.mp4
+piper:Zone.Identifier
+*:Zone.Identifier
+
+#node_modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+/AgentCore
+.github/
+/.github
+.github
+copilot-instructions.md
+
+/tests
+.env.developer
+.env.production
+.env.staging
+.env.docker
+
+# Speech-to-Text Model files (large files)
+stt_models/
+stt_models/**
+vosk-model-en-us-0.22-lgraph/
+vosk-model-en-us-0.22-lgraph/**
+vosk-model-en-us-0.22/
+vosk-model-en-us-0.22/**
+ 
+
+*.carpa
+*.fst
+*.dubm
+
+.pem
+instance/*.pem
+instance/*.pem:Zone.Identifier
+
+instance/brainstorm_x_git_access_token.txt
+instance/brainstorm_x_vm_sshkey.pem
+
+tts_models/en_US-hfc_male-medium.onnx.1
+tts_models/en_US-hfc_male-medium.onnx.json.1

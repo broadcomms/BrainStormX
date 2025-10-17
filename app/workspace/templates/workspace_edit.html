@@ -1,0 +1,195 @@
+{% extends "main_template.html" %}
+{% block title %}Edit Workspace: {{ workspace.name }}{% endblock %}
+
+{% block content %}
+{% set privacy_badge = ('secondary','lock-fill','Private') if workspace.is_private else ('info text-dark','globe2','Public') %}
+{% set priv_class, priv_icon, priv_label = privacy_badge %}
+<section class="py-4 bg-body-tertiary">
+  <div class="container">
+    <!-- Header + Breadcrumbs -->
+    <div class="d-flex flex-wrap justify-content-between align-items-start mb-3">
+      <div class="me-2">
+        <h1 class="h4 fw-bold mb-1 d-flex flex-wrap align-items-center gap-2">
+          <i class="bi bi-diagram-3"></i>
+          <span class="text-truncate mw-50ch" title="{{ workspace.name }}">{{ workspace.name }}</span>
+          <span class="badge text-bg-{{ priv_class }} d-inline-flex align-items-center gap-1"><i class="bi bi-{{ priv_icon }}"></i>{{ priv_label }}</span>
+          <span class="badge text-bg-light d-inline-flex align-items-center gap-1"><i class="bi bi-pencil-square"></i>Edit</span>
+        </h1>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item"><a href="{{ url_for('main_bp.index') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('workspace_bp.list_workspaces') }}">Workspaces</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('workspace_bp.view_workspace', workspace_id=workspace.workspace_id) }}" title="{{ workspace.name }}">{{ workspace.name|truncate(50) }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Edit</li>
+          </ol>
+        </nav>
+      </div>
+      <div class="d-flex gap-2 mt-3 mt-sm-0">
+        <a href="{{ url_for('workspace_bp.view_workspace', workspace_id=workspace.workspace_id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Cancel</a>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- Main Column -->
+      <div class="col-lg-8 d-flex flex-column gap-4">
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-sliders text-primary"></i>
+            <span class="fw-semibold">Workspace Settings</span>
+          </div>
+          <form action="{{ url_for('workspace_bp.edit_workspace', workspace_id=workspace.workspace_id) }}" method="POST" novalidate>
+            <div class="card-body">
+              <div class="mb-3">
+                <label for="name" class="form-label fw-semibold">Name <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-type"></i></span>
+                  <input type="text" name="name" id="name" class="form-control" maxlength="80" required value="{{ request.form.get('name', workspace.name) }}" aria-describedby="nameHelp nameCount" placeholder="e.g. Innovation Program 2025">
+                </div>
+                <div class="d-flex justify-content-between small mt-1">
+                  <div id="nameHelp" class="text-body-secondary">Keep it concise and recognizable (max 80 chars).</div>
+                  <div id="nameCount" class="text-body-secondary">0 / 80</div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="description" class="form-label fw-semibold">Description</label>
+                <textarea name="description" id="description" class="form-control" rows="4" maxlength="500" placeholder="Explain the purpose, scope, and expectations..." aria-describedby="descHelp descCount">{{ request.form.get('description', workspace.description or '') }}</textarea>
+                <div class="d-flex justify-content-between small mt-1">
+                  <div id="descHelp" class="text-body-secondary">Optional context shown to members (max 500 chars).</div>
+                  <div id="descCount" class="text-body-secondary">0 / 500</div>
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <label class="form-label fw-semibold d-block">Visibility</label>
+                {% set checked = 'checked' if request.form.get('is_private', 'on' if workspace.is_private else 'off') == 'on' else '' %}
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" name="is_private" id="is_private" {{ checked }}>
+                  <label class="form-check-label" for="is_private">Private workspace</label>
+                </div>
+                <div class="small text-body-secondary mt-1"><i class="bi bi-info-circle"></i> Private workspaces are hidden from listings and search unless you're a member.</div>
+              </div>
+
+              <div class="border-top pt-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="small text-body-secondary d-flex align-items-center gap-2"><i class="bi bi-shield-check text-success"></i><span>Changes apply immediately for all members.</span></div>
+                <div class="d-flex gap-2">
+                  <a href="{{ url_for('workspace_bp.view_workspace', workspace_id=workspace.workspace_id) }}" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Cancel</a>
+                  <button class="btn btn-primary" type="submit"><i class="bi bi-save"></i> Save Changes</button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Advanced / Future Panel Placeholder -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-gear-wide-connected text-secondary"></i>
+            <span class="fw-semibold">Coming Soon</span>
+          </div>
+          <div class="card-body small text-body-secondary">
+            <p class="mb-2">Planned enhancements:</p>
+            <ul class="ps-3 mb-0">
+              <li>Member role policies</li>
+              <li>Default workshop agenda templates</li>
+              <li>AI assistance configuration</li>
+              <li>Archival & lifecycle rules</li>
+            </ul>
+          </div>
+        </div>
+
+        {% if workspace.owner_id == current_user.user_id %}
+        <div class="card shadow-sm border-danger">
+          <div class="card-header bg-danger text-white py-2 d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <strong>Danger Zone</strong>
+          </div>
+          <div class="card-body small">
+            <p class="mb-3">Deleting this workspace will permanently remove:
+              <ul class="mb-3">
+                <li>All documents & uploaded files</li>
+                <li>All workshops (tasks, ideas, clusters, votes, chat)</li>
+                <li>All invitations and membership records</li>
+              </ul>
+              This action cannot be undone.</p>
+            <form method="POST" action="{{ url_for('workspace_bp.delete_workspace', workspace_id=workspace.workspace_id) }}" onsubmit="return confirmDeleteWorkspace();" class="d-flex flex-column gap-2">
+              <div>
+                <label for="confirm_name" class="form-label">Type the workspace name to confirm:</label>
+                <input type="text" id="confirm_name" name="confirm_name" class="form-control form-control-sm" placeholder="{{ workspace.name }}" required>
+              </div>
+              <button type="submit" class="btn btn-danger btn-sm align-self-start"><i class="bi bi-trash"></i> Delete Workspace</button>
+            </form>
+            <script>
+              function confirmDeleteWorkspace(){
+                return confirm('This will permanently delete the workspace and ALL associated data. Are you absolutely sure?');
+              }
+            </script>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Side Column -->
+      <div class="col-lg-4 d-flex flex-column gap-4">
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-lightbulb text-warning"></i>
+            <span class="fw-semibold">Improvement Tips</span>
+          </div>
+          <div class="card-body small">
+            <ul class="list-unstyled mb-0 lh-sm">
+              <li class="mb-2"><i class="bi bi-check2-circle text-success"></i> Use a naming convention (e.g. Team‑Focus‑Year).</li>
+              <li class="mb-2"><i class="bi bi-check2-circle text-success"></i> Keep description action‑driven.</li>
+              <li class="mb-2"><i class="bi bi-check2-circle text-success"></i> Switch to Public only when ready for discovery.</li>
+              <li><i class="bi bi-check2-circle text-success"></i> Review memberships quarterly.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-people text-primary"></i>
+            <span class="fw-semibold">Membership Snapshot</span>
+          </div>
+          <div class="card-body small text-body-secondary">
+            <p class="mb-2">Active members: <strong>{{ active_member_count|default('?') }}</strong></p>
+            <p class="mb-2">Managers / Admins can adjust roles from the workspace detail page.</p>
+            <p class="mb-0">Need to remove users? Use the Members panel on the details page.</p>
+          </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-shield-lock text-secondary"></i>
+            <span class="fw-semibold">Visibility Guidance</span>
+          </div>
+          <div class="card-body small text-body-secondary">
+            <p class="mb-2">Public workspaces allow discovery by all authenticated users (if implemented). Private restricts access and search indexing.</p>
+            <ul class="ps-3 mb-2">
+              <li>Switching to public increases reach</li>
+              <li>Keep early exploration private</li>
+              <li>Clear naming aids discoverability</li>
+            </ul>
+            <p class="mb-0">Audit visibility periodically for relevance.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const nameInput = document.getElementById('name');
+      const descInput = document.getElementById('description');
+      const nameCount = document.getElementById('nameCount');
+      const descCount = document.getElementById('descCount');
+      function update(el, counter, max){ if(!el||!counter) return; counter.textContent = `${el.value.length} / ${max}`; }
+      if(nameInput){ nameInput.addEventListener('input', ()=> update(nameInput, nameCount, 80)); update(nameInput, nameCount, 80); }
+      if(descInput){ descInput.addEventListener('input', ()=> update(descInput, descCount, 500)); update(descInput, descCount, 500); }
+    });
+  </script>
+{% endblock %}

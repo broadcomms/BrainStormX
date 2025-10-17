@@ -1,0 +1,146 @@
+<!-- app/account/templates/create_workspace.html -->
+{% extends "main_template.html" %}
+{% block title %}Create Workspace{% endblock %}
+
+{% block content %}
+<section class="py-4 bg-body-tertiary">
+  <div class="container">
+    <!-- Header + Breadcrumbs -->
+    <div class="d-flex flex-wrap justify-content-between align-items-start mb-3">
+      <div class="me-2">
+        <h1 class="h4 fw-bold mb-1 d-flex align-items-center gap-2">
+          <i class="bi bi-diagram-3"></i>
+          <span>Create Workspace</span>
+        </h1>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item"><a href="{{ url_for('main_bp.index') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('workspace_bp.list_workspaces') }}">Workspaces</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Create</li>
+          </ol>
+        </nav>
+      </div>
+      <div class="d-flex gap-2 mt-3 mt-sm-0">
+        <a href="{{ url_for('workspace_bp.list_workspaces') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Cancel</a>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-plus-square text-primary"></i>
+            <span class="fw-semibold">Workspace Details</span>
+          </div>
+          <form action="{{ url_for('workspace_bp.create_workspace') }}" method="POST" novalidate>
+            <div class="card-body">
+              <div class="mb-3">
+                <label for="name" class="form-label fw-semibold">Name <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-type"></i></span>
+                  <input type="text" name="name" id="name" class="form-control" maxlength="80" required placeholder="e.g. Product Innovation Hub" aria-describedby="nameHelp nameCount">
+                </div>
+                <div class="d-flex justify-content-between small mt-1">
+                  <div id="nameHelp" class="text-body-secondary">A concise, memorable name (max 80 chars).</div>
+                  <div id="nameCount" class="text-body-secondary">0 / 80</div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="description" class="form-label fw-semibold">Description</label>
+                <textarea name="description" id="description" class="form-control" rows="4" maxlength="500" placeholder="Purpose, scope, and what collaborators should know..." aria-describedby="descHelp descCount"></textarea>
+                <div class="d-flex justify-content-between small mt-1">
+                  <div id="descHelp" class="text-body-secondary">Optional context to guide members (max 500 chars).</div>
+                  <div id="descCount" class="text-body-secondary">0 / 500</div>
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <label class="form-label fw-semibold d-block">Visibility</label>
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" name="is_private" id="is_private">
+                  <label class="form-check-label" for="is_private">Private workspace</label>
+                </div>
+                <div class="small text-body-secondary mt-1" id="privacyHelp">
+                  <i class="bi bi-info-circle"></i>
+                  Private workspaces are only visible and discoverable to invited members.
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <label class="form-label fw-semibold d-block">Initial Settings</label>
+                <div class="row g-3">
+                  <div class="col-sm-6">
+                    <div class="border rounded p-3 h-100 bg-light-subtle">
+                      <div class="d-flex align-items-center gap-2 mb-1"><i class="bi bi-people text-primary"></i><span class="fw-semibold small">Membership</span></div>
+                      <p class="small mb-2 text-body-secondary">Members you invite can view documents and join scheduled workshops.</p>
+                      <span class="badge text-bg-light small">Configurable later</span>
+                    </div>
+                  </div>
+                  <div class="col-sm-6">
+                    <div class="border rounded p-3 h-100 bg-light-subtle">
+                      <div class="d-flex align-items-center gap-2 mb-1"><i class="bi bi-file-earmark-text text-primary"></i><span class="fw-semibold small">Documents</span></div>
+                      <p class="small mb-2 text-body-secondary">Upload briefs, research, or reference material once created.</p>
+                      <span class="badge text-bg-light small">Add after creation</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex justify-content-end gap-2 pt-2">
+                <a href="{{ url_for('workspace_bp.list_workspaces') }}" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Cancel</a>
+                <button class="btn btn-primary" type="submit"><i class="bi bi-check2-circle"></i> Create Workspace</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+      <!-- Side Panel -->
+      <div class="col-lg-4">
+        <div class="card shadow-sm border-0 mb-4">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-lightbulb text-warning"></i><span class="fw-semibold">Tips</span>
+          </div>
+          <div class="card-body small">
+            <ul class="list-unstyled mb-0 lh-sm">
+              <li class="mb-2"><i class="bi bi-check2-circle text-success"></i> Use action-oriented names (e.g. “Growth Experiments 2025”).</li>
+              <li class="mb-2"><i class="bi bi-check2-circle text-success"></i> Describe the purpose so new members ramp quickly.</li>
+              <li class="mb-2"><i class="bi bi-check2-circle text-success"></i> Keep private until structure & docs are ready.</li>
+              <li><i class="bi bi-check2-circle text-success"></i> Schedule a kickoff workshop right after creation.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-shield-lock text-primary"></i><span class="fw-semibold">Privacy</span>
+          </div>
+          <div class="card-body small text-body-secondary">
+            Private workspaces:
+            <ul class="ps-3 mt-2 mb-2">
+              <li>Hidden from general listings</li>
+              <li>Joinable only via invite</li>
+              <li>Not indexed in search (unless you’re a member)</li>
+            </ul>
+            You can switch visibility later in settings (if you’re an owner or admin).
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const nameInput = document.getElementById('name');
+      const descInput = document.getElementById('description');
+      const nameCount = document.getElementById('nameCount');
+      const descCount = document.getElementById('descCount');
+      function update(el, counter, max){ counter.textContent = `${el.value.length} / ${max}`; }
+      if(nameInput) { nameInput.addEventListener('input', ()=> update(nameInput, nameCount, 80)); update(nameInput, nameCount, 80); }
+      if(descInput) { descInput.addEventListener('input', ()=> update(descInput, descCount, 500)); update(descInput, descCount, 500); }
+      
+  </script>
+{% endblock %}

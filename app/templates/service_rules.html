@@ -1,0 +1,19 @@
+        <!-- AI‑Generated Rules -->
+        <div class="col-12 col-md-4">
+            <div class="p-3 border rounded bg-light h-100 d-flex flex-column"> {# Removed justify-content-between #}
+              <h6 class="mb-2">General Rules &amp; Guidelines</h6>
+              {# Add ID to the content div #}
+              <div id="ai-rules-content" class="small text-muted flex-grow-1">{{ ai_rules|safe or "Generating your workshop guidelines…" }}</div>
+              {# Add controls for organizer #}
+              {% if user_is_organizer %}
+              <div class="mt-auto pt-2 text-end border-top"> {# Aligns buttons at the bottom #}
+                <button class="btn btn-sm btn-outline-primary me-1 regenerate-btn" data-type="rules" title="Regenerate Rules">
+                  <i class="bi bi-arrow-clockwise"></i> <span class="d-none d-md-inline">Regenerate</span>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary edit-btn" data-type="rules" data-bs-toggle="modal" data-bs-target="#editModal" title="Edit Rules">
+                  <i class="bi bi-pencil-square"></i> <span class="d-none d-md-inline">Edit</span>
+                </button>
+              </div>
+              {% endif %}
+            </div>
+          </div>

@@ -1,0 +1,328 @@
+<!-- app/templates/main_chat.html -->
+<head>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+  </head>
+  
+  <style>
+    /* --- CHAT ICON STYLING --- */
+    .chat-icon {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+      width: 60px;
+      height: 60px;
+      background-color: #c9c9c9;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: background-color 0.3s, transform 0.3s;
+    }
+  
+    .chat-icon:hover {
+      background-color: #ababab;
+      transform: scale(1.1);
+    }
+  
+    .chat-icon i {
+      color: #fff;
+      font-size: 24px;
+    }
+  
+    /* --- CHAT BOX STYLING --- */
+    #chat-dialog {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 360px;
+      max-width: 90vw;
+      height: 680px;
+      max-height: 68vh;
+      background-color: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      transition: all 0.4s ease;
+      z-index: 9999;
+    }
+  
+    #chat-dialog.open {
+      display: flex;
+      animation: slideInUp 0.4s forwards;
+    }
+  
+    @keyframes slideInUp {
+      0% { transform: translateY(50px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+  
+    #chat-dialog .chat-header {
+      background-color: #9f9f9f;
+      color: #ffffff;
+      padding: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 50px;
+    }
+  
+    #chat-dialog .chat-header i {
+      cursor: pointer;
+    }
+  
+    #chat-dialog .chat-body {
+      flex: 1;
+      padding: 18px;
+      overflow-y: auto;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      background-color: #f7f7f7;
+    }
+  
+    .quick-tiles {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+  
+    .quick-tile {
+      background-color: #ffffff;
+      padding: 10px;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+  
+    .quick-tile i {
+      margin-left: 8px;
+      font-size: 18px;
+      color: #363636;
+    }
+  
+    .quick-tile:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+  
+    #chat-dialog .chat-footer {
+      border-top: 1px solid #dee2e6;
+      background-color: #ffffff;
+      display: flex;
+      align-items: center;
+      position: relative;
+      padding: 10px 15px;
+      gap: 10px;
+    }
+  
+    #chat-dialog .chat-footer textarea {
+      flex: 1;
+      border: 1px solid #ced4da;
+      border-radius: 14px;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      min-height: 40px;
+      line-height: 1.6;
+      max-height: 120px;
+      overflow-y: auto;
+      resize: none;
+      transition: height 0.2s ease, box-shadow 0.2s ease;
+    }
+  
+    #chat-dialog .chat-footer textarea:focus {
+      outline: none;
+      box-shadow: 0 0 10px rgba(176, 176, 176, 0.3);
+      border-color: #adadad;
+    }
+  
+    #chat-dialog .chat-footer button {
+      align-self: center;
+      background-color: transparent;
+      border: none;
+      color: #bdbdbd;
+      cursor: pointer;
+      opacity: 0.5;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+  
+    #chat-dialog .chat-footer button.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  
+    #chat-dialog .chat-footer button:hover {
+      transform: scale(1.1);
+    }
+  
+    .chat-controls {
+      display: flex;
+      gap: 10px;
+      padding: 5px;
+      justify-content: center;
+      background: #f1f1f1;
+      border-top: 1px solid #ccc;
+    }
+  
+    .chat-controls button {
+      padding: 5px 10px;
+      font-size: 0.8rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  
+    @media (max-width: 576px) {
+      .chat-icon {
+        width: 50px;
+        height: 50px;
+      }
+      .chat-icon i {
+        font-size: 20px;
+      }
+      #chat-dialog {
+        width: 90%;
+        bottom: 70px;
+        right: 5%;
+        height: 60%;
+      }
+    }
+  </style>
+  
+  <div id="chat-icon" class="chat-icon">
+    <i class="fas fa-comment" id="chat-icon-shape"></i>
+  </div>
+  
+  <div id="chat-dialog">
+    <div class="chat-header">
+      <span id="header-text">Virtual Agent</span>
+  <i class="fas fa-home d-none" id="home-btn"></i>
+      <div>
+        <i class="fas fa-times" id="close-chat"></i>
+      </div>
+    </div>
+  
+  <div id="agentChatMessages" class="h-100 overflow-auto p-2 bg-white">
+        <!-- Chat messages will be appended here -->
+      </div>
+  
+      <div id="agentChatInput" class="p-2 bg-eee">
+        <input type="text" id="agentChatText" placeholder="Type your message..." class="w-80 p-5px" />
+        <button id="agentChatSend" class="w-18 p-5px">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+  
+  </div>
+  
+  <script>
+    // Toggle chat window visibility
+    const chatIcon = document.getElementById('chat-icon');
+    const chatDialog = document.getElementById('chat-dialog');
+    const headerText = document.getElementById('header-text');
+    const homeBtn = document.getElementById('home-btn');
+    const closeChatBtn = document.getElementById('close-chat');
+  
+    chatIcon.addEventListener('click', () => {
+      chatDialog.classList.add('open');
+      chatIcon.style.display = 'none';
+    });
+  
+    closeChatBtn.addEventListener('click', () => {
+      chatDialog.classList.remove('open');
+      chatIcon.style.display = 'flex';
+      headerText.style.display = 'block';
+      homeBtn.style.display = 'none';
+    });
+  
+    homeBtn.addEventListener('click', () => {
+      headerText.style.display = 'block';
+      homeBtn.style.display = 'none';
+    });
+  </script>
+  
+  <script>
+    // Connect to the Socket.IO server
+    const agentSocket = io("/agent"); 
+    // Prefer the workshopId defined by the hosting page (e.g., workshop_room)
+    // Fall back to window.config.workshopId if available. Do not reassign a const from parent.
+    const agentWorkshopId = (typeof workshopId !== 'undefined' && workshopId)
+      ? workshopId
+      : (window.config && window.config.workshopId ? window.config.workshopId : null);
+
+    if (agentWorkshopId) {
+      // Use the same room name as the main workshop room
+      agentSocket.emit('join', { room: `workshop_room_${agentWorkshopId}` });
+    } else {
+      console.warn("Agent Chat: workshopId not found. Cannot join specific room.");
+    }
+  
+    // Listen for agent responses from the server
+    agentSocket.on('agent_response', function(data) {
+      if (data && data.message) {
+        appendMessage("Agent", data.message, data.type);
+      }
+    });
+  
+    // Function to append a new message to the chat window
+    function appendMessage(sender, message, type) {
+      const chatMessages = document.getElementById("agentChatMessages");
+      const messageDiv = document.createElement("div");
+      messageDiv.style.marginBottom = "10px";
+      messageDiv.innerHTML = "<strong>" + sender + ":</strong> " + message;
+      chatMessages.appendChild(messageDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+  
+    // Handle send button and Enter key events
+    const sendButton = document.getElementById("agentChatSend");
+    const chatInputField = document.getElementById("agentChatText");
+  
+    sendButton.addEventListener("click", sendMessage);
+    chatInputField.addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        sendMessage();
+      }
+    });
+  
+    // Function to send the chat message to the server
+    function sendMessage() {
+      const message = chatInputField.value.trim();
+      if (message === "") return;
+      
+      // Append users own message
+      appendMessage("You", message, "user");
+      chatInputField.value = "";
+      
+      // Send the message via AJAX POST
+      fetch(`/agent/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: message,
+          workshop_id: agentWorkshopId || 0, // Use resolved workshopId
+          user_id: typeof userId !== 'undefined' ? userId : 0
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          appendMessage("Agent", "Error: " + data.error, "error");
+        }
+      })
+      .catch(err => {
+      console.error("Network error or server unreachable:", err);
+      // Only show error message if it’s truly a network failure
+      appendMessage("Agent", "Unable to reach the server. Please try again later.", "error");
+    });
+  
+    }
+  </script>

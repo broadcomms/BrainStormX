@@ -1,0 +1,450 @@
+{# workshop lobby redesigned #}
+{% extends "main_template.html" %}
+{% block title %}Lobby: {{ workshop.title }}{% endblock %}
+{% set start_dt = workshop.date_time %}
+{% set organizer = workshop.organizer if workshop.organizer is defined else workshop.created_by %}
+{% block content %}
+{% set participant_count = (participants|length) if participants is defined else 0 %}
+<section class="pt-3 pb-4 bg-body-tertiary">
+  <div class="container">
+    <!-- Breadcrumbs (consistent with other views) -->
+    <div class="mb-3">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 small">
+          <li class="breadcrumb-item"><a href="{{ url_for('main_bp.index') }}">Home</a></li>
+          <li class="breadcrumb-item"><a href="{{ url_for('workshop_bp.list_workshops') }}">Workshops</a></li>
+          <li class="breadcrumb-item"><a href="{{ url_for('workshop_bp.view_workshop', workshop_id=workshop.id) }}">{{ workshop.title|truncate(60) }}</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Lobby</li>
+        </ol>
+      </nav>
+    </div>
+  <div class="mb-4 rounded-3 position-relative overflow-hidden lobby-hero-gradient">
+      <div class="row g-0">
+        <div class="col-12 col-lg-8 p-4 p-lg-5 text-white">
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <span class="badge text-bg-dark d-inline-flex align-items-center gap-1"><i class="bi bi-people"></i> Lobby</span>
+            <span id="countdown-{{ workshop.id }}" class="badge text-bg-warning d-inline-flex align-items-center gap-1" aria-live="polite"><i class="bi bi-hourglass-split"></i><span>--</span></span>
+          </div>
+          <h1 class="display-6 fw-semibold mb-2">{{ workshop.title }}</h1>
+          <p class="lead mb-3 small lh-base">Review the agenda & guidelines, meet participants, link docs, and get energized before we go live.</p>
+          <div class="d-flex flex-wrap align-items-center gap-3 small">
+            <div class="d-inline-flex align-items-center gap-2 text-white-50">
+              <i class="bi bi-calendar-event"></i>
+              <span>{{ start_dt.strftime('%b %d, %Y %I:%M %p') }} ({{ start_dt.tzinfo or 'UTC' }})</span>
+            </div>
+            <div class="vr d-none d-sm-block"></div>
+            <div class="d-inline-flex align-items-center gap-2 text-white-50">
+              <i class="bi bi-person-circle"></i>
+              <span>Organizer: {{ (organizer.first_name ~ ' ' ~ organizer.last_name) if organizer else 'Unknown' }}</span>
+            </div>
+            <div class="vr d-none d-sm-block"></div>
+            <div class="d-inline-flex align-items-center gap-2 text-white-50">
+              <i class="bi bi-people-fill"></i>
+              <span><span id="participant-count" class="fw-semibold">{{ participant_count }}</span> Participant{{ '' if participant_count == 1 else 's' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4 p-4 p-lg-5 bg-opacity-25 bg-black text-white d-flex flex-column justify-content-center gap-3">
+          {% if current_user.user_id == workshop.created_by_id %}
+          <form id="start-workshop-form" method="POST" action="{{ url_for('workshop_bp.start_workshop', workshop_id=workshop.id) }}" class="d-grid gap-2">
+            <button type="submit" class="btn btn-dark btn-lg shadow-sm d-inline-flex align-items-center justify-content-center gap-2">
+              <i class="bi bi-play-circle"></i><span>Start Workshop</span>
+            </button>
+          </form>
+          {% else %}
+          <div class="text-center small">
+            <div class="mb-2 fw-semibold">Waiting for organizer to start</div>
+            <div class="spinner-border spinner-border-sm text-light" role="status"><span class="visually-hidden">Loading…</span></div>
+          </div>
+          {% endif %}
+          <div class="d-flex flex-wrap gap-2 mt-2">
+            <a href="{{ url_for('workshop_bp.view_workshop', workshop_id=workshop.id) }}" class="btn btn-outline-light btn-sm"><i class="bi bi-info-circle"></i> Details</a>
+            <a href="{{ url_for('workshop_bp.list_workshops') }}" class="btn btn-outline-light btn-sm"><i class="bi bi-arrow-left"></i> Back</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4" id="lobby-grid">
+      <div class="col-12 col-xl-4 d-flex flex-column gap-4">
+  <div class="card shadow-sm">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-person-badge fs-5 text-info"></i>
+            <h2 class="h6 mb-0">Organizer</h2>
+          </div>
+            <div class="card-body small">
+              <div class="d-flex align-items-start gap-3">
+                <span class="avatar-circle avatar-64 d-inline-block overflow-hidden border shadow-sm">
+                  <img src="{{ profile_url(organizer.profile_image if organizer else None) }}" class="avatar-img" alt="Organizer Avatar" loading="lazy">
+                </span>
+                <div class="flex-grow-1">
+                  <div class="fw-semibold">{{ (organizer.first_name ~ ' ' ~ organizer.last_name) if organizer else 'Unknown Organizer' }}</div>
+                  <div class="text-body-secondary">Facilitator & Host</div>
+                  <hr class="my-2">
+                  <dl class="row mb-0 g-2 lh-sm">
+                    <dt class="col-5 text-body-secondary">Starts</dt><dd class="col-7 mb-0">{{ start_dt.strftime('%b %d %I:%M %p') }}</dd>
+                    <dt class="col-5 text-body-secondary">Timezone</dt><dd class="col-7 mb-0">{{ start_dt.tzinfo or 'UTC' }}</dd>
+                    <dt class="col-5 text-body-secondary">Status</dt><dd class="col-7 mb-0"><span class="badge rounded-pill text-bg-info text-dark">Scheduled</span></dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+          <div class="card-header bg-transparent py-3 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2"><i class="bi bi-people fs-5 text-primary"></i><h2 class="h6 mb-0">Participants</h2></div>
+            <span class="badge rounded-pill text-bg-primary" id="participant-count-display" aria-live="polite">{{ participants|length if participants is defined else 0 }}</span>
+          </div>
+          <ul id="participant-list" class="list-group list-group-flush small" aria-live="polite">
+            <li class="list-group-item py-4 text-center text-body-secondary" id="participants-placeholder">Loading participants…</li>
+          </ul>
+          <div class="card-footer bg-body-tertiary py-2 small text-body-secondary">Updates in real-time as people join.</div>
+        </div>
+
+                <div class="card shadow-sm">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2 flex-wrap">
+            <i class="bi bi-files fs-5 text-warning"></i>
+            <h2 class="h6 mb-0">Linked Documents</h2>
+            {% if user_is_organizer %}
+              <a href="{{ url_for('workshop_bp.view_workshop', workshop_id=workshop.id) }}#documents" class="btn btn-outline-secondary btn-sm ms-auto"><i class="bi bi-link-45deg"></i> Manage</a>
+            {% endif %}
+          </div>
+          <ul class="list-group list-group-flush small" id="document-list" aria-live="polite">
+            <li class="list-group-item py-4 text-center text-body-secondary" id="documents-placeholder">Loading documents…</li>
+          </ul>
+        </div>
+
+
+
+
+
+
+
+
+      </div>
+
+      <div class="col-12 col-xl-5 d-flex flex-column gap-4">
+        <div class="card shadow-sm" data-tts-card="agenda">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2 flex-wrap">
+            <i class="bi bi-list-check fs-5 text-success"></i>
+            <h2 class="h6 mb-0">Agenda Preview</h2>
+            <div class="ms-auto d-flex align-items-center gap-2">
+              <button type="button" class="btn btn-outline-secondary btn-sm tts-trigger" data-tts-key="agenda" data-tts-label="Agenda preview" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Play agenda preview">
+                <i class="bi bi-volume-up" aria-hidden="true"></i>
+                <span class="visually-hidden">Play agenda preview</span>
+              </button>
+              {% if user_is_organizer %}
+              <button class="btn btn-outline-secondary btn-sm regenerate-btn" data-type="agenda" title="Regenerate agenda" aria-label="Regenerate agenda"><i class="bi bi-arrow-clockwise"></i></button>
+              <button class="btn btn-outline-primary btn-sm edit-ai-btn" data-type="agenda" data-bs-toggle="modal" data-bs-target="#editModal" title="Edit agenda" aria-label="Edit agenda"><i class="bi bi-pencil"></i></button>
+              {% endif %}
+            </div>
+          </div>
+          <div class="card-body small" id="ai-agenda-content" aria-live="polite">
+            <ol id="agenda-titles-list" class="list-group list-group-numbered mb-0">
+              <li class="list-group-item text-body-secondary" id="agenda-loading">Loading agenda…</li>
+            </ol>
+            {# Prefer normalized rows rendered server-side; otherwise hydrate from JSON #}
+            {% set rows = workshop.agenda_items if workshop.agenda_items is defined else [] %}
+            {% if rows and rows|length > 0 %}
+            <script id="agenda-rows-json" type="application/json">[
+              {% for r in rows %}{"title": {{ (r.activity_title or 'Activity')|tojson }}, "minutes": {{ (r.estimated_duration or 0)|int }} }{% if not loop.last %},
+              {% endif %}{% endfor %}
+            ]</script>
+            <script>
+              document.addEventListener('DOMContentLoaded', () => {
+                const list = document.getElementById('agenda-titles-list');
+                if (!list) return;
+                list.innerHTML = '';
+                try {
+                  const raw = document.getElementById('agenda-rows-json')?.textContent || '[]';
+                  const items = JSON.parse(raw);
+                  items.forEach(it => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item';
+                    const t = it && it.title ? String(it.title) : 'Activity';
+                    const m = it && it.minutes ? Number(it.minutes) : 0;
+                    li.textContent = m ? `${t} (${m} min)` : t;
+                    list.appendChild(li);
+                  });
+                } catch (e) {
+                  const li = document.createElement('li');
+                  li.className = 'list-group-item text-danger';
+                  li.textContent = 'Agenda data error.';
+                  list.appendChild(li);
+                }
+              });
+            </script>
+            {% else %}
+            {# Ensure raw JSON is not HTML-escaped so client can parse it #}
+            <script id="agenda-json" type="application/json">{% if workshop.agenda %}{{ workshop.agenda|safe }}{% endif %}</script>
+            <script>
+              document.addEventListener('DOMContentLoaded', () => {
+                const jsonEl = document.getElementById('agenda-json');
+                const rawAgenda = jsonEl ? jsonEl.textContent.trim() : '';
+                if(!rawAgenda){
+                  const loading=document.getElementById('agenda-loading');
+                  if(loading) loading.textContent='No agenda available yet.';
+                  return;
+                }
+                renderAgendaList(rawAgenda);
+              });
+            </script>
+            {% endif %}
+          </div>
+          <div class="card-footer bg-body-tertiary small text-body-secondary">Structured plan that will guide the live session.</div>
+        </div>
+
+        <div class="card shadow-sm" data-tts-card="rules">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2 flex-wrap">
+            <i class="bi bi-shield-check fs-5 text-danger"></i>
+            <h2 class="h6 mb-0">Guidelines</h2>
+            <div class="ms-auto d-flex align-items-center gap-2">
+              <button type="button" class="btn btn-outline-secondary btn-sm tts-trigger" data-tts-key="rules" data-tts-label="Guidelines" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Play guidelines">
+                <i class="bi bi-volume-up" aria-hidden="true"></i>
+                <span class="visually-hidden">Play guidelines</span>
+              </button>
+              {% if user_is_organizer %}
+              <button class="btn btn-outline-secondary btn-sm regenerate-btn" data-type="rules" title="Regenerate guidelines" aria-label="Regenerate guidelines"><i class="bi bi-arrow-clockwise"></i></button>
+              <button class="btn btn-outline-primary btn-sm edit-ai-btn" data-type="rules" data-bs-toggle="modal" data-bs-target="#editModal" title="Edit guidelines" aria-label="Edit guidelines"><i class="bi bi-pencil"></i></button>
+              {% endif %}
+            </div>
+          </div>
+          <div class="card-body small" id="ai-rules-content" aria-live="polite">
+            {{ ai_rules|safe if ai_rules is defined else '<em>Generating guidelines…</em>' }}
+          </div>
+        </div>
+
+
+
+
+
+      </div>
+
+      <div class="col-12 col-xl-3 d-flex flex-column gap-4">
+
+        <div class="card shadow-sm" data-tts-card="icebreaker">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-globe-americas fs-5 text-success"></i>
+            <h2 class="h6 mb-0">Icebreaker</h2>
+            <div class="ms-auto d-flex align-items-center gap-2">
+              <button type="button" class="btn btn-outline-secondary btn-sm tts-trigger" data-tts-key="icebreaker" data-tts-label="Icebreaker" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Play icebreaker">
+                <i class="bi bi-volume-up" aria-hidden="true"></i>
+                <span class="visually-hidden">Play icebreaker</span>
+              </button>
+              {% if user_is_organizer %}
+              <div class="btn-group" role="group">
+                <button class="btn btn-outline-secondary btn-sm regenerate-btn" data-type="icebreaker" title="Regenerate icebreaker" aria-label="Regenerate icebreaker"><i class="bi bi-arrow-clockwise"></i></button>
+                <button class="btn btn-outline-primary btn-sm edit-ai-btn" data-type="icebreaker" data-bs-toggle="modal" data-bs-target="#editModal" title="Edit icebreaker" aria-label="Edit icebreaker"><i class="bi bi-pencil"></i></button>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="card-body small" id="ai-icebreaker-content" aria-live="polite">
+            {{ ai_icebreaker|safe if ai_icebreaker is defined else '<div class="text-body-secondary fst-italic">Thinking of a fun question…</div>' }}
+          </div>
+        </div>
+
+        <div class="card shadow-sm" data-tts-card="tip">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-stars fs-5 text-warning"></i>
+            <h2 class="h6 mb-0">Facilitator Tip</h2>
+            <div class="ms-auto d-flex align-items-center gap-2">
+              <button type="button" class="btn btn-outline-secondary btn-sm tts-trigger" data-tts-key="tip" data-tts-label="Facilitator tip" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Play facilitator tip">
+                <i class="bi bi-volume-up" aria-hidden="true"></i>
+                <span class="visually-hidden">Play facilitator tip</span>
+              </button>
+              {% if user_is_organizer %}
+              <div class="btn-group" role="group">
+                <button class="btn btn-outline-secondary btn-sm regenerate-btn" data-type="tip" title="Regenerate facilitator tip" aria-label="Regenerate facilitator tip"><i class="bi bi-arrow-clockwise"></i></button>
+                <button class="btn btn-outline-primary btn-sm edit-ai-btn" data-type="tip" data-bs-toggle="modal" data-bs-target="#editModal" title="Edit facilitator tip" aria-label="Edit facilitator tip"><i class="bi bi-pencil"></i></button>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="card-body small" id="ai-tip-content" aria-live="polite">
+            {{ ai_tip|safe if ai_tip is defined else '<div class="text-body-secondary">Preparing a quick brainstorming tip…</div>' }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mt-5 small text-body-secondary">
+      <i class="bi bi-lightning-charge-fill text-warning"></i> When the organizer starts, you will transition automatically.
+    </div>
+  </div>
+</section>
+
+{% if user_is_organizer %}
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editModalLabel">Edit Content</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-type">
+        <label for="edit-content-area" class="form-label small text-body-secondary">Raw Text / Markdown</label>
+        <textarea id="edit-content-area" class="form-control" rows="14" spellcheck="true"></textarea>
+        <div id="edit-error" class="text-danger small mt-2"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="save-edit-btn"><i class="bi bi-save"></i> Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div id="lobby-meta" data-workshop-id="{{ workshop.id }}" data-user-id="{{ current_user.user_id }}" data-is-organizer="{{ '1' if user_is_organizer else '0' }}" class="d-none"></div>
+
+<script id="lobby-tts-json" type="application/json">{{ lobby_tts_content|tojson }}</script>
+<script src="{{ url_for('static', filename='js/tts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/lobbyTts.js') }}"></script>
+<script id="participants-json" type="application/json">[
+{% for p in participants %}{% set u=p.user %}{
+  "user_id": {{ u.user_id }},
+  "name": {{ (u.first_name ~ ' ' ~ u.last_name)|trim|tojson }},
+  "email": {{ u.email|tojson }},
+  "title": {{ (u.title or u.email)|tojson }},
+  "profile_image": {{ profile_url(u.profile_image)|tojson }},
+  "status": "Invited"
+}{% if not loop.last %},
+{% endif %}{% endfor %}
+]</script>
+<script id="documents-json" type="application/json">[
+{% if documents is defined and documents %}
+{% for d in documents %}{
+  "id": {{ d.id }},
+  "title": {{ d.title|tojson }},
+  "description": {{ (d.description or 'No description')|tojson }},
+  "url": {{ url_for('document_bp.preview_document', document_id=d.id)|tojson }}
+}{% if not loop.last %},
+{% endif %}{% endfor %}
+{% elif linked_documents is defined and linked_documents %}
+{% for link in linked_documents %}{% set d = link.document %}{
+  "id": {{ d.id }},
+  "title": {{ d.title|tojson }},
+  "description": {{ (d.description or 'No description')|tojson }},
+  "url": {{ url_for('document_bp.preview_document', document_id=d.id)|tojson }}
+}{% if not loop.last %},
+{% endif %}{% endfor %}
+{% endif %}
+]</script>
+<script>
+  const meta = document.getElementById('lobby-meta');
+  const workshopId = meta?.dataset.workshopId || '';
+  const workshopNumericId = workshopId ? Number(workshopId) : null;
+  const userId = meta?.dataset.userId || '';
+  const isOrganizer = (meta?.dataset.isOrganizer === '1');
+  const lobbyRoom = `workshop_lobby_${workshopId}`;
+  window.workshopId = workshopNumericId ?? workshopId;
+  window.ttsDefaults = Object.assign({ workshop_id: workshopNumericId ?? workshopId }, window.ttsDefaults || {});
+  function getCsrf(){ const el = document.querySelector('input[name="csrf_token"]'); return el ? el.value : null; }
+  const socket = io();
+  socket.on('connect', () => socket.emit('join_room', { room: lobbyRoom, workshop_id: workshopId, user_id: userId }));
+  window.addEventListener('beforeunload', () => socket.emit('leave_room', { room: lobbyRoom }));
+  socket.on('workshop_started', d => { if(d.workshop_id===workshopId) window.location.href = "{{ url_for('workshop_bp.workshop_room', workshop_id=workshop.id) }}"; });
+  socket.on('participant_update', handleParticipantStatusUpdate);
+  socket.on('participant_list_update', handleParticipantListUpdate);
+  socket.on('ai_content_update', handleAiContentUpdate);
+  function updateLobbyTtsStore(key, text){
+    if(!key) return;
+    if(window.LobbyTTS && typeof window.LobbyTTS.updateContent === 'function'){
+      window.LobbyTTS.updateContent(key, text);
+    }
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    setupCountdown();
+    setupStartWorkshopForm();
+    if(isOrganizer){ setupRegenerateButtons(); setupEditModal(); }
+    populateInitialParticipants();
+    populateInitialDocuments();
+  });
+
+  function setupCountdown(){ const wrap=document.querySelector(`#countdown-${workshopId} span`); if(!wrap) return; const target=new Date("{{ workshop.date_time.isoformat() }}Z").getTime(); const intv=setInterval(()=>{ const diff=target-Date.now(); if(diff<=0){ wrap.textContent='Now'; clearInterval(intv); return;} const d=Math.floor(diff/864e5); const h=Math.floor(diff%864e5/36e5); const m=Math.floor(diff%36e5/6e4); const s=Math.floor(diff%6e4/1e3); const parts=[]; if(d) parts.push(d+'d'); if(h) parts.push(h+'h'); if(m) parts.push(m+'m'); parts.push(s+'s'); wrap.textContent=parts.join(' '); },1000);} 
+  function setupStartWorkshopForm(){ const form=document.getElementById('start-workshop-form'); if(!form) return; form.addEventListener('submit', async e=>{ e.preventDefault(); const btn=form.querySelector('button[type="submit"]'); if(!btn) return; const orig=btn.innerHTML; btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm"></span> Starting…'; try { const r=await fetch(form.action,{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json','X-CSRFToken':getCsrf()}}); const j=await r.json(); if(r.ok && j.success){ window.location.href=j.redirect_url||window.location.href; } else throw new Error(j.message||`HTTP ${r.status}`); } catch(err){ alert(err.message); btn.disabled=false; btn.innerHTML=orig; } }); }
+  function handleParticipantStatusUpdate(d){ if(d.workshop_id!==workshopId) return; const badge=document.getElementById(`status-${d.user_id}`); if(badge) badge.textContent=d.status||'Active'; }
+  function parseJson(id){ const el=document.getElementById(id); if(!el) return []; try { return JSON.parse(el.textContent); } catch(_){ return []; } }
+  function _resolveAvatar(raw){ try{ if(!raw) return "{{ profile_url(None) }}"; if(raw.startsWith('http://')||raw.startsWith('https://')) return raw; if(raw.startsWith('/media/')||raw.startsWith('/static/')) return raw; return '/static/'+raw.replace(/^\/+/, ''); }catch{ return "{{ profile_url(None) }}"; } }
+  function buildParticipantLi(p){ const avatar=_resolveAvatar(p.profile_image); return `<li class=\"list-group-item d-flex align-items-center gap-3 py-2\"><span class=\"avatar-circle avatar-40 d-inline-block overflow-hidden border\"><img src=\"${avatar}\" class=\"avatar-img\" alt=\"Participant avatar\" loading=\"lazy\"></span><div class=\"flex-grow-1\"><div class=\"fw-semibold text-truncate truncate-160\">${escapeHtml(p.name||p.email||'Participant')}</div><div class=\"text-body-secondary text-truncate truncate-160\">${escapeHtml(p.title||'')}</div></div><span id=\"status-${p.user_id}\" class=\"badge bg-secondary-subtle text-secondary-emphasis border\">${escapeHtml(p.status||'Active')}</span></li>`; }
+  function populateInitialParticipants(){ const data=parseJson('participants-json'); const list=document.getElementById('participant-list'); if(!list) return; list.innerHTML=''; if(!data.length){ list.innerHTML='<li class="list-group-item py-4 text-center text-body-secondary">No participants yet.</li>'; } else { data.forEach(p=> list.insertAdjacentHTML('beforeend', buildParticipantLi(p))); const countEl=document.getElementById('participant-count-display'); if(countEl) countEl.textContent=data.length; const top=document.getElementById('participant-count'); if(top) top.textContent=data.length; } }
+  function populateInitialDocuments(){ const docs=parseJson('documents-json'); const list=document.getElementById('document-list'); if(!list) return; list.innerHTML=''; if(!docs.length){ list.innerHTML='<li class="list-group-item py-4 text-center text-body-secondary">No documents linked.</li>'; } else { docs.forEach(d=>{ list.insertAdjacentHTML('beforeend', `<li class=\"list-group-item d-flex justify-content-between align-items-start gap-2 py-2\"><div class=\"me-auto\"><div class=\"fw-semibold text-truncate truncate-240\" title=\"${escapeHtml(d.title)}\">${escapeHtml(d.title)}</div><div class=\"text-body-secondary text-truncate truncate-240\">${escapeHtml(d.description)}</div></div><a href=\"${d.url}\" class=\"btn btn-outline-primary btn-sm\" title=\"Open document ${escapeHtml(d.title)}\" aria-label=\"Open document ${escapeHtml(d.title)}\"><i class=\"bi bi-box-arrow-up-right\"></i></a></li>`); }); } }
+  function handleParticipantListUpdate(d){
+    if(d.workshop_id!==workshopId) return;
+    const list=document.getElementById('participant-list');
+    const countEl=document.getElementById('participant-count-display');
+    if(!list) return;
+    list.innerHTML='';
+    (d.participants||[]).forEach(p=>{
+      const li=document.createElement('li');
+      li.className='list-group-item d-flex align-items-center gap-3 py-2';
+    const avatar = _resolveAvatar(p.profile_image);
+  li.innerHTML = `<span class="avatar-circle avatar-40 d-inline-block overflow-hidden border"><img src="${avatar}" class="avatar-img" alt="Participant avatar" loading="lazy"></span><div class="flex-grow-1"><div class="fw-semibold text-truncate truncate-160">${escapeHtml(p.name||p.email||'Participant')}</div><div class="text-body-secondary text-truncate truncate-160">${escapeHtml(p.title||'')}</div></div><span id="status-${p.user_id}" class="badge bg-secondary-subtle text-secondary-emphasis border">${escapeHtml(p.status||'Active')}</span>`;
+      list.appendChild(li);
+    });
+    if(countEl) countEl.textContent=(d.participants||[]).length;
+    const top=document.getElementById('participant-count');
+    if(top) top.textContent=(d.participants||[]).length;
+  }
+  /* (Removed older duplicate setupRegenerateButtons) */
+  function setupRegenerateButtons(){
+    document.querySelectorAll('.regenerate-btn').forEach(btn=>btn.addEventListener('click', async e=>{
+      const b=e.currentTarget; const type=b.dataset.type; if(!type) return; const orig=b.innerHTML; b.disabled=true; b.innerHTML='<span class="spinner-border spinner-border-sm"></span>';
+      const pane=getAiPane(type);
+      if(pane){
+        if(type==='agenda'){
+          // Keep list structure, just show loading inside existing list
+            const list=document.getElementById('agenda-titles-list');
+            if(list) list.innerHTML='<li class="list-group-item text-center"><span class="spinner-border spinner-border-sm"></span></li>';
+        } else {
+          pane.innerHTML='<div class="text-center py-3"><span class="spinner-border spinner-border-sm"></span></div>';
+        }
+      }
+      try {
+        const r=await fetch(`/workshop/${workshopId}/regenerate/${type}`,{method:'POST',headers:{'Accept':'application/json','X-CSRFToken':getCsrf()}});
+        const j=await r.json();
+        if(!r.ok||!j.success) throw new Error(j.message||`HTTP ${r.status}`);
+        if(j.content){ updateAiContentElement(type, j.content); }
+        if(Object.prototype.hasOwnProperty.call(j,'tts_text')){ updateLobbyTtsStore(type, j.tts_text); }
+      } catch(err){ console.error('Regeneration failed', err); alert(`Regeneration failed: ${err.message}`); }
+      finally { b.disabled=false; b.innerHTML=orig; }
+    }));
+  }
+  function handleAiContentUpdate(d){ if(d.workshop_id!==workshopId) return; if(!d.type||!d.content){ console.warn('ai_content_update missing fields', d); return;} console.debug('AI content update received', d.type); updateAiContentElement(d.type,d.content); if(Object.prototype.hasOwnProperty.call(d,'tts_text')){ updateLobbyTtsStore(d.type, d.tts_text); } }
+  function getAiPane(type){ return type==='agenda' ? document.getElementById('ai-agenda-content') : document.getElementById(`ai-${type}-content`); }
+  function updateAiContentElement(type, content){ console.debug('Updating AI content element', type);
+    if(type==='agenda'){
+      // Content may be raw JSON or already-rendered HTML/Markdown
+      if(content && (content.trim().startsWith('{')||content.trim().startsWith('['))){
+  // Update hidden script holder so future edits reference latest
+  const scriptHolder=document.getElementById('agenda-json');
+  if(scriptHolder) scriptHolder.textContent=content;
+        renderAgendaList(content);
+        return;
+      }
+      // Fallback: treat as HTML
+      const pane=getAiPane(type);
+      if(pane) pane.innerHTML=content;
+      return;
+    }
+    const pane=getAiPane(type);
+    if(pane) pane.innerHTML=content;
+  }
+  function renderAgendaList(raw){
+    // Some backends may HTML-escape quotes; decode basic entities first
+    if(typeof raw==='string'){
+      raw = raw.replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+    }
+    let data; try { data= typeof raw==='string' ? JSON.parse(raw) : raw; } catch(e){ console.error('Agenda JSON parse failed', e, raw); const list=document.getElementById('agenda-titles-list'); if(list) list.innerHTML='<li class="list-group-item text-danger">Agenda data corrupted.</li>'; return; }
+    const items = Array.isArray(data.agenda)? data.agenda : []; const list=document.getElementById('agenda-titles-list'); if(!list) return; list.innerHTML=''; if(!items.length){ list.innerHTML='<li class="list-group-item text-body-secondary">No agenda items.</li>'; return; }
+    items.forEach(it=>{ const li=document.createElement('li'); li.className='list-group-item'; li.textContent=it.activity||it.title||it.description||'Activity'; list.appendChild(li); });
+  }
+  function setupEditModal(){ const modalEl=document.getElementById('editModal'); if(!modalEl) return; const modal=new bootstrap.Modal(modalEl); const typeInput=document.getElementById('edit-type'); const textarea=document.getElementById('edit-content-area'); const err=document.getElementById('edit-error'); document.querySelectorAll('.edit-ai-btn').forEach(btn=>btn.addEventListener('click',()=>{ const t=btn.dataset.type; typeInput.value=t; err.textContent=''; const pane=getAiPane(t); textarea.value=pane ? stripHtml(pane.innerHTML).trim() : ''; document.getElementById('editModalLabel').textContent=`Edit ${capitalize(t)}`; })); document.getElementById('save-edit-btn')?.addEventListener('click', async ()=>{ const t=typeInput.value; const content=textarea.value; const btn=document.getElementById('save-edit-btn'); const orig=btn.innerHTML; btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm"></span> Saving…'; err.textContent=''; try { const r=await fetch(`/workshop/${workshopId}/edit/${t}`,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRFToken':getCsrf()},body:JSON.stringify({content})}); const j=await r.json(); if(r.ok&&j.success){ updateAiContentElement(t,j.content); if(Object.prototype.hasOwnProperty.call(j,'tts_text')){ updateLobbyTtsStore(t, j.tts_text); } modal.hide(); } else throw new Error(j.message||`HTTP ${r.status}`); } catch(error){ err.textContent=error.message; } finally { btn.disabled=false; btn.innerHTML=orig; } }); }
+  function stripHtml(html){ const tmp=document.createElement('div'); tmp.innerHTML=html; return tmp.textContent||tmp.innerText||''; }
+  function escapeHtml(str){ if(!str) return ''; return str.replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+  function capitalize(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
+</script>
+{% endblock %}

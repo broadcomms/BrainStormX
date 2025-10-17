@@ -1,0 +1,224 @@
+{% extends "admin_base.html" %}
+
+{% block title %}{{ document.title }} · Documents · Admin{% endblock %}
+{% block header_title %}{{ document.title }}{% endblock %}
+{% block header_subtitle %}Workspace {{ document.workspace.name if document.workspace else document.workspace_id }} · Version {{ document.version or 1 }}{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-xl-8 d-flex flex-column gap-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-bottom-0 pb-0 d-flex justify-content-between align-items-start">
+        <div>
+          <h5 class="card-title h6 mb-1">Document overview</h5>
+          <p class="text-body-secondary small mb-0">Uploaded {{ document.uploaded_at.strftime('%Y-%m-%d %H:%M') if document.uploaded_at else 'unknown' }} by {{ document.uploader.display_name if document.uploader else 'System' }}.</p>
+        </div>
+        <div class="btn-group btn-group-sm">
+          <a class="btn btn-outline-primary" href="{{ url_for('admin.document_download', document_id=document.id) }}">
+            <i class="bi bi-download me-1"></i>Download
+          </a>
+          <form method="post" action="{{ url_for('admin.document_delete', document_id=document.id) }}" onsubmit="return confirm('Delete {{ document.title }} and all derived versions?');">
+            {{ delete_form.hidden_tag() }}
+            <button type="submit" class="btn btn-outline-danger">
+              <i class="bi bi-trash me-1"></i>Delete
+            </button>
+          </form>
+        </div>
+      </div>
+      <div class="card-body pt-3">
+        {% if document.description %}
+          <p class="mb-4">{{ document.description }}</p>
+        {% endif %}
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <div class="small text-body-secondary text-uppercase fw-semibold">Filename</div>
+            <div class="fw-medium">{{ document.file_name }}</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="small text-body-secondary text-uppercase fw-semibold">File size</div>
+            <div class="fw-medium">{{ document.file_size | filesizeformat }}</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="small text-body-secondary text-uppercase fw-semibold">Processing status</div>
+            {% set status = (document.processing_status or 'pending').lower() %}
+            <div>
+              {% if document.is_archived %}
+                <span class="badge text-bg-secondary">Archived</span>
+              {% elif status in ['processing', 'queued'] %}
+                <span class="badge text-bg-info text-uppercase">{{ status }}</span>
+              {% elif status == 'failed' %}
+                <span class="badge text-bg-danger">Failed</span>
+              {% else %}
+                <span class="badge text-bg-success">Ready</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="col-sm-6">
+            <div class="small text-body-secondary text-uppercase fw-semibold">File presence</div>
+            <div class="fw-medium">
+              {% if file_exists %}
+                <span class="text-success"><i class="bi bi-check-circle me-1"></i>Stored in instance uploads</span>
+              {% else %}
+                <span class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>File missing on disk</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="col-sm-6">
+            <div class="small text-body-secondary text-uppercase fw-semibold">Access count</div>
+            <div class="fw-medium">{{ document.access_count or 0 }}</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="small text-body-secondary text-uppercase fw-semibold">Last processed</div>
+            <div class="fw-medium">{{ document.last_processed_at.strftime('%Y-%m-%d %H:%M') if document.last_processed_at else 'Never' }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-bottom-0 pb-0 d-flex justify-content-between align-items-center">
+        <h5 class="card-title h6 mb-0">Processing activity</h5>
+        <span class="text-body-secondary small">{{ processing_logs|length }} recent entries</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th scope="col">Stage</th>
+              <th scope="col">Status</th>
+              <th scope="col">Started</th>
+              <th scope="col">Completed</th>
+              <th scope="col">Pages</th>
+              <th scope="col">Message</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if processing_logs %}
+              {% for log in processing_logs %}
+                <tr>
+                  <td>{{ log.stage or '—' }}</td>
+                  <td>
+                    {% set log_status = (log.status or 'pending').lower() %}
+                    {% if log_status == 'failed' %}
+                      <span class="badge text-bg-danger">Failed</span>
+                    {% elif log_status in ['processing', 'queued'] %}
+                      <span class="badge text-bg-info text-uppercase">{{ log_status }}</span>
+                    {% elif log_status == 'completed' %}
+                      <span class="badge text-bg-success">Completed</span>
+                    {% else %}
+                      <span class="badge text-bg-secondary">{{ log.status or 'Pending' }}</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ log.started_at.strftime('%Y-%m-%d %H:%M') if log.started_at else '—' }}</td>
+                  <td>{{ log.completed_at.strftime('%Y-%m-%d %H:%M') if log.completed_at else '—' }}</td>
+                  <td>{{ log.processed_pages or 0 }}/{{ log.total_pages or '—' }}</td>
+                  <td class="text-body-secondary small">{{ log.error_message or log.created_at.strftime('%Y-%m-%d %H:%M') if log.created_at else '' }}</td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="6" class="text-center text-body-secondary py-4">No processing events recorded yet.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+      {% if archived_logs %}
+        <div class="border-top p-3">
+          <details>
+            <summary class="small text-body-secondary">Show archived log history ({{ archived_logs|length }})</summary>
+            <ul class="list-group list-group-flush mt-3">
+              {% for log in archived_logs %}
+                <li class="list-group-item">
+                  <div class="d-flex justify-content-between">
+                    <div>
+                      <strong>{{ log.stage or '—' }}</strong> · <span class="text-uppercase small text-body-secondary">{{ log.status or 'unknown' }}</span>
+                    </div>
+                    <div class="text-body-secondary small">Archived {{ log.archived_at.strftime('%Y-%m-%d %H:%M') if log.archived_at else '—' }}</div>
+                  </div>
+                  {% if log.error_message %}
+                    <div class="text-danger small mt-1">{{ log.error_message }}</div>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          </details>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-xl-4 d-flex flex-column gap-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-bottom-0 pb-0">
+        <h5 class="card-title h6 mb-0">Version lineage</h5>
+      </div>
+      <div class="card-body pt-3">
+        <div class="list-group list-group-flush">
+          <div class="list-group-item d-flex justify-content-between align-items-start">
+            <div>
+              <div class="fw-semibold">Current version</div>
+              <div class="text-body-secondary small">v{{ document.version or 1 }}</div>
+            </div>
+            <span class="badge text-bg-primary">Active</span>
+          </div>
+          {% if document.parent_document %}
+            <div class="list-group-item">
+              <div class="fw-semibold">Derived from</div>
+              <a href="{{ url_for('admin.document_detail', document_id=document.parent_document.id) }}" class="small">{{ document.parent_document.title }}</a>
+            </div>
+          {% endif %}
+          {% if version_children %}
+            {% for child in version_children %}
+              <div class="list-group-item">
+                <div class="fw-semibold">Version {{ child.version or '?' }}</div>
+                <a href="{{ url_for('admin.document_detail', document_id=child.id) }}" class="small">{{ child.title }}</a>
+                <div class="text-body-secondary small">Uploaded {{ child.uploaded_at.strftime('%Y-%m-%d') if child.uploaded_at else 'unknown' }}</div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="list-group-item text-body-secondary small">No derived versions yet.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-bottom-0 pb-0">
+        <h5 class="card-title h6 mb-0">Linked workshops</h5>
+      </div>
+      <div class="card-body pt-3">
+        {% if workshop_links %}
+          <div class="list-group list-group-flush">
+            {% for workshop in workshop_links %}
+              <div class="list-group-item">
+                <div class="fw-semibold">{{ workshop.title }}</div>
+                <div class="text-body-secondary small">Scheduled {{ workshop.date_time.strftime('%Y-%m-%d') if workshop.date_time else 'TBD' }}</div>
+                <a class="small" href="{{ url_for('admin.workshop_detail', workshop_id=workshop.id) }}">View workshop</a>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-body-secondary small mb-0">This document is not linked to any workshops.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-bottom-0 pb-0">
+        <h5 class="card-title h6 mb-0">Narration / audio</h5>
+      </div>
+      <div class="card-body pt-3">
+        {% if latest_audio %}
+          <p class="mb-2">Latest audio created {{ latest_audio.created_at.strftime('%Y-%m-%d %H:%M') if latest_audio.created_at else 'unknown' }}.</p>
+          <a class="btn btn-outline-primary btn-sm" href="{{ url_for('admin.document_audio_admin', document_id=document.id, audio_id=latest_audio.id) }}" target="_blank" rel="noopener">
+            <i class="bi bi-volume-up me-1"></i>Play audio
+          </a>
+        {% else %}
+          <p class="text-body-secondary small mb-0">No audio renditions available yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,336 @@
+/* Partner logo / icon circle */
+.partner-logo {
+	width: 40px;
+	height: 40px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: #ffffff;
+	border-radius: 50%;
+	object-fit: contain; /* still works for <img> usage */
+}
+
+.partner-logo i {
+	font-size: 22px; /* icon size inside circle */
+	line-height: 1;
+}
+
+/* General avatar sizing */
+.avatar-50 {
+	width: 50px;
+	height: 50px;
+	object-fit: cover;
+	display: inline-block;
+}
+
+.avatar-md { width:52px; height:52px; }
+.fs-07 { font-size: 0.7em !important; }
+.fs-075 { font-size: 0.75rem !important; }
+.badge-xs { font-size: 0.6rem !important; }
+.pos-top-right-5 { position:absolute; top:-5px; right:-5px; }
+.max-w-55 { max-width:55px !important; }
+.w-60px { width:60px !important; }
+
+/* Notification area positioning */
+.notification-area {
+	z-index: 1080;
+}
+
+/* Utility: truncate to ~48ch width (paired with .text-truncate) */
+.truncate-48ch {
+	max-width: 48ch;
+}
+
+/* Password strength meter utility */
+.pw-strength-progress {
+	height: 6px;
+}
+.pw-strength-bar {
+	width: 0%;
+	transition: width .3s ease;
+}
+
+/* ---- Profile / Layout Utilities ---- */
+.mw-50ch { max-width: 50ch !important; }
+.mw-60ch { max-width: 60ch !important; }
+
+.avatar-xl { width:140px; height:140px; }
+.avatar-xl-wrapper { width:140px; flex-shrink:0; }
+.avatar-32 { width:32px; height:32px; object-fit: cover; }
+
+.minw-stats { min-width:210px; }
+
+/* Full width truncation helper for long inline code/file paths */
+.truncate-full {
+	max-width:100%;
+	overflow:hidden;
+	text-overflow:ellipsis;
+	white-space:nowrap;
+	display:block;
+}
+
+/* Pixel-based truncation utilities to replace inline styles */
+.truncate-160 { max-width:160px; }
+.truncate-240 { max-width:240px; }
+
+/* Lobby hero gradient background */
+.lobby-hero-gradient {
+	background: radial-gradient(circle at 25% 30%, rgba(60,110,255,.55), rgba(30,30,60,.85)), linear-gradient(135deg, #1b2845, #121826 70%);
+	color: #fff;
+}
+
+/* Card subtle elevation harmonized */
+.card.shadow-sm { border: 0; }
+
+/* Fine tune badges inside hero */
+.lobby-hero-gradient .badge { -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+
+/* Height limiting utility for scrollable content blocks */
+.limit-height-140 { max-height:140px; }
+
+/* Generic max-width utility */
+.max-w-640 { max-width:640px; }
+
+/* --- Workshop room utilities --- */
+.progress-thin { height:6px; }
+.progress-bar-initial { width:0%; }
+.min-h-160 { min-height:160px; }
+.min-h-220 { min-height:220px; }
+.overlay-z-10 { z-index: 10; }
+.chat-messages { max-height:340px; background: var(--bs-body-bg); }
+.notif-area { width: min(560px, 90vw); }
+.w-70px { width: 70px !important; }
+
+/* Tab pane viewport: grows to a reasonable height then scrolls */
+.pane-viewport { min-height: 240px; max-height: 60vh; }
+
+/* Consistent vertical scroll containers for tab panes */
+.scrollable-pane {
+	max-height: 55vh;
+	overflow-y: auto;
+	padding-right: 0.35rem;
+}
+.scrollable-pane::-webkit-scrollbar {
+	width: 6px;
+}
+.scrollable-pane::-webkit-scrollbar-thumb {
+	background: rgba(0,0,0,.25);
+	border-radius: 4px;
+}
+.scrollable-pane:hover::-webkit-scrollbar-thumb {
+	background: rgba(0,0,0,.35);
+}
+
+/* Participant tiles horizontal scroll (prevents overflow) */
+.participant-tiles-scroll {
+	max-width:100%;
+	overflow-x:auto;
+	padding-bottom:2px;
+}
+.participant-tiles-scroll::-webkit-scrollbar { height:6px; }
+.participant-tiles-scroll::-webkit-scrollbar-track { background:transparent; }
+.participant-tiles-scroll::-webkit-scrollbar-thumb { background:rgba(0,0,0,.25); border-radius:4px; }
+.participant-tile { width:60px; flex:0 0 auto; }
+.participant-tile .avatar-img { width:50px; height:50px; object-fit:cover; display:block; }
+
+/* Transcript scroll area height (extracted from inline style) */
+.transcript-scroll { max-height:420px; }
+
+/* Video showcase utilities */
+.video-progress { height: 5px; }
+.chapter-marker-track {
+	position: relative;
+	height: 10px;
+	margin-top: -5px;
+}
+.video-playlist-scroll { max-height: 500px; overflow-y: auto; }
+.video-playlist-scroll::-webkit-scrollbar { width: 6px; }
+.video-playlist-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,.25); border-radius: 3px; }
+.video-playlist-scroll:hover::-webkit-scrollbar-thumb { background: rgba(0,0,0,.4); }
+.video-transcript-scroll { max-height: 450px; overflow-y: auto; }
+.video-transcript-scroll::-webkit-scrollbar { width: 6px; }
+.video-transcript-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,.2); border-radius: 3px; }
+.video-transcript-scroll:hover::-webkit-scrollbar-thumb { background: rgba(0,0,0,.35); }
+.indicator-dot { width: 8px; height: 8px; }
+.video-playlist-thumb { width: 120px; }
+.progress-bar-75 { width: 75%; }
+.scroll-panel-280 { height: 280px; overflow: auto; }
+.scroll-panel-280::-webkit-scrollbar { width: 6px; }
+.scroll-panel-280::-webkit-scrollbar-thumb { background: rgba(0,0,0,.25); border-radius: 4px; }
+
+.transcript-word {
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.transcript-word:hover {
+	background-color: rgba(var(--bs-primary-rgb), 0.1);
+	padding: 0 4px;
+	border-radius: 4px;
+}
+
+.transcript-word.active {
+	background-color: rgba(var(--bs-warning-rgb), 0.25);
+	padding: 0 4px;
+	border-radius: 4px;
+	font-weight: 500;
+}
+
+.transcript-block {
+	border-left: 3px solid transparent;
+	padding-left: 1rem;
+	transition: border-color 0.3s ease;
+}
+
+.transcript-block.active {
+	border-left-color: var(--bs-primary);
+	background-color: rgba(var(--bs-primary-rgb), 0.05);
+}
+
+.chapter-marker {
+	position: absolute;
+	width: 2px;
+	height: 10px;
+	background-color: var(--bs-secondary);
+	cursor: pointer;
+	z-index: 10;
+}
+
+.chapter-marker:hover::after,
+.chapter-marker:focus-visible::after {
+	content: attr(data-title);
+	position: absolute;
+	bottom: 15px;
+	left: 50%;
+	transform: translateX(-50%);
+	background: var(--bs-dark);
+	color: #fff;
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 0.75rem;
+	white-space: nowrap;
+}
+
+/* Transcript recording indicator & speaker highlight */
+.transcript-recording-badge { animation: pulse-rec 1.2s ease-in-out infinite; }
+@keyframes pulse-rec { 0%{ transform:scale(1); opacity:1;} 50%{ transform:scale(1.15); opacity:.6;} 100%{ transform:scale(1); opacity:1;} }
+.transcript-final.highlighting { background: var(--bs-warning-bg-subtle, #fff3cd); transition: background .8s ease; }
+.transcript-list-scroll::-webkit-scrollbar { width: 8px; }
+.transcript-list-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,.25); border-radius:4px; }
+
+/* --- Video Conference Grid & Tiles --- */
+.vc-grid, #video-grid {
+	--vc-min-tile: 180px; /* JS adjusts based on participant count */
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(var(--vc-min-tile), 1fr));
+	gap: 0.5rem;
+	width: 100%;
+}
+@media (max-width: 575.98px) {
+	.vc-grid, #video-grid { --vc-min-tile: 140px; }
+}
+.video-tile { aspect-ratio: 4 / 3; position: relative; background: #222; border:1px solid #000; border-radius: .375rem; overflow: hidden; }
+.video-tile video { width:100%; height:100%; object-fit: cover; display:block; background:#000; }
+.video-tile .media-badge { font-size: .55rem; letter-spacing: .5px; }
+.video-tile.speaking { box-shadow: 0 0 0 3px #0d6efd inset, 0 0 4px rgba(13,110,253,.65); }
+.video-tile.muted:not(.speaking) { filter: grayscale(.15) brightness(.85); }
+.video-tile .level-meter { position:absolute; left:3px; bottom:3px; width:6px; height:48%; background:linear-gradient(180deg,#46c3ff,#0d6efd); opacity:.85; border-radius:3px; transform-origin: bottom; transform:scaleY(0); transition: transform .12s linear; box-shadow:0 0 2px rgba(0,0,0,.6); }
+#video-grid .video-tile.spotlight { box-shadow: 0 0 0 3px var(--bs-warning, #ffc107) inset, 0 0 10px rgba(255,193,7,.6); position: relative; }
+#video-grid .video-tile.spotlight::after { content: 'Speaker'; position:absolute; top: .25rem; right: .25rem; font-size: .6rem; padding: .15rem .35rem; border-radius: .25rem; background: var(--bs-warning, #ffc107); color: #000; }
+#video-grid[data-count="1"] .video-tile { aspect-ratio: 16 / 9; }
+#video-grid[data-count="2"] .video-tile, #video-grid[data-count="3"] .video-tile { aspect-ratio: 16 / 9; }
+#video-grid[data-count="4"] .video-tile { aspect-ratio: 16 / 9; }
+/* Higher densities: square-ish */
+#video-grid[data-count="9"] .video-tile,
+#video-grid[data-count="10"] .video-tile,
+#video-grid[data-count="11"] .video-tile,
+#video-grid[data-count="12"] .video-tile { aspect-ratio: 1 / 1; }
+
+/* --- Screen Share Stage --- */
+.screen-stage { border: 1px solid rgba(0,0,0,.1); border-radius: .5rem; background: var(--bs-body-bg); padding: .5rem; margin-bottom: 1rem; }
+.screen-stage-header { margin-bottom: .5rem; }
+.screen-stage-body { position: relative; background: #000; border-radius: .375rem; min-height: 200px; max-height: 58vh; }
+.screen-stage-body video { width:100%; height:100%; object-fit: contain; display:block; background:#000; }
+.screen-stage-placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#bbb; }
+.screen-stage.ready .screen-stage-placeholder { display:none; }
+
+/* --- AI Facilitator Tile --- */
+.ai-facilitator-tile { background: radial-gradient(120px 80px at 50% 30%, rgba(13,110,253,.10), transparent 60%), #1c1f26; }
+.ai-facilitator-tile .ai-avatar { position:relative; }
+.ai-facilitator-tile .ai-wave {
+	position:absolute; left:0; right:0; bottom:0; height: 28%;
+	background: repeating-linear-gradient(90deg, rgba(13,110,253,.35) 0 6px, rgba(13,110,253,.12) 6px 12px);
+	opacity:.7; filter: blur(0.4px);
+	transform-origin: bottom; transform: scaleY(var(--ai-amp, .2));
+	transition: transform .12s linear;
+}
+.ai-facilitator-tile.speaking { box-shadow: 0 0 0 3px #0d6efd inset, 0 0 6px rgba(13,110,253,.7); }
+#vc-reconnect-badge { animation: pulse-reconnect 1.2s ease-in-out infinite; }
+@keyframes pulse-reconnect {
+	0% { transform: scale(1); opacity: 1; }
+	50% { transform: scale(1.06); opacity: .75; }
+	100% { transform: scale(1); opacity: 1; }
+}
+
+
+/* --- Report & General Utilities --- */
+.avatar-54 { width:54px; height:54px; object-fit: cover; }
+.avatar-24 { width:24px; height:24px; object-fit: cover; }
+.max-h-340 { max-height:340px; }
+.fs-08 { font-size: 0.8em !important; }
+.fs-06 { font-size: 0.6rem !important; }
+.fs-055 { font-size: 0.55rem !important; }
+.print-hidden { display: inherit; }
+@media print {
+	.print-hidden { display: none !important; }
+	.card { box-shadow: none !important; }
+}
+
+/* Fixed width utility for table columns */
+.w-30 { width: 30% !important; }
+.w-75p { width: 75% !important; }
+.w-33p { width: 33% !important; }
+.w-0p { width: 0% !important; }
+.wh-30 { width:30px !important; height:30px !important; }
+.wh-120 { width:120px !important; height:120px !important; }
+.h-300 { height:300px !important; }
+.overflow-auto { overflow:auto !important; }
+.gradient-135-blue { background: linear-gradient(135deg,#1e3c72,#2a5298); }
+.bg-eee { background: #eee !important; }
+.w-80 { width: 80% !important; }
+.w-18 { width: 18% !important; }
+.p-5px { padding: 5px !important; }
+.maxw-720 { max-width:720px !important; margin-left:auto; margin-right:auto; }
+.my-2rem { margin-top:2rem !important; margin-bottom:2rem !important; }
+.mt-1rem { margin-top:1rem !important; }
+.maxw-280 { max-width: 280px !important; }
+
+/* Unified avatar helpers to prevent distortion */
+.avatar-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar-circle { border-radius: 50%; overflow: hidden; }
+.avatar-120 { width:120px; height:120px; }
+.avatar-96 { width:96px; height:96px; }
+.avatar-28 { width:28px; height:28px; }
+.avatar-112 { width:112px; height:112px; }
+.avatar-40 { width:40px; height:40px; }
+.avatar-64 { width:64px; height:64px; }
+
+/* Fixed width utilities for plan table */
+.w-44 { width: 44px !important; }
+.w-80 { width: 80px !important; }
+.w-120 { width: 120px !important; }
+.w-160 { width: 160px !important; }
+
+
+/* --- Action Items table tweaks --- */
+#action-items-table .col-actions { white-space: nowrap; width:1%; }
+#action-items-table .btn-group { flex-wrap: nowrap; }
+#action-items-table td, #action-items-table th { vertical-align: middle; }
+#action-items-table .col-status { width: 8rem; }
+#action-items-table td:nth-child(2) .small { display:block; max-width: 60ch; }
+
+
+/* Utility min-height helpers */
+.min-h-160 { min-height: 160px; }
+
+

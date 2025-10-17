@@ -1,0 +1,716 @@
+{% extends "main_template.html" %}
+{% block title %}Create Workshop{% endblock %}
+
+{% block content %}
+<section class="py-4 bg-body-tertiary">
+  <div class="container">
+    <!-- Header + Breadcrumbs -->
+    <div class="d-flex flex-wrap justify-content-between align-items-start mb-3">
+      <div class="me-2">
+        <h1 class="h4 fw-bold mb-1 d-flex align-items-center gap-2">
+          <i class="bi bi-easel2"></i>
+          <span>Create Workshop</span>
+          {% if workspace %}
+            <span class="badge text-bg-light text-wrap d-inline-flex align-items-center gap-1"><i class="bi bi-diagram-3"></i>{{ workspace.name }}</span>
+          {% endif %}
+        </h1>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item"><a href="{{ url_for('main_bp.index') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('workshop_bp.list_workshops') }}">Workshops</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Create</li>
+          </ol>
+        </nav>
+      </div>
+      <div class="d-flex gap-2 mt-3 mt-sm-0">
+        {% if workspace %}
+          <a href="{{ url_for('workspace_bp.view_workspace', workspace_id=workspace.workspace_id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Cancel</a>
+        {% else %}
+          <a href="{{ url_for('workshop_bp.list_workshops') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Cancel</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- Main Column -->
+      <div class="col-lg-8 d-flex flex-column gap-4">
+        <!-- Core Details Card -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-clipboard-plus text-primary"></i>
+            <span class="fw-semibold">Workshop Details</span>
+          </div>
+          {% if form_data and form_data.auto_generate_agenda is not none %}
+            {% set auto_generate_checked = form_data.auto_generate_agenda %}
+          {% else %}
+            {% set auto_generate_checked = true %}
+          {% endif %}
+          <form id="workshopCreateForm" action="{% if workspace %}{{ url_for('workshop_bp.create_workshop_specific', workspace_id=workspace.workspace_id) }}{% else %}{{ url_for('workshop_bp.create_workshop_general') }}{% endif %}" method="POST" enctype="multipart/form-data" novalidate>
+            <div class="card-body">
+              {% set selected_doc_ids = form_data.linked_document_ids if form_data and form_data.linked_document_ids else [] %}
+              {% if show_workspace_select and workspaces %}
+                <div class="mb-3">
+                  <label for="workspace_id" class="form-label fw-semibold">Workspace <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-diagram-3"></i></span>
+                    <select name="workspace_id" id="workspace_id" class="form-select" required aria-describedby="workspaceHelp">
+                      <option value="" disabled selected>-- Select a Workspace --</option>
+                      {% for ws in workspaces %}
+                        <option value="{{ ws.workspace_id }}" {% if form_data and form_data.workspace_id == ws.workspace_id|string %}selected{% endif %}>{{ ws.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div id="workspaceHelp" class="form-text small text-body-secondary">Choose where this workshop will live.</div>
+                </div>
+              {% endif %}
+
+              <div class="mb-3">
+                <label for="title" class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-fonts"></i></span>
+                  <input type="text" name="title" id="title" maxlength="120" class="form-control" required placeholder="e.g. Sustainable Packaging Sprint" value="{{ form_data.title if form_data else '' }}" aria-describedby="titleHelp titleCount">
+                </div>
+                <div class="d-flex justify-content-between small mt-1">
+                  <div id="titleHelp" class="text-body-secondary">Clear, outcome‑oriented title (max 120 chars).</div>
+                  <div id="titleCount" class="text-body-secondary">0 / 120</div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="objective" class="form-label fw-semibold">Objective</label>
+                <textarea name="objective" id="objective" rows="3" maxlength="500" class="form-control" placeholder="What problem are we solving? What do we want by the end?" aria-describedby="objHelp objCount">{{ form_data.objective if form_data else '' }}</textarea>
+                <div class="d-flex justify-content-between small mt-1">
+                  <div id="objHelp" class="text-body-secondary">Concise purpose (max 500 chars). Helps generate better agenda.</div>
+                  <div id="objCount" class="text-body-secondary">0 / 500</div>
+                </div>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-sm-7">
+                  <label for="date_time" class="form-label fw-semibold">Scheduled Start <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-calendar-week"></i></span>
+                    <input type="text" name="date_time" id="date_time" class="form-control flatpickr-datetime" placeholder="YYYY-MM-DD HH:MM" value="{{ form_data.date_time if form_data else '' }}" required aria-describedby="dtHelp">
+                  </div>
+                  <div id="dtHelp" class="form-text small text-body-secondary">Local time. 24‑hour format.</div>
+                </div>
+                <div class="col-sm-5">
+                  <label for="duration" class="form-label fw-semibold">Duration (mins)</label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-stopwatch"></i></span>
+                    <input type="number" name="duration" id="duration" min="5" max="1440" step="5" class="form-control" placeholder="60" value="{{ form_data.duration if form_data else '' }}" aria-describedby="durHelp">
+                  </div>
+                  <div id="durHelp" class="form-text small text-body-secondary">Total planned runtime (optional).</div>
+                </div>
+              </div>
+
+              <div class="mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <label for="linked_document_ids" class="form-label fw-semibold mb-0">Reference Pack</label>
+                  <span class="badge text-bg-light">Optional</span>
+                </div>
+                {% if workspace_documents %}
+                  <p class="small text-body-secondary mb-2">Select any pre-processed documents to prime the AI briefing. These links sync to the agenda generator and facilitator collateral.</p>
+                  <select name="linked_document_ids" id="linked_document_ids" class="form-select" multiple size="{{ [workspace_documents|length, 6]|min if workspace_documents|length > 0 else 4 }}" aria-describedby="referenceHelp">
+                    {% for doc in workspace_documents %}
+                      {% set doc_value = doc.id|string %}
+                      <option value="{{ doc_value }}" {% if doc_value in selected_doc_ids %}selected{% endif %}
+                        data-workspace="{{ (doc.workspace_name or '')|e }}"
+                        data-description="{{ (doc.description or '')|e }}"
+                        data-file="{{ (doc.file_name or '')|e }}"
+                        data-workspace-id="{{ doc.workspace_id }}">
+                        {{ doc.title }}{% if doc.workspace_name %} · {{ doc.workspace_name }}{% endif %}
+                      </option>
+                    {% endfor %}
+                  </select>
+                  <div id="referenceHelp" class="form-text small text-body-secondary">Hold ⌘/Ctrl to select multiple. Attach 3–5 anchor docs for best results.</div>
+                  <div class="mt-3">
+                    <div class="fw-semibold small mb-2">Selected documents</div>
+                    <ul class="list-group list-group-flush small" id="selectedDocumentList">
+                      <li class="list-group-item text-body-secondary">No documents selected yet.</li>
+                    </ul>
+                  </div>
+                {% else %}
+                  <div class="alert alert-light border mb-0 small d-flex gap-2 align-items-start">
+                    <i class="bi bi-folder2-open text-primary"></i>
+                    <div>
+                      {% if workspace %}
+                        No reference files in <strong>{{ workspace.name }}</strong> yet. <a href="{{ url_for('workspace_bp.view_workspace', workspace_id=workspace.workspace_id) }}" class="link-primary">Upload a document</a> to make it available here.
+                      {% else %}
+                        Pick a workspace above to surface its document library, then re-open this section.
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endif %}
+                <div class="mt-3">
+                  <label for="referenceUploads" class="form-label fw-semibold mb-1">Upload new documents</label>
+                  <input type="file" class="form-control" id="referenceUploads" name="reference_uploads" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.md" aria-describedby="referenceUploadsHelp">
+                  <div class="d-flex justify-content-between align-items-center small mt-2 text-body-secondary">
+                    <span id="referenceUploadsHelp">Up to 10 files, 25 MB each.</span>
+                    <span>Pending uploads: <strong id="referenceUploadsCount">0</strong></span>
+                  </div>
+                  <ul class="list-group list-group-flush small mt-2" id="referenceUploadsPreview">
+                    <li class="list-group-item text-body-secondary">No pending uploads.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="mt-4">
+                <label for="agenda" class="form-label fw-semibold d-flex justify-content-between align-items-center">Agenda <span class="badge text-bg-light">Markdown</span></label>
+                <textarea name="agenda" id="agenda" rows="6" class="form-control" maxlength="2000" placeholder="Introduction and Warm‑Up\nBrainstorming\nClustering & Voting\nFeasibility Assessment\nSummary & Closing" aria-describedby="agendaHelp agendaCount">{{ form_data.agenda if form_data else '' }}</textarea>
+                <div class="d-flex justify-content-between small mt-1">
+                  <div id="agendaHelp" class="text-body-secondary">One activity per line. You can refine later in the lobby.</div>
+                  <div id="agendaCount" class="text-body-secondary">0 / 2000</div>
+                </div>
+                <div class="mt-2 d-flex flex-wrap gap-2">
+                  <button type="button" class="btn btn-sm btn-outline-primary" id="insertDefaultAgenda"><i class="bi bi-magic"></i> Quick Insert</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" id="clearAgenda"><i class="bi bi-eraser"></i> Clear</button>
+                </div>
+
+                <div class="mt-3 border rounded-3 p-3 bg-body-tertiary">
+                  <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-3">
+                    <div class="form-check form-switch m-0">
+                      <input class="form-check-input" type="checkbox" role="switch" id="autoGenerateSwitch" name="auto_generate_agenda" value="on" {% if auto_generate_checked %}checked{% endif %}>
+                      <label class="form-check-label fw-semibold" for="autoGenerateSwitch">Let BrainStorm X structure this agenda</label>
+                    </div>
+                    <div class="text-body-secondary small" id="autoGenerateHelp">AI segments your draft into timed phases with facilitator collateral right away.</div>
+                  </div>
+                  <div class="alert alert-warning mt-3 mb-0 small d-none" id="autoGenerateNotice"><i class="bi bi-pencil-square"></i> We'll save your draft exactly as typed. You can switch on auto-structure later from the workshop plan.</div>
+                </div>
+
+                <!-- Lightweight Agenda Preview (client-side only) -->
+                <div class="card mt-3 shadow-sm border-0">
+                  <div class="card-header bg-transparent py-2 d-flex align-items-center gap-2">
+                    <i class="bi bi-list-ol text-primary"></i>
+                    <span class="fw-semibold">Agenda Preview</span>
+                  </div>
+                  <div class="card-body small">
+                    <ol id="agendaPreviewList" class="list-group list-group-numbered">
+                      <li class="list-group-item text-body-secondary">Start typing above to see items…</li>
+                    </ol>
+                    <div class="text-end text-body-secondary mt-2">Total items: <span id="agendaPreviewCount">0</span></div>
+                  </div>
+                  <div class="card-footer bg-body-tertiary small text-body-secondary">Raw text is submitted; detailed editing available after creation.</div>
+                </div>
+              </div>
+
+              <div class="submission-progress alert alert-secondary bg-body-tertiary border-0 d-none" id="submissionProgress" role="status">
+                <div class="d-flex flex-column flex-md-row align-items-md-center gap-3">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="spinner-border spinner-border-sm text-primary flex-shrink-0" id="submissionProgressSpinner" aria-hidden="true"></span>
+                    <div>
+                      <div class="fw-semibold" id="submissionProgressTitle">Preparing agenda intelligence…</div>
+                      <div class="small text-body-secondary" id="submissionProgressDetail">We’re organizing your agenda and attachments.</div>
+                    </div>
+                  </div>
+                  <div class="flex-grow-1 w-100">
+                    <div class="progress" id="submissionProgressTrack">
+                      <div class="progress-bar bg-primary" id="submissionProgressBar" role="progressbar" aria-label="Agenda preparation progress" aria-valuenow="12" aria-valuemin="0" aria-valuemax="100" data-initial-progress="12"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="border-top mt-4 pt-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="small text-body-secondary d-flex align-items-center gap-2">
+                  <i class="bi bi-shield-check text-success"></i>
+                  <span>Organizer becomes first participant automatically.</span>
+                </div>
+                <div class="d-flex gap-2">
+                  {% if workspace %}
+                    <a href="{{ url_for('workspace_bp.view_workspace', workspace_id=workspace.workspace_id) }}" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Cancel</a>
+                  {% else %}
+                    <a href="{{ url_for('workshop_bp.list_workshops') }}" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Cancel</a>
+                  {% endif %}
+                  <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-2" id="createWorkshopSubmit">
+                    <span class="spinner-border spinner-border-sm flex-shrink-0 d-none" role="status" aria-hidden="true" id="createWorkshopSpinner"></span>
+                    <span class="d-inline-flex align-items-center gap-2" id="createWorkshopSubmitContent">
+                      <i class="bi bi-check2-circle"></i>
+                      <span id="createWorkshopSubmitLabel">Create Workshop</span>
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Guidance Card (optional second card for context) -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-lightning-charge text-warning"></i>
+            <span class="fw-semibold">Phase Blueprint</span>
+          </div>
+          <div class="card-body small text-body-secondary">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="border rounded p-3 h-100 bg-light-subtle">
+                  <div class="fw-semibold mb-1 d-flex align-items-center gap-1"><i class="bi bi-graph-up text-primary"></i> Diverge</div>
+                  <p class="mb-2">Generate a broad set of ideas. Encourage volume first, filtering later.</p>
+                  <ul class="ps-3 mb-0 small">
+                    <li>Warm‑up prompt</li>
+                    <li>Timed idea bursts</li>
+                    <li>Silent capture</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="border rounded p-3 h-100 bg-light-subtle">
+                  <div class="fw-semibold mb-1 d-flex align-items-center gap-1"><i class="bi bi-funnel text-primary"></i> Converge</div>
+                  <p class="mb-2">Cluster, vote, assess feasibility, and converge on high‑potential options.</p>
+                  <ul class="ps-3 mb-0 small">
+                    <li>Affinity grouping</li>
+                    <li>Dot voting</li>
+                    <li>Impact / effort scan</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div class="alert alert-light border mt-3 mb-0"><i class="bi bi-info-circle"></i> The platform auto‑structures tasks, but a clear agenda improves AI guidance.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side Column -->
+      <div class="col-lg-4 d-flex flex-column gap-4">
+        <!-- Tips -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-lightbulb text-warning"></i>
+            <span class="fw-semibold">Facilitation Tips</span>
+          </div>
+          <div class="card-body small">
+            <ul class="list-unstyled mb-0 lh-sm">
+              <li class="mb-2"><i class="bi bi-check2-circle text-success"></i> Use verbs: “Ideate”, “Refine”, “Prioritize”.</li>
+              <li class="mb-2"><i class="bi bi-check2-circle text-success"></i> Keep objective outcome‑based.</li>
+              <li class="mb-2"><i class="bi bi-check2-circle text-success"></i> Add constraints to focus creativity.</li>
+              <li><i class="bi bi-check2-circle text-success"></i> Draft agenda now, polish in lobby.</li>
+            </ul>
+          </div>
+        </div>
+        <!-- Participation & Roles -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-people text-primary"></i>
+            <span class="fw-semibold">Roles & Access</span>
+          </div>
+          <div class="card-body small text-body-secondary">
+            <p class="mb-2">After creation you can:</p>
+            <ul class="ps-3 mb-2">
+              <li>Invite workspace members</li>
+              <li>Pre-link reference documents now or add more later</li>
+              <li>Regenerate agenda, rules & icebreaker</li>
+              <li>Start when participants arrive</li>
+            </ul>
+            <p class="mb-0">Only the organizer can edit schedule or start tasks.</p>
+          </div>
+        </div>
+        <!-- Privacy Note (contextual if workspace exists) -->
+        {% if workspace %}
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-shield-lock text-secondary"></i>
+            <span class="fw-semibold">Workspace Context</span>
+          </div>
+          <div class="card-body small text-body-secondary">
+            <p class="mb-2">This workshop inherits visibility & member access from <strong>{{ workspace.name }}</strong>.</p>
+            <ul class="ps-3 mb-2">
+              <li>Only active members can be invited</li>
+              <li>Linked documents must belong to this workspace</li>
+              <li>Ownership: organizer + workspace admins</li>
+            </ul>
+            <p class="mb-0">Change members or privacy in the workspace settings.</p>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Flatpickr init (guarded)
+      if (typeof flatpickr !== 'undefined') {
+        flatpickr('.flatpickr-datetime', {
+          enableTime: true,
+          dateFormat: 'Y-m-d H:i',
+          time_24hr: true,
+          minuteIncrement: 5
+        });
+      }
+
+      // Character counters
+      const counters = [
+        { id: 'title', max: 120, countId: 'titleCount' },
+        { id: 'objective', max: 500, countId: 'objCount' },
+        { id: 'agenda', max: 2000, countId: 'agendaCount' }
+      ];
+      counters.forEach(c => {
+        const el = document.getElementById(c.id);
+        const counter = document.getElementById(c.countId);
+        if (!el || !counter) return;
+        const update = () => { counter.textContent = `${el.value.length} / ${c.max}`; };
+        el.addEventListener('input', update); update();
+      });
+
+      // Agenda helpers
+      const quickBtn = document.getElementById('insertDefaultAgenda');
+      const clearBtn = document.getElementById('clearAgenda');
+      const agendaField = document.getElementById('agenda');
+      if (quickBtn && agendaField) {
+        quickBtn.addEventListener('click', () => {
+          if (!agendaField.value.trim()) {
+            agendaField.value = `Introduction & Warm‑Up\nDiverged Ideation (Timed)\nClustering & Dot Voting\nFeasibility Analysis\nShortlisting Ideas\nAction Planning\nDiscussion & Decisions\nSummary & Closing`;
+          } else {
+            agendaField.value += `\nDiverged Ideation (Timed)\nClustering & Dot Voting\nFeasibility Scan\nShortlisting\nAction Planning\nDiscussion & Decisions\nSummary & Closing`;
+          }
+          agendaField.dispatchEvent(new Event('input'));
+        });
+      }
+      if (clearBtn && agendaField) {
+        clearBtn.addEventListener('click', () => {
+          if (confirm('Clear agenda content?')) { agendaField.value=''; agendaField.dispatchEvent(new Event('input')); }
+        });
+      }
+
+      // Agenda live preview (client-side only)
+      (function(){
+        const field = document.getElementById('agenda');
+        const list  = document.getElementById('agendaPreviewList');
+        const cnt   = document.getElementById('agendaPreviewCount');
+        function render(){
+          if (!field || !list) return;
+          const lines = (field.value || '').split('\n').map(l=>l.trim()).filter(Boolean);
+          if (!lines.length){ list.innerHTML = '<li class="list-group-item text-body-secondary">Start typing above to see items…</li>'; if (cnt) cnt.textContent='0'; return; }
+          list.innerHTML = '';
+          for (const t of lines){ const li = document.createElement('li'); li.className='list-group-item'; li.textContent=t; list.appendChild(li); }
+          if (cnt) cnt.textContent = String(lines.length);
+        }
+        field && field.addEventListener('input', render);
+        render();
+      })();
+
+      // Dev Autofill (toggle via console: toggleWorkshopCreateAutoFill(false))
+      const title = document.getElementById('title');
+      const objective = document.getElementById('objective');
+      const dt = document.getElementById('date_time');
+      const dur = document.getElementById('duration');
+      const agenda = document.getElementById('agenda');
+      const wsSelect = document.getElementById('workspace_id');
+
+      function applyAutoFill(){
+        if (localStorage.getItem('autoFillWorkshopCreate') !== 'true') return;
+        if (wsSelect && !wsSelect.value) {
+          const opt = wsSelect.querySelector('option:not([disabled])');
+            if (opt) wsSelect.value = opt.value;
+        }
+        if (title && !title.value) title.value = 'Responsible AI for SMBs';
+        if (objective && !objective.value) objective.value = 'Identify practical governance, risk, and compliance patterns to deploy AI responsibly in small and mid-sized businesses.';
+        if (dt && !dt.value) {
+          const now = new Date(); now.setDate(now.getDate()+5); now.setHours(10,0,0,0);
+          const y = now.getFullYear(); const m = String(now.getMonth()+1).padStart(2,'0'); const d = String(now.getDate()).padStart(2,'0'); const hh = String(now.getHours()).padStart(2,'0'); const mm = String(now.getMinutes()).padStart(2,'0');
+          dt.value = `${y}-${m}-${d} ${hh}:${mm}`;
+          if (dt._flatpickr) dt._flatpickr.setDate(dt.value, false);
+        }
+        if (dur && !dur.value) dur.value = 90;
+        if (agenda && !agenda.value) agenda.value = 'Context and Objectives\nRisks & Mitigations Ideation\nClustering Policy Themes\nVoting: High Impact Practices\nHigh-Level Solution Concepting\nAction Plan Roadmap\nWrap-Up & Follow-Up Plan';
+        counters.forEach(c=>{ const counter = document.getElementById(c.countId); const el = document.getElementById(c.id); if (el && counter) counter.textContent = `${el.value.length} / ${c.max}`; });
+      }
+      if (localStorage.getItem('autoFillWorkshopCreate') === null) localStorage.setItem('autoFillWorkshopCreate','false');
+      //applyAutoFill();
+      window.toggleWorkshopCreateAutoFill = (enable) => { localStorage.setItem('autoFillWorkshopCreate', enable?'false':'false'); };
+
+      const referenceUploadsInput = document.getElementById('referenceUploads');
+      const referenceUploadsPreview = document.getElementById('referenceUploadsPreview');
+      const referenceUploadsCount = document.getElementById('referenceUploadsCount');
+      const referenceUploadsHelp = document.getElementById('referenceUploadsHelp');
+
+      const formatBytes = (bytes) => {
+        if (!Number.isFinite(bytes) || bytes <= 0) return '';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let size = bytes;
+        let idx = 0;
+        while (size >= 1024 && idx < units.length - 1) {
+          size /= 1024;
+          idx += 1;
+        }
+        const rounded = size >= 100 ? size.toFixed(0) : size >= 10 ? size.toFixed(1) : size.toFixed(2);
+        return `${rounded.replace(/\.00?$/, '')} ${units[idx]}`;
+      };
+
+      const renderUploadsPreview = () => {
+        if (!referenceUploadsInput || !referenceUploadsPreview) return;
+        const files = referenceUploadsInput.files ? Array.from(referenceUploadsInput.files) : [];
+        const limited = files.slice(0, 10);
+        const excess = files.length - limited.length;
+        if (referenceUploadsCount) referenceUploadsCount.textContent = String(limited.length);
+        if (!files.length) {
+          referenceUploadsPreview.innerHTML = '<li class="list-group-item text-body-secondary">No pending uploads.</li>';
+          if (referenceUploadsHelp) referenceUploadsHelp.textContent = 'Up to 10 files, 25 MB each.';
+          return;
+        }
+        referenceUploadsPreview.innerHTML = '';
+        let cumulative = 0;
+        limited.forEach((file) => {
+          cumulative += file.size || 0;
+          const li = document.createElement('li');
+          li.className = 'list-group-item d-flex justify-content-between align-items-start gap-3 flex-wrap';
+
+          const meta = document.createElement('div');
+          meta.className = 'd-flex align-items-start gap-2';
+          const icon = document.createElement('i');
+          icon.className = 'bi bi-upload text-success-emphasis mt-1';
+          meta.appendChild(icon);
+          const details = document.createElement('div');
+          const name = document.createElement('div');
+          name.className = 'fw-semibold';
+          name.textContent = file.name;
+          details.appendChild(name);
+          if (file.type) {
+            const type = document.createElement('div');
+            type.className = 'text-body-secondary small';
+            type.textContent = file.type;
+            details.appendChild(type);
+          }
+          meta.appendChild(details);
+          li.appendChild(meta);
+
+          const size = document.createElement('div');
+          size.className = 'text-body-secondary small text-nowrap';
+          size.textContent = formatBytes(file.size || 0);
+          li.appendChild(size);
+
+          referenceUploadsPreview.appendChild(li);
+        });
+        if (referenceUploadsHelp) {
+          const total = formatBytes(cumulative);
+          const base = total ? `Up to 10 files, 25 MB each. Selected total: ${total}.` : 'Up to 10 files, 25 MB each.';
+          referenceUploadsHelp.textContent = excess > 0 ? `${base} Only the first 10 files will be staged.` : base;
+        }
+      };
+
+      if (referenceUploadsInput) {
+        referenceUploadsInput.addEventListener('change', renderUploadsPreview);
+        renderUploadsPreview();
+      }
+
+      const referenceSelect = document.getElementById('linked_document_ids');
+      const referenceList = document.getElementById('selectedDocumentList');
+      const renderReferencePreview = () => {
+        if (!referenceSelect || !referenceList) return;
+        const selected = Array.from(referenceSelect.selectedOptions || []);
+        if (!selected.length) {
+          referenceList.innerHTML = '<li class="list-group-item text-body-secondary">No documents selected yet.</li>';
+          return;
+        }
+        referenceList.innerHTML = '';
+        selected.forEach(option => {
+          const li = document.createElement('li');
+          li.className = 'list-group-item py-2';
+
+          const header = document.createElement('div');
+          header.className = 'fw-semibold d-flex align-items-center gap-2';
+          const icon = document.createElement('i');
+          icon.className = 'bi bi-file-earmark-text text-primary';
+          header.appendChild(icon);
+          const titleSpan = document.createElement('span');
+          titleSpan.textContent = option.textContent.trim();
+          header.appendChild(titleSpan);
+          li.appendChild(header);
+
+          const workspaceLabel = option.getAttribute('data-workspace');
+          if (workspaceLabel) {
+            const workspaceRow = document.createElement('div');
+            workspaceRow.className = 'text-body-secondary small';
+            workspaceRow.textContent = workspaceLabel;
+            li.appendChild(workspaceRow);
+          }
+
+          const fileName = option.getAttribute('data-file');
+          if (fileName) {
+            const fileRow = document.createElement('div');
+            fileRow.className = 'text-body-secondary small';
+            fileRow.textContent = fileName;
+            li.appendChild(fileRow);
+          }
+
+          const description = option.getAttribute('data-description');
+          if (description) {
+            const descRow = document.createElement('div');
+            descRow.className = 'text-body-secondary small mt-1';
+            const trimmed = description.length > 180 ? `${description.slice(0, 177)}…` : description;
+            descRow.textContent = trimmed;
+            li.appendChild(descRow);
+          }
+
+          referenceList.appendChild(li);
+        });
+      };
+      if (referenceSelect && referenceList) {
+        referenceSelect.addEventListener('change', renderReferencePreview);
+        renderReferencePreview();
+      }
+
+      const filterDocsForWorkspace = () => {
+        if (!referenceSelect) return;
+        const workspaceId = wsSelect && wsSelect.value ? wsSelect.value : '';
+        let visibleCount = 0;
+        Array.from(referenceSelect.options || []).forEach(option => {
+          const optionWorkspaceId = option.getAttribute('data-workspace-id') || '';
+          const matches = !workspaceId || optionWorkspaceId === workspaceId;
+          option.hidden = !matches;
+          option.disabled = !matches;
+          if (!matches && option.selected) {
+            option.selected = false;
+          }
+          if (matches) {
+            visibleCount += 1;
+          }
+        });
+        if (visibleCount > 0) {
+          referenceSelect.size = Math.min(Math.max(visibleCount, 4), 6);
+        }
+        renderReferencePreview();
+      };
+
+      if (wsSelect && referenceSelect) {
+        wsSelect.addEventListener('change', filterDocsForWorkspace);
+        filterDocsForWorkspace();
+      }
+
+      const autoSwitch = document.getElementById('autoGenerateSwitch');
+      const autoNotice = document.getElementById('autoGenerateNotice');
+      const autoHelp = document.getElementById('autoGenerateHelp');
+      const updateAutoNotice = () => {
+        if (!autoNotice) return;
+        if (autoSwitch && autoSwitch.checked) {
+          autoNotice.classList.add('d-none');
+          if (autoHelp) autoHelp.textContent = 'AI segments your draft into timed phases with facilitator collateral right away.';
+        } else {
+          autoNotice.classList.remove('d-none');
+          if (autoHelp) autoHelp.textContent = 'Keep this off to store the agenda exactly as typed—regenerate later whenever you are ready.';
+        }
+      };
+      if (autoSwitch) {
+        updateAutoNotice();
+        autoSwitch.addEventListener('change', updateAutoNotice);
+      }
+
+      const submissionProgress = document.getElementById('submissionProgress');
+      const submissionProgressBar = document.getElementById('submissionProgressBar');
+      const submissionProgressTitle = document.getElementById('submissionProgressTitle');
+      const submissionProgressDetail = document.getElementById('submissionProgressDetail');
+      const submissionProgressSpinner = document.getElementById('submissionProgressSpinner');
+      const initialProgress = submissionProgressBar ? Number(submissionProgressBar.dataset.initialProgress || '12') : 12;
+      let submissionProgressTimer = null;
+      let submissionProgressValue = initialProgress;
+
+      const ensureToastContainer = () => {
+        let area = document.getElementById('notification-area');
+        if (!area) {
+          area = document.createElement('div');
+          area.id = 'notification-area';
+          area.className = 'toast-container position-fixed top-0 end-0 p-3 mt-5 z-3';
+          document.body.appendChild(area);
+        }
+        return area;
+      };
+
+      const showInlineToast = (message, tone = 'primary') => {
+        if (!message) return;
+        const allowed = new Set(['primary', 'success', 'info', 'warning', 'danger', 'secondary']);
+        const color = allowed.has(tone) ? tone : 'secondary';
+        const area = ensureToastContainer();
+        const toast = document.createElement('div');
+        toast.className = `toast text-bg-${color} border-0 shadow-sm`;
+        toast.setAttribute('role', 'status');
+        toast.innerHTML = `
+          <div class="d-flex align-items-start">
+            <div class="toast-body small">${message}</div>
+            <button type="button" class="btn-close btn-close-white ms-2 m-1" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>`;
+        area.appendChild(toast);
+        if (window.bootstrap && window.bootstrap.Toast) {
+          const toastObj = new window.bootstrap.Toast(toast, { delay: 5200, autohide: true });
+          toastObj.show();
+          toast.addEventListener('hidden.bs.toast', () => toast.remove());
+        } else {
+          toast.classList.add('show');
+        }
+      };
+
+      const setSubmissionProgress = (value) => {
+        if (!submissionProgressBar) return;
+        submissionProgressValue = Math.max(0, Math.min(100, value));
+        submissionProgressBar.style.width = `${submissionProgressValue}%`;
+        submissionProgressBar.setAttribute('aria-valuenow', submissionProgressValue.toFixed(0));
+      };
+
+      const startSubmissionProgress = (mode) => {
+        if (!submissionProgress) return;
+        submissionProgress.classList.remove('d-none');
+        if (submissionProgressSpinner) submissionProgressSpinner.removeAttribute('hidden');
+        const autoMode = mode === 'auto';
+        if (submissionProgressTitle) {
+          submissionProgressTitle.textContent = autoMode ? 'Structuring your agenda with AI…' : 'Saving your agenda draft…';
+        }
+        if (submissionProgressDetail) {
+          submissionProgressDetail.textContent = autoMode ? 'Generating timed phases, facilitator collateral, and syncing attachments.' : 'Capturing your exact agenda text and references. Redirecting shortly.';
+        }
+        setSubmissionProgress(initialProgress || (autoMode ? 18 : 30));
+        if (submissionProgressTimer) {
+          window.clearInterval(submissionProgressTimer);
+        }
+        submissionProgressTimer = window.setInterval(() => {
+          const increment = autoMode ? (Math.random() * 8 + 4) : (Math.random() * 6 + 3);
+          const next = submissionProgressValue + increment;
+          if (next >= 96) {
+            window.clearInterval(submissionProgressTimer);
+            setSubmissionProgress(96);
+          } else {
+            setSubmissionProgress(next);
+          }
+        }, 1300);
+      };
+
+      window.addEventListener('beforeunload', () => {
+        if (submissionProgressTimer) {
+          window.clearInterval(submissionProgressTimer);
+        }
+      });
+
+      if (submissionProgressBar && initialProgress) {
+        setSubmissionProgress(initialProgress);
+      }
+
+      const createForm = document.getElementById('workshopCreateForm');
+      if (createForm) {
+        const submitBtn = document.getElementById('createWorkshopSubmit');
+        const submitLabel = document.getElementById('createWorkshopSubmitLabel');
+        const submitSpinner = document.getElementById('createWorkshopSpinner');
+        createForm.addEventListener('submit', () => {
+          if (submitBtn) {
+            submitBtn.classList.add('disabled');
+            submitBtn.setAttribute('aria-disabled', 'true');
+          }
+          if (submitSpinner) submitSpinner.classList.remove('d-none');
+          if (submitLabel) submitLabel.textContent = 'Creating…';
+          const mode = (autoSwitch && autoSwitch.checked) ? 'auto' : 'manual';
+          startSubmissionProgress(mode);
+          const toastMsg = mode === 'auto'
+            ? 'Structuring your agenda with Bedrock Nova — we\'ll redirect you when everything is synced.'
+            : 'Saving your agenda draft exactly as typed. Redirecting to your new workshop.';
+          showInlineToast(toastMsg, mode === 'auto' ? 'primary' : 'secondary');
+          if (referenceUploadsInput && referenceUploadsInput.files && referenceUploadsInput.files.length > 0) {
+            showInlineToast(`Uploading ${referenceUploadsInput.files.length} reference file${referenceUploadsInput.files.length > 1 ? 's' : ''} for enrichment.`, 'info');
+          }
+        }, { once: true });
+      }
+    });
+  </script>
+{% endblock %}
+

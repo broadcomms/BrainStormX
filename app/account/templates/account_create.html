@@ -1,0 +1,317 @@
+<!-- app/account/templates/account_create.html -->
+{% extends "main_template.html" %}
+{% block title %}Registration{% endblock %}
+
+{% block content %}
+<section class="py-5 bg-body-tertiary">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-xxl-8 col-xl-9 col-lg-10">
+
+        <!-- Shell -->
+        <div class="row g-0 shadow-lg rounded-3 overflow-hidden">
+          <!-- Left: Brand/value -->
+          <div class="col-lg-5 d-none d-lg-block bg-primary text-white p-4 p-xl-5">
+           
+
+            <p class="mb-4 h2">Create your workspace and start running AI-powered innovation workshops.</p>
+
+            <div class="mb-3">
+              <div class="progress" role="progressbar" aria-label="Onboarding progress" aria-valuenow="33" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar bg-light text-primary fw-semibold w-33p">Step 1 of 3</div>
+              </div>
+            </div>
+
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item bg-transparent text-white-50 border-0 ps-0 d-flex align-items-start">
+                <i class="bi bi-people-fill me-2 text-white"></i>
+                <div>
+                  <div class="fw-semibold text-white">Inclusive by default</div>
+                  <small>Structured capture, clustering & dot-voting for every voice.</small>
+                </div>
+              </li>
+              <li class="list-group-item bg-transparent text-white-50 border-0 ps-0 d-flex align-items-start">
+                <i class="bi bi-clipboard2-check me-2 text-white"></i>
+                <div>
+                  <div class="fw-semibold text-white">Action out of the box</div>
+                  <small>Feasibility scoring & auto-generated action items.</small>
+                </div>
+              </li>
+              <li class="list-group-item bg-transparent text-white-50 border-0 ps-0 d-flex align-items-start">
+                <i class="bi bi-shield-lock me-2 text-white"></i>
+                <div>
+                  <div class="fw-semibold text-white">Enterprise-ready</div>
+                  <small>Security-first workflows powered by AWS Bedrock (Nova).</small>
+                </div>
+              </li>
+            </ul>
+
+            <div class="mt-4 d-flex flex-wrap gap-2">
+              <span class="badge text-bg-light text-primary">Product Teams</span>
+              <span class="badge text-bg-light text-primary">Consultancies</span>
+              <span class="badge text-bg-light text-primary">Innovation Leaders</span>
+            </div>
+          </div>
+
+          <!-- Right: Registration form -->
+          <div class="col-lg-7 bg-white p-4 p-xl-5">
+            <div class="mb-3">
+              <h2 class="h4 fw-bold mb-1"><i class="bi bi-person-plus-fill me-2"></i>Create your account</h2>
+              <p class="text-body-secondary mb-0">Free to start. No credit card required.</p>
+            </div>
+
+            <form class="needs-validation" novalidate method="POST" action="{{ url_for('auth_bp.register') }}">
+              <!-- Email -->
+              <div class="mb-3">
+                <label for="email" class="form-label">Work email</label>
+                <div class="input-group">
+                  <span class="input-group-text" id="email-addon"><i class="bi bi-envelope"></i></span>
+                  <input
+                    type="email"
+                    class="form-control"
+                    id="email"
+                    name="email"
+                    aria-describedby="email-addon emailHelp"
+                    autocomplete="email"
+                    placeholder="you@company.com"
+                    required
+                  >
+                  <div class="invalid-feedback">Please enter a valid work email.</div>
+                </div>
+                <div id="emailHelp" class="form-text">We’ll use this to connect you to your team workspace.</div>
+              </div>
+
+              <!-- Password + strength -->
+              <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <div class="input-group">
+                  <span class="input-group-text" id="password-addon"><i class="bi bi-shield-lock"></i></span>
+                  <input
+                    type="password"
+                    class="form-control"
+                    id="password"
+                    name="password"
+                    maxlength="72"
+                    minlength="8"
+                    aria-describedby="password-addon passwordHelp"
+                    autocomplete="new-password"
+                    placeholder="Create a strong password"
+                    required
+                  >
+                  <button class="btn btn-outline-secondary" type="button" id="togglePassword" aria-label="Show password">
+                    <i class="bi bi-eye" aria-hidden="true"></i>
+                  </button>
+                  <div class="invalid-feedback">Please create a password.</div>
+                </div>
+                <div class="small text-body-secondary mt-2" id="passwordHelp">
+                  Use 8-72 characters with a mix of letters, numbers, and symbols.
+                </div>
+                <div class="mt-2">
+                  <div class="progress" aria-label="Password strength">
+                    <div id="pwBar" class="progress-bar w-0p"></div>
+                  </div>
+                  <div class="d-flex justify-content-between small mt-1">
+                    <span class="text-body-secondary">Strength</span>
+                    <span id="pwLabel" class="fw-semibold">–</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Name -->
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="first_name" class="form-label">First name</label>
+                    <div class="input-group">
+                      <span class="input-group-text"><i class="bi bi-person"></i></span>
+                      <input type="text" class="form-control" id="first_name" name="first_name" autocomplete="given-name" placeholder="Alex">
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="last_name" class="form-label">Last name</label>
+                    <div class="input-group">
+                      <span class="input-group-text"><i class="bi bi-person"></i></span>
+                      <input type="text" class="form-control" id="last_name" name="last_name" autocomplete="family-name" placeholder="Morgan">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Role / Org / Phone -->
+              <div class="mb-3">
+                <label for="job_title" class="form-label">Job title</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-briefcase"></i></span>
+                  <input type="text" class="form-control" id="job_title" name="job_title" placeholder="Product Manager">
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="organization" class="form-label">Organization</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-building"></i></span>
+                  <input type="text" class="form-control" id="organization" name="organization" autocomplete="organization" placeholder="Acme Inc.">
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="phone_number" class="form-label">Phone number (optional)</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                  <input type="tel" class="form-control" id="phone_number" name="phone_number" autocomplete="tel" placeholder="+1 (555) 123-4567">
+                </div>
+              </div>
+
+              <!-- Team size (nice hint for ICP) -->
+              <div class="mb-3">
+                <label for="team_size" class="form-label">Team size</label>
+                <select class="form-select" id="team_size" name="team_size" aria-label="Team size">
+                  <option selected disabled value="">Choose...</option>
+                  <option>5–10</option>
+                  <option>10–25</option>
+                  <option>25–50</option>
+                  <option>50+</option>
+                </select>
+              </div>
+
+              <!-- Terms + updates -->
+              <div class="mb-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" value="1" id="terms" required>
+                  <label class="form-check-label" for="terms">
+                    I agree to the <a href="#" class="link-primary">Terms</a> and <a href="#" class="link-primary">Privacy Policy</a>.
+                  </label>
+                  <div class="invalid-feedback">You must agree before registering.</div>
+                </div>
+                <div class="form-check mt-2">
+                  <input class="form-check-input" type="checkbox" value="1" id="updates" name="updates">
+                  <label class="form-check-label" for="updates">
+                    Send me product updates and workshop tips.
+                  </label>
+                </div>
+              </div>
+
+              <!-- Submit -->
+              <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary py-2">
+                  <i class="bi bi-person-plus-fill me-1"></i>Create account
+                </button>
+              </div>
+
+              <!-- Switch -->
+              <div class="text-center mt-4">
+                <small class="text-body-secondary">Already have an account?</small>
+                <a class="ms-1" href="{{ url_for('auth_bp.login') }}">Sign in</a>
+              </div>
+            </form>
+
+            <!-- Social proof -->
+            <div class="mt-4 text-center">
+              <small class="text-body-secondary">Trusted by modern product & innovation teams.</small>
+              <div class="d-flex justify-content-center align-items-center gap-2 mt-2">
+                <span class="badge text-bg-light"><i class="bi bi-people-fill me-1"></i> 50+ teams</span>
+                <span class="badge text-bg-light"><i class="bi bi-speedometer2 me-1"></i> 40% faster</span>
+                <span class="badge text-bg-light"><i class="bi bi-check2-circle me-1"></i> Action-ready</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <!-- /Shell -->
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Validation + Password strength + Password toggle + (Dev-only) Auto-fill -->
+<script>
+  // Bootstrap validation
+  (function () {
+    'use strict';
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms).forEach(function (form) {
+      form.addEventListener('submit', function (event) {
+        if (!form.checkValidity()) { event.preventDefault(); event.stopPropagation(); }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  })();
+
+  // Password visibility toggle
+  (function () {
+    const btn = document.getElementById('togglePassword');
+    const input = document.getElementById('password');
+    if (btn && input) {
+      btn.addEventListener('click', function () {
+        const isText = input.getAttribute('type') === 'text';
+        input.setAttribute('type', isText ? 'password' : 'text');
+        const icon = this.querySelector('i');
+        if (icon) { icon.classList.toggle('bi-eye'); icon.classList.toggle('bi-eye-slash'); }
+        this.setAttribute('aria-label', isText ? 'Show password' : 'Hide password');
+      });
+    }
+  })();
+
+  // Simple password strength meter (length + variety)
+  (function () {
+    const pw = document.getElementById('password');
+    const bar = document.getElementById('pwBar');
+    const label = document.getElementById('pwLabel');
+
+    function strengthScore(v) {
+      let s = 0;
+      if (!v) return 0;
+      if (v.length >= 8) s += 1;
+      if (/[A-Z]/.test(v)) s += 1;
+      if (/\d/.test(v)) s += 1;
+      if (/[^A-Za-z0-9]/.test(v)) s += 1;
+      return s; // 0..4
+    }
+
+    function update(v) {
+      const s = strengthScore(v);
+      const pct = [0, 25, 50, 75, 100][s];
+      const classes = ['bg-danger','bg-warning','bg-info','bg-primary','bg-success'];
+      bar.className = 'progress-bar ' + classes[s]; // replace classes
+      bar.style.width = pct + '%';
+      label.textContent = ['Weak','Weak','Fair','Good','Strong'][s];
+    }
+
+    if (pw && bar && label) {
+      pw.addEventListener('input', () => update(pw.value));
+      update(pw.value);
+    }
+  })();
+
+  // DEBUG SCRIPT — dev only; remove for production
+  document.addEventListener('DOMContentLoaded', function () {
+    // Enable/disable via console: toggleAutoFillRegistration(true|false)
+    window.toggleAutoFillRegistration = function (enable) {
+      localStorage.setItem('autoFillRegistration', enable ? 'true' : 'false');
+      applyAutoFill();
+    };
+
+    function applyAutoFill() {
+      const enabled = localStorage.getItem('autoFillRegistration') === 'true';
+      if (!enabled) return;
+  const q = s => document.querySelector(s);
+  const _email = q('input[name="email"]'); if (_email) _email.value = 'patrick@broadcomms.net';
+  const _pw = q('input[name="password"]'); if (_pw) _pw.value = 'Secret123!';
+  const _fn = q('input[name="first_name"]'); if (_fn) _fn.value = 'Patrick';
+  const _ln = q('input[name="last_name"]'); if (_ln) _ln.value = 'Ejelle-Ndille';
+  const _jt = q('input[name="job_title"]'); if (_jt) _jt.value = 'Developer';
+  const _org = q('input[name="organization"]'); if (_org) _org.value = 'BroadComms';
+  const _ph = q('input[name="phone_number"]'); if (_ph) _ph.value = '+1 (444) 999-5555';
+  const _team = document.getElementById('team_size'); if (_team) _team.selectedIndex = 1;
+  const _terms = document.getElementById('terms'); if (_terms) _terms.checked = true;
+    }
+    applyAutoFill();
+    // Development default (comment out in prod)
+    toggleAutoFillRegistration(false);
+    //console.log('Registration auto-fill ready: toggleAutoFillRegistration(true|false)');
+  });
+</script>
+{% endblock %}

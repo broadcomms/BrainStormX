@@ -1,0 +1,16 @@
+<div class="mt-auto pt-2 border-top"> {# Aligns tip at the bottom #}
+    <h6 class="mb-2">Tip</h6>
+    {# Add ID to the content div #}
+    <small class="fst-italic" id="ai-tip-content">{{ ai_tip|safe or "Preparing a quick brainstorming tip…" }}</small>
+     {# Add controls for organizer #}
+    {% if user_is_organizer %}
+    <div class="text-end mt-2">
+      <button class="btn btn-sm btn-outline-primary me-1 regenerate-btn" data-type="tip" title="Regenerate Tip">
+        <i class="bi bi-arrow-clockwise"></i> <span class="d-none d-md-inline">Regenerate</span>
+      </button>
+      <button class="btn btn-sm btn-outline-secondary edit-btn" data-type="tip" data-bs-toggle="modal" data-bs-target="#editModal" title="Edit Tip">
+        <i class="bi bi-pencil-square"></i> <span class="d-none d-md-inline">Edit</span>
+      </button>
+    </div>
+    {% endif %}
+  </div>

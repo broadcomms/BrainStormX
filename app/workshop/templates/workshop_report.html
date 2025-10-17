@@ -1,0 +1,1106 @@
+{# app/workshop/templates/workshop_report.html (Redesigned) #}
+{# NOTE: Action Items table structure:
+    <table>
+      <thead> (static headers)
+      <tbody id="action-items-body">
+         {% if action_items %}
+             {% for it in action_items %} <tr> ... {% endfor %}
+         {% else %} <tr>No action items</tr> {% endif %}
+    This explicit structure prevents stray endfor/endblock template errors that previously occurred
+    after a partial refactor where the for block was removed but the closing tag remained. #}
+{% extends "main_template.html" %}
+{% block title %}Report: {{ workshop.title }}{% endblock %}
+
+{% set duration_minutes = workshop.duration or 0 %}
+
+{% block content %}
+<section class="py-4 bg-body-tertiary">
+    <div class="container">
+        <!-- Breadcrumbs -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb mb-0 small">
+                <li class="breadcrumb-item"><a href="{{ url_for('main_bp.index') }}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('workshop_bp.list_workshops') }}">Workshops</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('workshop_bp.view_workshop', workshop_id=workshop.id) }}">Details</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Report</li>
+            </ol>
+        </nav>
+
+        <!-- Header / Meta / Actions -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body d-flex flex-column flex-md-row align-items-md-start gap-4">
+                <div class="flex-grow-1">
+                    <h1 class="h4 fw-bold mb-2 d-flex align-items-center gap-2 text-truncate" title="{{ workshop.title }}">
+                        <i class="bi bi-clipboard-check"></i><span>Workshop Report</span>
+                        <span class="badge bg-success">Completed</span>
+                    </h1>
+                    <div class="small text-body-secondary mb-2">{{ workshop.title }} &middot; Hosted by {{ workshop.creator.first_name or workshop.creator.email }}</div>
+                    <div class="small d-flex flex-wrap gap-3">
+                        <div><i class="bi bi-calendar-event me-1"></i>{{ workshop.date_time.strftime('%Y-%m-%d') }}</div>
+                        {% if duration_minutes %}<div><i class="bi bi-hourglass-split me-1"></i>{{ duration_minutes }} min planned</div>{% endif %}
+                        {% if workshop.objective %}<div><i class="bi bi-bullseye me-1"></i>Objective: <span class="text-body-secondary">{{ workshop.objective|truncate(90) }}</span></div>{% endif %}
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2 ms-md-auto print-hidden">
+                    <a href="{{ url_for('workshop_bp.list_workshops') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Back</a>
+                    <button onclick="window.print()" class="btn btn-outline-primary btn-sm"><i class="bi bi-printer"></i> Print</button>
+                    <button id="copy-report-btn" class="btn btn-outline-success btn-sm"><i class="bi bi-clipboard"></i> Copy</button>
+                </div>
+            </div>
+            <div class="card-footer bg-body-tertiary small text-body-secondary d-flex flex-wrap gap-4">
+                <div class="d-flex align-items-center gap-2"><span class="badge text-bg-light"><i class="bi bi-people me-1"></i>{{ participants|length }} Participants</span></div>
+                <div class="d-flex align-items-center gap-2"><span class="badge text-bg-light"><i class="bi bi-lightbulb me-1"></i>{{ ideas_count or 0 }} Ideas</span></div>
+                <div class="d-flex align-items-center gap-2"><span class="badge text-bg-light"><i class="bi bi-diagram-3 me-1"></i>{{ clusters_count or 0 }} Clusters</span></div>
+                <div class="d-flex align-items-center gap-2"><span class="badge text-bg-light"><i class="bi bi-activity me-1"></i>{{ workshop.tasks|length }} Tasks</span></div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- LEFT MAIN CONTENT -->
+            <div class="col-12 col-lg-8 d-flex flex-column gap-4">
+                <!-- Executive Overview -->
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-stars text-primary"></i><span class="fw-semibold">Executive Overview</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12 col-lg-4">
+                                <div class="border rounded bg-body-tertiary p-3 h-100">
+                                    <div class="small text-uppercase text-body-secondary fw-semibold">Facilitator Guidance</div>
+                                    <p class="mb-0 mt-2 small">{{ summary_payload.instructions or 'Instructions from the summary phase will appear here when available.' }}</p>
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-4">
+                                <div class="border rounded bg-body-tertiary p-3 h-100">
+                                    <div class="small text-uppercase text-body-secondary fw-semibold">Narration Hook</div>
+                                    <p class="mb-0 mt-2 small">{{ summary_payload.narration or 'Narration will surface once the summary phase completes.' }}</p>
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-4">
+                                <div class="border rounded bg-body-tertiary p-3 h-100">
+                                    <div class="small text-uppercase text-body-secondary fw-semibold">Key Metrics</div>
+                                    <ul class="list-unstyled mb-0 small mt-2">
+                                        <li><i class="bi bi-people me-1 text-body-secondary"></i><strong>{{ participants|length }}</strong> participants engaged</li>
+                                        <li><i class="bi bi-lightbulb me-1 text-warning"></i><strong>{{ ideas_count or 0 }}</strong> ideas captured</li>
+                                        <li><i class="bi bi-diagram-3 me-1 text-info"></i><strong>{{ clusters_count or 0 }}</strong> clusters synthesized</li>
+                                        {% if prioritized_items %}
+                                            <li><i class="bi bi-list-ol me-1 text-success"></i><strong>{{ prioritized_items|length }}</strong> shortlisted opportunities</li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Executive Summary -->
+                <div class="card shadow-sm border-0" id="summary-section">
+                    <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-journal-text text-primary"></i><span class="fw-semibold">Executive Summary</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-body-secondary small mb-3">A concise AI-generated overview of goals, highlights, and outcomes.</p>
+                        <div class="border rounded p-3 bg-body-tertiary" id="summary-content">
+                            {% if summary_html %}
+                                {{ summary_html|safe }}
+                            {% else %}
+                                <p class="text-muted mb-0">Summary not yet generated. (Future AI summary content will appear here.)</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Idea Spotlight -->
+                <div class="card shadow-sm border-0" id="idea-spotlight-section">
+                    <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-lightbulb text-warning"></i><span class="fw-semibold">Idea Spotlight</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12 col-xl-6">
+                                <h6 class="text-body-secondary text-uppercase small fw-semibold mb-2">Top Clusters</h6>
+                                {% if top_clusters %}
+                                    <div class="list-group list-group-flush small">
+                                        {% for cluster in top_clusters %}
+                                            <div class="list-group-item border rounded mb-2">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div>
+                                                        <div class="fw-semibold">{{ cluster.cluster_name or cluster.name or ('Cluster ' ~ loop.index) }}</div>
+                                                        {% if cluster.description %}<div class="text-body-secondary">{{ cluster.description|truncate(140) }}</div>{% endif %}
+                                                    </div>
+                                                    {% if cluster.votes is not none %}
+                                                        <span class="badge text-bg-warning-subtle text-warning-emphasis">{{ cluster.votes }} votes</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted small mb-0">Cluster analytics will appear after clustering & voting.</p>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 col-xl-6">
+                                <h6 class="text-body-secondary text-uppercase small fw-semibold mb-2">Representative Ideas</h6>
+                                {% if top_ideas %}
+                                    <ul class="list-unstyled small mb-0">
+                                        {% for idea in top_ideas %}
+                                            <li class="mb-2">
+                                                <div class="fw-semibold">Idea {{ idea.idea_id or loop.index }}</div>
+                                                <div class="text-body-secondary">{{ idea.text|truncate(160) if idea.text else '—' }}</div>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <p class="text-muted small mb-0">Idea spotlight will populate after brainstorming.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Journey Snapshot -->
+                <div class="card shadow-sm border-0" id="journey-section">
+                    <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-map text-info"></i><span class="fw-semibold">Journey Snapshot</span>
+                    </div>
+                    <div class="card-body">
+                        {% if phase_snapshots %}
+                            <div class="accordion" id="journey-accordion">
+                                {% for snapshot in phase_snapshots %}
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="phase-{{ loop.index }}">
+                                            <button class="accordion-button {{ 'collapsed' if not loop.first }}" type="button" data-bs-toggle="collapse" data-bs-target="#phase-panel-{{ loop.index }}" aria-expanded="{{ 'true' if loop.first else 'false' }}" aria-controls="phase-panel-{{ loop.index }}">
+                                                <span class="me-2 fw-semibold">{{ snapshot.title }}</span>
+                                                <span class="small text-body-secondary">{{ snapshot.subtitle }}</span>
+                                            </button>
+                                        </h2>
+                                        <div id="phase-panel-{{ loop.index }}" class="accordion-collapse collapse {{ 'show' if loop.first }}" data-bs-parent="#journey-accordion">
+                                            <div class="accordion-body small">
+                                                {% set content = snapshot.content %}
+                                                {% if content is string %}
+                                                    <p class="mb-0">{{ content }}</p>
+                                                {% elif content.items is defined %}
+                                                    <ul class="list-unstyled mb-0">
+                                                        {% for key, value in content.items() %}
+                                                            <li class="mb-1"><span class="fw-semibold">{{ key|replace('_',' ')|title }}:</span>
+                                                                {% if value is string %}
+                                                                    <span class="text-body-secondary"> {{ value }}</span>
+                                                                {% elif value is iterable %}
+                                                                    <ul class="mb-0 ps-3">
+                                                                        {% for inner in value %}
+                                                                            <li>{{ inner if inner is string else inner|tojson(indent=2) }}</li>
+                                                                        {% endfor %}
+                                                                    </ul>
+                                                                {% else %}
+                                                                    <pre class="mb-0">{{ value|tojson(indent=2) }}</pre>
+                                                                {% endif %}
+                                                            </li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                {% elif content is iterable %}
+                                                    <ul class="mb-0 ps-3">
+                                                        {% for item in content %}
+                                                            <li>{{ item if item is string else item|tojson(indent=2) }}</li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                {% else %}
+                                                    <pre class="mb-0">{{ content|tojson(indent=2) }}</pre>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted mb-0">Phase snapshots will populate once the workshop has completed key phases.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Feasibility Insights -->
+                <div class="card shadow-sm border-0" id="feasibility-section">
+                    <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-speedometer2 text-danger"></i><span class="fw-semibold">Feasibility Insights</span>
+                    </div>
+                    <div class="card-body">
+                        {% if feasibility_clusters %}
+                            <div class="vstack gap-3">
+                                {% for cluster in feasibility_clusters %}
+                                    <div class="border rounded bg-body-tertiary p-3">
+                                        <div class="d-flex justify-content-between align-items-start gap-3">
+                                            <div>
+                                                <div class="fw-semibold">{{ cluster.cluster_name or ('Cluster ' ~ loop.index) }}</div>
+                                                {% if cluster.representative_ideas %}
+                                                    <div class="small text-body-secondary">Representative ideas: {{ cluster.representative_ideas|length }}</div>
+                                                {% endif %}
+                                            </div>
+                                            {% if cluster.votes is not none %}
+                                                <span class="badge text-bg-danger-subtle text-danger-emphasis">{{ cluster.votes }} votes</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if cluster.scores %}
+                                            <div class="d-flex flex-wrap gap-2 small mt-2">
+                                                {% for label, value in cluster.scores.items() %}
+                                                    <span class="badge rounded-pill text-bg-light">{{ label|replace('_',' ')|title }}: {{ value }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        {% set findings = cluster.findings %}
+                                        {% if findings %}
+                                            <div class="mt-3">
+                                                <div class="small text-body-secondary text-uppercase fw-semibold">Key Findings</div>
+                                                <ul class="small mb-0 ps-3">
+                                                    {% for key, value in findings.items() %}
+                                                        {% if value %}
+                                                            {% if value is iterable and value is not string %}
+                                                                <li><span class="fw-semibold">{{ key|replace('_',' ')|title }}:</span>
+                                                                    <ul class="mb-0 ps-3">
+                                                                        {% for item in value %}
+                                                                            <li>{{ item if item is string else item|tojson(indent=2) }}</li>
+                                                                        {% endfor %}
+                                                                    </ul>
+                                                                </li>
+                                                            {% else %}
+                                                                <li><span class="fw-semibold">{{ key|replace('_',' ')|title }}:</span> {{ value }}</li>
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </ul>
+                                            </div>
+                                        {% endif %}
+                                        {% if cluster.recommendation %}
+                                            <div class="mt-3 border-top pt-2">
+                                                <div class="small text-body-secondary text-uppercase fw-semibold">Recommendation</div>
+                                                <p class="small mb-1">{{ cluster.recommendation.summary or 'Summary pending' }}</p>
+                                                {% if cluster.recommendation.next_steps %}
+                                                    <ul class="small mb-0 ps-3">
+                                                        {% for step in cluster.recommendation.next_steps %}
+                                                            <li>{{ step }}</li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted mb-0">Feasibility analysis has not been generated yet.</p>
+                        {% endif %}
+                        {% if feasibility_method_notes %}
+                            <div class="alert alert-secondary small mt-3 mb-0"><i class="bi bi-clipboard-data me-1"></i>{{ feasibility_method_notes }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Shortlist Overview -->
+                <div class="card shadow-sm border-0" id="shortlist-section">
+                    <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-list-ol text-success"></i><span class="fw-semibold">Shortlist Overview</span>
+                    </div>
+                    <div class="card-body">
+                        {% if prioritized_items %}
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th scope="col">Rank</th>
+                                            <th scope="col">Opportunity</th>
+                                            <th scope="col">Votes</th>
+                                            <th scope="col">Impact</th>
+                                            <th scope="col">Effort</th>
+                                            <th scope="col">Why it matters</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in prioritized_items %}
+                                            <tr>
+                                                <td class="text-body-secondary">{{ item.rank or loop.index }}</td>
+                                                <td>
+                                                    <div class="fw-semibold">{{ item.title or 'Opportunity ' ~ loop.index }}</div>
+                                                    {% if item.description %}<div class="text-body-secondary small">{{ item.description|truncate(160) }}</div>{% endif %}
+                                                </td>
+                                                <td>{{ item.vote_count if item.vote_count is not none else '—' }}</td>
+                                                <td>
+                                                    {% if item.scores.impact is defined %}
+                                                        <span class="badge text-bg-success-subtle text-success-emphasis">{{ item.scores.impact }}</span>
+                                                    {% else %}
+                                                        <span class="text-muted">—</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if item.scores.effort is defined %}
+                                                        <span class="badge text-bg-info-subtle text-info-emphasis">{{ item.scores.effort }}</span>
+                                                    {% else %}
+                                                        <span class="text-muted">—</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="small">{{ item.why or 'Rationale will be available in the prioritization payload.' }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% if prioritization_methods %}
+                                <div class="small text-body-secondary mt-2">Methods applied: {{ prioritization_methods|join(', ') }}</div>
+                            {% endif %}
+                        {% else %}
+                            <p class="text-muted mb-0">Shortlist data becomes available after the prioritization phase.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Action Plan Overview -->
+                <div class="card shadow-sm border-0" id="action-plan-overview">
+                    <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-flag text-primary"></i><span class="fw-semibold">Action Plan Overview</span>
+                    </div>
+                    <div class="card-body">
+                        {% if action_plan_actions %}
+                            <div class="row g-3">
+                                <div class="col-12 col-md-7">
+                                    <div class="small text-body-secondary text-uppercase fw-semibold mb-2">Planned Actions</div>
+                                    <ul class="small mb-0 ps-3">
+                                        {% for action in action_plan_actions[:6] %}
+                                            <li>
+                                                <span class="fw-semibold">{{ action.title or ('Action ' ~ loop.index) }}</span>
+                                                {% if action.owner %}<span class="text-body-secondary"> &middot; Owner: {{ action.owner }}</span>{% elif action.owner_name %}<span class="text-body-secondary"> &middot; Owner: {{ action.owner_name }}</span>{% endif %}
+                                                {% if action.metric %}<div class="text-body-secondary">Metric: {{ action.metric }}</div>{% endif %}
+                                            </li>
+                                        {% endfor %}
+                                        {% if action_plan_actions|length > 6 %}
+                                            <li class="text-body-secondary">... and {{ action_plan_actions|length - 6 }} more</li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                                <div class="col-12 col-md-5">
+                                    <div class="small text-body-secondary text-uppercase fw-semibold mb-2">Owners & Focus</div>
+                                    <div class="border rounded bg-body-tertiary p-3">
+                                        {% set owners = action_plan_actions | map(attribute='owner') | list %}
+                                        <div class="small">Owners assigned: <strong>{{ owners|select|list|length }}</strong></div>
+                                        <div class="small">Total actions: <strong>{{ action_plan_actions|length }}</strong></div>
+                                        <div class="small">Milestones planned: <strong>{{ action_plan_milestones|length }}</strong></div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <p class="text-muted mb-0">Action plan highlights will surface after the action planning phase.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Action Items -->
+                <div class="card shadow-sm border-0" id="actions-section">
+                    <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-list-check text-success"></i><span class="fw-semibold">Action Items</span>
+                        {% if can_edit %}
+                        <div class="ms-auto d-flex gap-2 print-hidden">
+                            <button id="add-action-btn" class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-plus"></i> Add Item
+                            </button>
+                                <button id="import-actions-btn" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-download"></i> Import from Summary
+                                </button>
+                                <button id="export-actions-btn" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-filetype-csv"></i> Export CSV
+                                </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <p class="text-body-secondary small mb-3">Concrete follow‑ups, owners, and due dates derived from the session.</p>
+                        <div class="table-responsive">
+                            <div class="d-flex flex-wrap gap-2 align-items-center mb-2 print-hidden">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">Filter</span>
+                                    <label class="visually-hidden" for="filter-owner">Filter by owner</label>
+                                    <select id="filter-owner" class="form-select" aria-label="Filter by owner">
+                                        <option value="">Owner: All</option>
+                                        {% for p in participants %}
+                                            <option value="owner-{{ p.id }}">{{ p.user.first_name or p.user.email.split('@')[0] }}</option>
+                                        {% endfor %}
+                                        <option value="owner-none">Unassigned</option>
+                                    </select>
+                                    <label class="visually-hidden" for="filter-status">Filter by status</label>
+                                    <select id="filter-status" class="form-select" aria-label="Filter by status">
+                                        <option value="">Status: All</option>
+                                        <option value="todo">To Do</option>
+                                        <option value="in_progress">In Progress</option>
+                                        <option value="done">Done</option>
+                                        <option value="blocked">Blocked</option>
+                                    </select>
+                                </div>
+                                <div class="input-group input-group-sm ms-auto maxw-280">
+                                    <span class="input-group-text">Group</span>
+                                    <label class="visually-hidden" for="group-by">Group by</label>
+                                    <select id="group-by" class="form-select" aria-label="Group rows">
+                                        <option value="">None</option>
+                                        <option value="owner">Owner</option>
+                                        <option value="status">Status</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <table class="table table-sm align-middle mb-0" id="action-items-table" data-workshop-id="{{ workshop.id }}" data-can-edit="{{ 1 if can_edit else 0 }}">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col">#</th>
+                                        <th scope="col">Action</th>
+                                        <th scope="col">Owner</th>
+                                        <th scope="col">Due</th>
+                                        <th scope="col">Status</th>
+                                        {% if can_edit %}<th scope="col" class="text-end print-hidden">Actions</th>{% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody id="action-items-body">
+                                {% if action_items and action_items|length > 0 %}
+                                    {% for it in action_items %}
+                                    <tr data-id="{{ it.id }}" data-owner="owner-{{ it.owner_participant.id if it.owner_participant else 'none' }}" data-status="{{ it.status }}">
+                                        <td class="text-body-secondary">{{ loop.index }}</td>
+                                        <td>
+                                            <div class="fw-semibold">{{ it.title }}</div>
+                                            {% if it.description %}<div class="small text-body-secondary">{{ it.description }}</div>{% endif %}
+                                        </td>
+                                        <td>
+                                            {% set owner = it.owner_participant %}
+                                            {% if owner %}
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="avatar-circle avatar-24 d-inline-block overflow-hidden border"><img src="{{ profile_url(owner.user.profile_pic_url) }}" class="avatar-img" alt=""/></span>
+                                                    <span class="small">{{ owner.user.first_name or owner.user.email.split('@')[0] }}</span>
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted small">Unassigned</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if it.due_date %}
+                                                <span class="small">{{ it.due_date.strftime('%Y-%m-%d') }}</span>
+                                            {% else %}
+                                                <span class="text-muted small">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td><span class="badge text-bg-light text-capitalize">{{ it.status.replace('_',' ') }}</span></td>
+                                        {% if can_edit %}
+                                        <td class="text-end print-hidden col-actions">
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-secondary edit-item">Edit</button>
+                                                <button class="btn btn-outline-secondary assign-item">Assign</button>
+                                                <button class="btn btn-outline-danger delete-item" aria-label="Delete action item"><i class="bi bi-trash"></i></button>
+                                            </div>
+                                        </td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr class="text-muted">
+                                        <td colspan="{% if can_edit %}6{% else %}5{% endif %}" class="fst-italic">No action items captured yet.</td>
+                                    </tr>
+                                {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Milestones -->
+                <div class="card shadow-sm border-0" id="milestones-section">
+                    <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-calendar-event text-secondary"></i><span class="fw-semibold">Milestones</span>
+                    </div>
+                    <div class="card-body">
+                        {% if action_plan_milestones %}
+                            <ul class="list-group list-group-flush small">
+                                {% for milestone in action_plan_milestones %}
+                                    <li class="list-group-item">
+                                        <div class="fw-semibold">{{ milestone.title or ('Milestone ' ~ loop.index) }}</div>
+                                        {% if milestone.target_date %}<div class="text-body-secondary">Target: {{ milestone.target_date }}</div>{% endif %}
+                                        {% if milestone.owner %}<div class="text-body-secondary">Owner: {{ milestone.owner }}</div>{% endif %}
+                                        {% if milestone.description %}<div class="text-body-secondary">{{ milestone.description }}</div>{% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted mb-0">Milestones will be available once the action plan phase defines them.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Transcript -->
+                <div class="card shadow-sm border-0" id="transcript-section">
+                    <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-chat-left-text text-warning"></i><span class="fw-semibold">Session Transcript</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-body-secondary small mb-3">Chronological capture of structured outputs & notable chat excerpts.</p>
+                        <div class="border rounded p-3 bg-body-tertiary small overflow-auto max-h-340" id="transcription-content">
+                            {% if transcript and transcript|length > 0 %}
+                                <div class="vstack gap-1">
+                                    {% for line in transcript %}
+                                        <div>
+                                            <strong>{{ line.user }}</strong>: {{ line.message }}
+                                            {% if line.timestamp %}
+                                                <span class="text-muted ms-1 fs-08">{{ line.timestamp_display or line.timestamp }}</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-muted mb-0">Transcript not yet available.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task Timeline -->
+                <div class="card shadow-sm border-0" id="tasks-section">
+                    <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-clock-history text-info"></i><span class="fw-semibold">Task Timeline</span>
+                    </div>
+                    <div class="card-body">
+                        {% if workshop.tasks|length == 0 %}
+                            <p class="text-muted mb-0">No tasks were recorded for this workshop.</p>
+                        {% else %}
+                            <div class="list-group list-group-flush">
+                                {% for t in workshop.tasks %}
+                                    {% set idea_total = t.ideas.count() if t.ideas else 0 %}
+                                    <div class="list-group-item px-0">
+                                        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex align-items-center gap-2 mb-1">
+                                                    <span class="badge rounded-pill text-bg-light text-uppercase small">{{ t.task_type or 'Task' }}</span>
+                                                    <strong>{{ t.title }}</strong>
+                                                </div>
+                                                {% if t.description %}<div class="small text-body-secondary mb-1">{{ t.description|truncate(160) }}</div>{% endif %}
+                                                <div class="small text-body-secondary d-flex flex-wrap gap-3">
+                                                    <span><i class="bi bi-lightbulb me-1"></i>{{ idea_total }} ideas</span>
+                                                    <span><i class="bi bi-hourglass me-1"></i>{{ t.duration }}s</span>
+                                                    <span><i class="bi bi-activity me-1"></i>{{ t.status|capitalize }}</span>
+                                                </div>
+                                            </div>
+                                            {% if t.started_at %}
+                                            <div class="text-end small text-body-secondary">
+                                                <div><i class="bi bi-play-circle me-1"></i>{{ t.started_at.strftime('%H:%M') }}</div>
+                                                {% if t.ended_at %}<div><i class="bi bi-stop-circle me-1"></i>{{ t.ended_at.strftime('%H:%M') }}</div>{% endif %}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT SIDEBAR -->
+            <div class="col-12 col-lg-4 d-flex flex-column gap-4">
+                <!-- Artifact Library -->
+                <div class="card shadow-sm border-0" id="artifact-library">
+                    <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-archive text-primary"></i><span class="fw-semibold">Artifact Library</span>
+                    </div>
+                    <div class="card-body">
+                        {% if report_artifacts %}
+                            <div class="vstack gap-3">
+                                {% for artifact in report_artifacts %}
+                                    <div class="border rounded bg-body-tertiary p-3">
+                                        <div class="d-flex justify-content-between align-items-start gap-3">
+                                            <div>
+                                                <div class="fw-semibold">{{ artifact.label }}</div>
+                                                <div class="small text-body-secondary">{{ artifact.description }}</div>
+                                            </div>
+                                            <span class="badge text-bg-light">{{ artifact.format }}</span>
+                                        </div>
+                                        <div class="d-flex gap-2 mt-3">
+                                            <a href="{{ artifact.url }}" class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener">Open</a>
+                                            <a href="{{ artifact.url }}" class="btn btn-sm btn-primary" download>Download</a>
+                                        </div>
+                                        {% if artifact.badge %}
+                                            <span class="badge rounded-pill text-bg-secondary small mt-2">{{ artifact.badge }}</span>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted mb-0">Artifacts will appear after executive, feasibility, shortlist, and action plan phases complete.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Documents Gallery -->
+                <div class="card shadow-sm border-0" id="documents-gallery">
+                    <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-folder text-success"></i><span class="fw-semibold">Documents Gallery</span>
+                    </div>
+                    <div class="card-body">
+                        {% if documents_gallery %}
+                            <ul class="list-group list-group-flush small">
+                                {% for doc in documents_gallery %}
+                                    <li class="list-group-item">
+                                        <div class="fw-semibold">{{ doc.title or doc.file_name }}</div>
+                                        {% if doc.description %}<div class="text-body-secondary">{{ doc.description }}</div>{% endif %}
+                                        <div class="d-flex justify-content-between align-items-center mt-2">
+                                            <span class="text-body-secondary">{{ doc.file_name }}</span>
+                                            {% if doc.url %}
+                                                <a href="{{ doc.url }}" class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener">Open</a>
+                                            {% else %}
+                                                <span class="badge text-bg-secondary">Stored offline</span>
+                                            {% endif %}
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted mb-0">Linked documents will surface as phases attach reports to the workshop.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Participants -->
+                <div class="card shadow-sm border-0" id="participants-section">
+                    <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-people text-secondary"></i><span class="fw-semibold">Participants</span>
+                    </div>
+                    <div class="card-body">
+                        {% if participants|length == 0 %}
+                            <p class="text-muted mb-0">No participants recorded.</p>
+                        {% else %}
+                            <div class="row g-3">
+                                {% for p in participants %}
+                                    <div class="col-6 col-sm-4 col-lg-6">
+                                        <div class="text-center position-relative p-2 border rounded bg-body-tertiary h-100">
+                                            <span class="avatar-circle avatar-54 d-inline-block overflow-hidden mb-2 shadow-sm border"><img src="{{ profile_url(p.user.profile_pic_url) }}" alt="{{ p.user.first_name or p.user.email }}" class="avatar-img"></span>
+                                            <div class="small text-truncate" title="{{ p.user.email }}">{{ p.user.first_name or p.user.email.split('@')[0] }}</div>
+                                            {% if p.role == 'organizer' or p.user_id == workshop.created_by_id %}
+                                                <span class="badge bg-primary position-absolute top-0 end-0 m-1 small fs-06">Host</span>
+                                            {% endif %}
+                                            <div class="mt-1">
+                                                <span class="badge rounded-pill {{ 'text-bg-success' if p.status=='accepted' else 'text-bg-secondary' }} small fs-055">{{ p.status|capitalize }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Generated Pre-Workshop Content -->
+                <div class="card shadow-sm border-0" id="generated-section">
+                    <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-robot text-danger"></i><span class="fw-semibold">Generated Content</span>
+                    </div>
+                    <div class="card-body small d-flex flex-column gap-3">
+                        <div>
+                            <div class="fw-semibold d-flex align-items-center gap-2"><i class="bi bi-list-ol text-primary"></i><span>Agenda</span></div>
+                            <div class="border rounded p-2 bg-body-tertiary mt-1 overflow-auto agenda-render limit-height-140">
+                                {{ agenda_html|safe }}
+                            </div>
+                        </div>
+                        <div>
+                            <div class="fw-semibold d-flex align-items-center gap-2"><i class="bi bi-shield-check text-success"></i><span>Rules</span></div>
+                            <div class="border rounded p-2 bg-body-tertiary mt-1 overflow-auto limit-height-140">
+                                {{ rules_html|safe }}
+                            </div>
+                        </div>
+                        <div>
+                            <div class="fw-semibold d-flex align-items-center gap-2"><i class="bi bi-stars text-warning"></i><span>Icebreaker</span></div>
+                            <div class="border rounded p-2 bg-body-tertiary mt-1 overflow-auto limit-height-140">
+                                {{ icebreaker_html|safe }}
+                            </div>
+                        </div>
+                        <div>
+                            <div class="fw-semibold d-flex align-items-center gap-2"><i class="bi bi-lightning-charge text-info"></i><span>Tip</span></div>
+                            <div class="border rounded p-2 bg-body-tertiary mt-1 overflow-auto limit-height-140">
+                                {{ tip_html|safe }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer small bg-body-tertiary text-body-secondary">Captured AI-generated preparation content.</div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Action Item Modal -->
+<div class="modal fade" id="actionItemModal" tabindex="-1" aria-labelledby="actionItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="actionItemModalLabel">Action Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="action-item-form" class="row g-3">
+                    <input type="hidden" name="id" />
+                    <div class="col-12">
+                        <label for="ai-title" class="form-label">Title</label>
+                        <input id="ai-title" name="title" class="form-control" required />
+                    </div>
+                    <div class="col-12">
+                        <label for="ai-description" class="form-label">Description</label>
+                        <textarea id="ai-description" name="description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="ai-owner" class="form-label">Owner</label>
+                        <select id="ai-owner" name="owner_participant_id" class="form-select"></select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="ai-due" class="form-label">Due date</label>
+                        <input id="ai-due" name="due_date" type="date" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label for="ai-status" class="form-label">Status</label>
+                        <select id="ai-status" name="status" class="form-select">
+                            <option value="todo">To Do</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="done">Done</option>
+                            <option value="blocked">Blocked</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="action-item-save" class="btn btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Copy full report (text only) to clipboard
+    document.getElementById('copy-report-btn')?.addEventListener('click', () => {
+        const sections = [
+            '# Workshop Report',
+            'Title: {{ workshop.title|e }}',
+            'Date: {{ workshop.date_time.strftime("%Y-%m-%d") }}',
+            'Participants: {{ participants|length }}',
+            'Ideas: {{ ideas_count or 0 }}',
+            'Clusters: {{ clusters_count or 0 }}',
+            '',
+            '--- Summary ---',
+            document.getElementById('summary-content')?.innerText.trim() || 'N/A',
+            '',
+            '--- Action Items ---',
+            document.getElementById('action-items-body')?.innerText.trim() || 'None',
+            '',
+            '--- Transcript ---',
+            document.getElementById('transcription-content')?.innerText.trim() || 'Not available',
+        ];
+        navigator.clipboard.writeText(sections.join('\n')).then(() => {
+            const btn = document.getElementById('copy-report-btn');
+            if (!btn) return;
+            const original = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-check2"></i> Copied';
+            btn.disabled = true;
+            setTimeout(() => { btn.innerHTML = original; btn.disabled = false; }, 1800);
+        }).catch(err => alert('Copy failed: ' + err));
+    });
+    document.addEventListener('click', async (ev) => {
+        const t = ev.target;
+        if (t.id === 'import-actions-btn') {
+            ev.preventDefault();
+            if (!canEdit) return;
+            try {
+                const btn = t; btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Importing';
+                const res = await api('POST', `/workshop/${wsId}/action_items/import`, {});
+                if (res && res.created) {
+                    const tbody = document.getElementById('action-items-body');
+                    // Clear any existing rows to reflect replace semantics
+                    tbody.innerHTML = '';
+                    const participants = participantsList();
+                    res.created.forEach(item => {
+                        const tr = document.createElement('tr');
+                        tr.dataset.id = item.id;
+                        tr.dataset.owner = item.owner_participant_id ? `owner-${item.owner_participant_id}` : 'owner-none';
+                        tr.dataset.status = item.status || 'todo';
+                        tr.innerHTML = `
+                            <td class="text-body-secondary"></td>
+                            <td><div class="fw-semibold"></div><div class="small text-body-secondary"></div></td>
+                            <td><span class="text-muted small">Unassigned</span></td>
+                            <td><span class="small"></span></td>
+                            <td class="col-status"><span class="badge text-bg-light text-capitalize"></span></td>
+                            ${canEdit ? '<td class="text-end print-hidden col-actions"><div class="btn-group btn-group-sm"><button class="btn btn-outline-secondary edit-item">Edit</button><button class="btn btn-outline-secondary assign-item">Assign</button><button class="btn btn-outline-danger delete-item" title="Delete action item" aria-label="Delete action item"><i class="bi bi-trash"></i></button></div></td>' : ''}
+                        `;
+                        tbody.appendChild(tr);
+                        setRowFromData(tr, item, participants);
+                    });
+                    rebuildRows();
+                } else if (res && res.error) {
+                    alert(res.error);
+                }
+            } catch (e) {
+                alert('Import failed: ' + e.message);
+            } finally {
+                const btn = document.getElementById('import-actions-btn');
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-download"></i> Import from Summary'; }
+            }
+        }
+        if (t.id === 'export-actions-btn') {
+            ev.preventDefault();
+            const rows = Array.from(document.querySelectorAll('#action-items-body tr')).filter(tr => !tr.classList.contains('group-row'));
+            const csvRows = [['#','Title','Description','Owner','Due','Status']];
+            rows.forEach((tr, idx) => {
+                const title = tr.querySelector('td:nth-child(2) .fw-semibold')?.textContent.trim() || '';
+                const description = tr.querySelector('td:nth-child(2) .small')?.textContent.trim() || '';
+                const owner = tr.querySelector('td:nth-child(3) .small')?.textContent.trim() || 'Unassigned';
+                const due = tr.querySelector('td:nth-child(4) .small')?.textContent.trim() || '';
+                const status = tr.querySelector('td:nth-child(5) .badge')?.textContent.trim() || '';
+                csvRows.push([String(idx+1), title, description, owner, due, status]);
+            });
+            const csv = csvRows.map(r => r.map(v => '"' + (v.replaceAll('"','""')) + '"').join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `action_items_workshop_{{ workshop.id }}.csv`; a.click();
+            URL.revokeObjectURL(url);
+        }
+    });
+</script>
+<script id="participants-json" type="application/json">{{ participants_payload|tojson }}</script>
+<script>
+    // Utilities
+    const actionTable = document.getElementById('action-items-table');
+    const wsId = actionTable?.dataset.workshopId;
+    const canEdit = actionTable?.dataset.canEdit === '1';
+
+    function rowIndexify() {
+        const rows = Array.from(document.querySelectorAll('#action-items-body tr')).filter(tr => !tr.classList.contains('group-row'));
+        rows.forEach((tr, idx) => {
+            const idxCell = tr.querySelector('td');
+            if (idxCell) idxCell.textContent = String(idx + 1);
+        });
+    }
+
+    async function api(method, path, body) {
+        const res = await fetch(path, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: body ? JSON.stringify(body) : undefined,
+        });
+        if (!res.ok) throw new Error(await res.text());
+        return res.json().catch(() => ({}));
+    }
+
+    // Modal helpers
+    let bsModal = null;
+    const modalEl = document.getElementById('actionItemModal');
+    if (modalEl && window.bootstrap) {
+        bsModal = new bootstrap.Modal(modalEl);
+    }
+
+    function participantsList() {
+        try { return JSON.parse(document.getElementById('participants-json').textContent || '[]'); }
+        catch { return []; }
+    }
+    function fillOwnerSelect(selectEl, selectedId) {
+        const parts = participantsList();
+        selectEl.innerHTML = '';
+        const optNone = document.createElement('option');
+        optNone.value = '';
+        optNone.textContent = 'Unassigned';
+        selectEl.appendChild(optNone);
+        parts.forEach(p => {
+            const o = document.createElement('option');
+            o.value = String(p.id);
+            o.textContent = p.user.first_name || (p.user.email || '').split('@')[0] || 'User';
+            if (selectedId && Number(selectedId) === Number(p.id)) o.selected = true;
+            selectEl.appendChild(o);
+        });
+    }
+
+    function getRowData(tr) {
+        return {
+            id: parseInt(tr.dataset.id, 10),
+            title: tr.querySelector('td:nth-child(2) .fw-semibold')?.textContent.trim() || '',
+            description: tr.querySelector('td:nth-child(2) .small')?.textContent.trim() || '',
+            owner_participant_id: (tr.dataset.owner && tr.dataset.owner.startsWith('owner-') && tr.dataset.owner !== 'owner-none') ? Number(tr.dataset.owner.split('-')[1]) : null,
+            due_date: tr.querySelector('td:nth-child(4) .small')?.textContent.trim() || null,
+            status: tr.querySelector('td:nth-child(5) .badge')?.textContent.trim().toLowerCase().replace(' ', '_') || 'todo',
+        };
+    }
+
+    function setRowFromData(tr, data, participants) {
+        tr.querySelector('td:nth-child(2) .fw-semibold').textContent = data.title || '';
+        const descEl = tr.querySelector('td:nth-child(2) .small');
+        if (descEl) descEl.textContent = data.description || '';
+        const ownerCell = tr.querySelector('td:nth-child(3)');
+        ownerCell.innerHTML = '';
+        const owner = participants.find(p => Number(p.id) === Number(data.owner_participant_id));
+        const defaultProfileUrl = "{{ profile_url(None) }}";
+        if (owner) {
+            const pic = (owner.user.profile_pic_url && (owner.user.profile_pic_url.startsWith('http') || owner.user.profile_pic_url.startsWith('/'))) ? owner.user.profile_pic_url : defaultProfileUrl;
+            const label = owner.user.first_name || (owner.user.email || '').split('@')[0] || 'User';
+            ownerCell.innerHTML = `<div class="d-flex align-items-center gap-2"><span class=\"avatar-circle avatar-24 d-inline-block overflow-hidden border\"><img src=\"${pic}\" class=\"avatar-img\" alt=\"\"/></span><span class=\"small\">${label}</span></div>`;
+        } else {
+            ownerCell.innerHTML = '<span class="text-muted small">Unassigned</span>';
+        }
+        const dueEl = tr.querySelector('td:nth-child(4) .small');
+        if (dueEl) dueEl.textContent = data.due_date || '—';
+        const stEl = tr.querySelector('td:nth-child(5) .badge');
+        if (stEl) stEl.textContent = (data.status || 'todo').replace('_',' ');
+    }
+
+    function openActionModal(mode, init = {}) {
+        if (!bsModal && window.bootstrap && modalEl) {
+            try { bsModal = new bootstrap.Modal(modalEl); } catch(_) {}
+        }
+        document.getElementById('actionItemModalLabel').textContent =
+            mode === 'add' ? 'Add Action Item' : mode === 'edit' ? 'Edit Action Item' : 'Assign Action Item';
+        const form = document.getElementById('action-item-form');
+        form.reset();
+        form.elements['id'].value = init.id || '';
+        document.getElementById('ai-title').value = init.title || '';
+        document.getElementById('ai-description').value = init.description || '';
+        document.getElementById('ai-due').value = init.due_date || '';
+        document.getElementById('ai-status').value = (init.status || 'todo');
+        fillOwnerSelect(document.getElementById('ai-owner'), init.owner_participant_id || '');
+
+        if (bsModal) bsModal.show();
+
+        const saveBtn = document.getElementById('action-item-save');
+        saveBtn.onclick = async () => {
+            const payload = {
+                title: document.getElementById('ai-title').value.trim(),
+                description: document.getElementById('ai-description').value.trim() || null,
+                owner_participant_id: document.getElementById('ai-owner').value ? Number(document.getElementById('ai-owner').value) : null,
+                due_date: document.getElementById('ai-due').value || null,
+                status: document.getElementById('ai-status').value || 'todo',
+            };
+            try {
+                if (mode === 'add') {
+                    const res = await api('POST', `/workshop/${wsId}/action_items`, payload);
+                    if (res && res.id) {
+                        const tbody = document.getElementById('action-items-body');
+                        const tr = document.createElement('tr');
+                        tr.dataset.id = res.id;
+                        tr.dataset.owner = payload.owner_participant_id ? `owner-${payload.owner_participant_id}` : 'owner-none';
+                        tr.dataset.status = payload.status || 'todo';
+                        tr.innerHTML = `
+                            <td class="text-body-secondary"></td>
+                            <td><div class="fw-semibold"></div><div class="small text-body-secondary"></div></td>
+                            <td><span class="text-muted small">Unassigned</span></td>
+                            <td><span class="small"></span></td>
+                            <td class="col-status"><span class="badge text-bg-light text-capitalize"></span></td>
+                            ${canEdit ? '<td class="text-end print-hidden col-actions"><div class="btn-group btn-group-sm"><button class="btn btn-outline-secondary edit-item">Edit</button><button class="btn btn-outline-secondary assign-item">Assign</button><button class="btn btn-outline-danger delete-item" title="Delete action item" aria-label="Delete action item"><i class="bi bi-trash"></i></button></div></td>' : ''}
+                        `;
+                        tbody.appendChild(tr);
+                        setRowFromData(tr, payload, participantsList());
+                        rebuildRows();
+                    }
+                } else if (mode === 'edit') {
+                    const id = init.id;
+                    await api('PATCH', `/workshop/${wsId}/action_items/${id}`, payload);
+                    const tr = document.querySelector(`#action-items-body tr[data-id="${id}"]`);
+                    if (tr) {
+                        tr.dataset.owner = payload.owner_participant_id ? `owner-${payload.owner_participant_id}` : 'owner-none';
+                        tr.dataset.status = payload.status || 'todo';
+                        setRowFromData(tr, { ...init, ...payload }, participantsList());
+                    }
+                    rebuildRows();
+                } else if (mode === 'assign') {
+                    const id = init.id;
+                    await api('PATCH', `/workshop/${wsId}/action_items/${id}`, { owner_participant_id: payload.owner_participant_id });
+                    const tr = document.querySelector(`#action-items-body tr[data-id="${id}"]`);
+                    if (tr) {
+                        tr.dataset.owner = payload.owner_participant_id ? `owner-${payload.owner_participant_id}` : 'owner-none';
+                        setRowFromData(tr, { ...init, owner_participant_id: payload.owner_participant_id }, participantsList());
+                    }
+                    rebuildRows();
+                }
+                if (bsModal) bsModal.hide();
+            } catch (e) {
+                alert('Save failed: ' + e.message);
+            }
+        };
+    }
+
+    async function onDelete(tr) {
+        const id = parseInt(tr.dataset.id, 10);
+        if (!confirm('Delete this action item?')) return;
+        try {
+            await api('DELETE', `/workshop/${wsId}/action_items/${id}`);
+            tr.remove();
+            rebuildRows();
+        } catch (e) {
+            alert('Failed to delete: ' + e.message);
+        }
+    }
+
+    // Filtering & Grouping
+    function visibleAfterFilter(tr) {
+        const ownerVal = document.getElementById('filter-owner').value;
+        const statusVal = document.getElementById('filter-status').value;
+        const okOwner = !ownerVal || (tr.dataset.owner === ownerVal);
+        const okStatus = !statusVal || (tr.dataset.status === statusVal);
+        return okOwner && okStatus;
+    }
+    function groupKeyFor(tr, by) {
+        if (by === 'owner') return tr.dataset.owner || 'owner-none';
+        if (by === 'status') return tr.dataset.status || 'todo';
+        return '';
+    }
+    function groupLabelFor(key, by) {
+        if (by === 'status') return (key || 'todo').replace('owner-','').replace('_',' ').replace(/\b\w/g, c=>c.toUpperCase());
+        if (!key || key === 'owner-none') return 'Unassigned';
+        const id = Number((key.split('-')[1]||'0'));
+        const p = participantsList().find(x => Number(x.id) === id);
+        return p ? (p.user.first_name || (p.user.email||'').split('@')[0]) : 'Unassigned';
+    }
+    function rebuildRows() {
+        const tbody = document.getElementById('action-items-body');
+        const allRows = Array.from(tbody.querySelectorAll('tr')).filter(r => !r.classList.contains('group-row'));
+        const groupBy = document.getElementById('group-by')?.value;
+        const visible = allRows.filter(visibleAfterFilter);
+        tbody.innerHTML = '';
+        if (!groupBy) {
+            visible.forEach(r => tbody.appendChild(r));
+        } else {
+            const groups = new Map();
+            visible.forEach(r => {
+                const key = groupKeyFor(r, groupBy);
+                if (!groups.has(key)) groups.set(key, []);
+                groups.get(key).push(r);
+            });
+            const keys = Array.from(groups.keys()).sort((a,b) => {
+                const la = groupLabelFor(a, groupBy).toLowerCase();
+                const lb = groupLabelFor(b, groupBy).toLowerCase();
+                return la.localeCompare(lb);
+            });
+            const colSpan = canEdit ? 6 : 5;
+            keys.forEach(k => {
+                const label = groupLabelFor(k, groupBy);
+                const hdr = document.createElement('tr');
+                hdr.className = 'group-row table-group-divider';
+                hdr.innerHTML = `<td colspan="${colSpan}" class="text-body-secondary small">${groupBy.charAt(0).toUpperCase()+groupBy.slice(1)}: <strong>${label}</strong></td>`;
+                tbody.appendChild(hdr);
+                groups.get(k).forEach(r => tbody.appendChild(r));
+            });
+        }
+        rowIndexify();
+    }
+
+    // Event handlers (Add/Edit/Assign delegated to modal)
+    document.addEventListener('click', (ev) => {
+        const t = ev.target;
+        if (t.id === 'add-action-btn') { ev.preventDefault(); if (canEdit) openActionModal('add', {}); }
+        if (t.classList.contains('edit-item')) { ev.preventDefault(); if (canEdit) openActionModal('edit', getRowData(t.closest('tr'))); }
+        if (t.classList.contains('assign-item')) { ev.preventDefault(); if (canEdit) openActionModal('assign', getRowData(t.closest('tr'))); }
+        if (t.classList.contains('delete-item')) { ev.preventDefault(); if (canEdit) onDelete(t.closest('tr')); }
+    });
+
+    document.getElementById('filter-owner')?.addEventListener('change', rebuildRows);
+    document.getElementById('filter-status')?.addEventListener('change', rebuildRows);
+    document.getElementById('group-by')?.addEventListener('change', rebuildRows);
+
+    // Initialize dataset for existing rows (safety) and build view
+    document.querySelectorAll('#action-items-body tr').forEach(tr => {
+        if (!tr.dataset.owner) tr.dataset.owner = 'owner-none';
+        if (!tr.dataset.status) tr.dataset.status = 'todo';
+    });
+    rebuildRows();
+</script>
+{% endblock %}

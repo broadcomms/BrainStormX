@@ -1,0 +1,9 @@
+{
+  "bedrock": {
+    "image_model": "amazon.nova-canvas-v1:0",
+    "model_id": "amazon.nova-lite-v1:0",
+    "nova_pro": "amazon.nova-pro-v1:0",
+    "speech_model": "amazon.nova-sonic-v1:0",
+    "video_model": "None"
+  }
+}

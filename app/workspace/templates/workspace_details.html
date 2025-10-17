@@ -1,0 +1,264 @@
+{% extends "main_template.html" %}
+{% block title %}Workspace: {{ workspace.name }}{% endblock %}
+
+{% block content %}
+{% set privacy_badge = ('secondary','lock-fill','Private') if workspace.is_private else ('info text-dark','globe2','Public') %}
+{% set priv_class, priv_icon, priv_label = privacy_badge %}
+<section class="py-4 bg-body-tertiary">
+  <div class="container">
+    <!-- Header + Breadcrumbs -->
+    <div class="d-flex flex-wrap justify-content-between align-items-start mb-3">
+      <div class="me-2">
+        <h1 class="h4 fw-bold mb-1 d-flex align-items-center gap-2">
+          <i class="bi bi-diagram-3"></i>
+          <span class="text-truncate mw-50ch" title="{{ workspace.name }}">{{ workspace.name }}</span>
+          <span class="badge text-bg-{{ priv_class }} d-inline-flex align-items-center gap-1"><i class="bi bi-{{ priv_icon }}"></i>{{ priv_label }}</span>
+        </h1>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item"><a href="{{ url_for('main_bp.index') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('workspace_bp.list_workspaces') }}">Workspaces</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Details</li>
+          </ol>
+        </nav>
+      </div>
+      <div class="d-flex gap-2 mt-3 mt-sm-0">
+        {% if can_edit %}
+          <a href="{{ url_for('workspace_bp.edit_workspace', workspace_id=workspace.workspace_id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Edit</a>
+        {% endif %}
+        {% if can_manage_members %}
+          <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#inviteModal"><i class="bi bi-person-plus"></i> Invite</button>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if workspace.description %}
+      <div class="alert alert-light border small mb-4">{{ workspace.description }}</div>
+    {% endif %}
+
+    <!-- Summary Stats -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="card h-100 shadow-sm border-0">
+          <div class="card-body py-3 text-center small d-flex flex-column justify-content-center">
+            <div class="text-body-secondary mb-1"><i class="bi bi-people"></i> Members</div>
+            <div class="fw-semibold fs-5">{{ active_member_count }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card h-100 shadow-sm border-0">
+          <div class="card-body py-3 text-center small d-flex flex-column justify-content-center">
+            <div class="text-body-secondary mb-1"><i class="bi bi-file-earmark-text"></i> Documents</div>
+            <div class="fw-semibold fs-5">{{ documents|length }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card h-100 shadow-sm border-0">
+          <div class="card-body py-3 text-center small d-flex flex-column justify-content-center">
+            <div class="text-body-secondary mb-1"><i class="bi bi-easel2"></i> Workshops</div>
+            <div class="fw-semibold fs-5">{{ workshops|length }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card h-100 shadow-sm border-0">
+          <div class="card-body py-3 text-center small d-flex flex-column justify-content-center">
+            <div class="text-body-secondary mb-1"><i class="bi bi-shield-lock"></i> Visibility</div>
+            <div class="fw-semibold fs-6">{{ priv_label }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- Main Column -->
+      <div class="col-lg-8 d-flex flex-column gap-4">
+        <!-- Documents -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-3">
+            <div class="d-flex align-items-center gap-2"><i class="bi bi-file-earmark-text text-primary"></i><span class="fw-semibold">Documents ({{ documents|length }})</span></div>
+            <a href="{{ url_for('document_bp.upload_document', workspace_id=workspace.workspace_id) }}" class="btn btn-sm btn-primary"><i class="bi bi-upload"></i> Upload</a>
+          </div>
+          <div class="list-group list-group-flush small">
+            {% if documents %}
+              {% for doc in documents %}
+                <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-start gap-3" href="{{ url_for('document_bp.preview_document', document_id=doc.id) }}">
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold text-truncate" title="{{ doc.title }}"><i class="bi bi-file-earmark-text me-1"></i>{{ doc.title }}</div>
+                    {% if doc.description %}
+                      <div class="text-body-secondary text-truncate mw-60ch">{{ doc.description | striptags | truncate(90) }}</div>
+                    {% endif %}
+                    <div class="text-body-secondary small">Uploaded {{ doc.uploaded_at.strftime('%Y-%m-%d') }} by {{ doc.uploader.first_name or doc.uploader.email }}</div>
+                  </div>
+                  <span class="badge text-bg-light text-wrap">{{ doc.file_size | filesizeformat if doc.file_size is not none else 'N/A' }}</span>
+                </a>
+              {% endfor %}
+            {% else %}
+              <div class="p-3 text-center text-body-secondary">No documents yet.</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Workshops -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-3">
+            <div class="d-flex align-items-center gap-2"><i class="bi bi-easel2 text-primary"></i><span class="fw-semibold">Workshops ({{ workshops|length }})</span></div>
+            {% if can_create_workshop %}
+              <a href="{{ url_for('workshop_bp.create_workshop_specific', workspace_id=workspace.workspace_id) }}" class="btn btn-sm btn-primary"><i class="bi bi-calendar-plus"></i> New</a>
+            {% endif %}
+          </div>
+          <div class="list-group list-group-flush small">
+            {% if workshops %}
+              {% for ws in workshops %}
+                {% set status_map = {
+                  'scheduled':'info text-dark',
+                  'inprogress':'success',
+                  'paused':'warning text-dark',
+                  'completed':'secondary',
+                  'cancelled':'danger'
+                } %}
+                <div class="list-group-item d-flex justify-content-between align-items-start gap-3">
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold text-truncate" title="{{ ws.title }}"><i class="bi bi-easel2 me-1"></i>{{ ws.title }}</div>
+                    <div class="text-body-secondary small d-flex flex-wrap gap-2 align-items-center">
+                      <span><i class="bi bi-calendar-week me-1"></i>{{ ws.date_time.strftime('%Y-%m-%d %H:%M') if ws.date_time else 'TBD' }}</span>
+                      <span class="badge text-bg-{{ status_map.get(ws.status,'light text-dark') }}">{{ ws.status|capitalize }}</span>
+                      <span><i class="bi bi-person-circle me-1"></i>{{ ws.creator.first_name or ws.creator.email }}</span>
+                    </div>
+                  </div>
+                  <div class="d-flex gap-1">
+                    <a href="{{ url_for('workshop_bp.view_workshop', workshop_id=ws.id) }}" class="btn btn-sm btn-outline-primary" title="View"><i class="bi bi-eye"></i></a>
+                    {% if ws.created_by_id == current_user.user_id %}
+                      <a href="{{ url_for('workshop_bp.edit_workshop', workshop_id=ws.id) }}" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
+                      <form action="{{ url_for('workshop_bp.delete_workshop', workshop_id=ws.id) }}" method="POST" onsubmit="return confirm('Delete this workshop?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="p-3 text-center text-body-secondary">No workshops yet.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Side Column -->
+      <div class="col-lg-4 d-flex flex-column gap-4">
+        <!-- Members -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-3">
+            <div class="d-flex align-items-center gap-2"><i class="bi bi-people text-primary"></i><span class="fw-semibold">Members ({{ active_member_count }})</span></div>
+            {% if can_manage_members %}
+              <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#inviteModal" title="Invite"><i class="bi bi-person-plus"></i></button>
+            {% endif %}
+          </div>
+          <div class="list-group list-group-flush small">
+            {% if active_members %}
+              {% for member in active_members %}
+                <div class="list-group-item d-flex align-items-start gap-2">
+                  <span class="avatar-circle avatar-40 d-inline-block overflow-hidden border">
+                    <img src="{{ profile_url(member.user.profile_pic_url) }}" alt="{{ member.user.first_name or member.user.email }}" class="avatar-img">
+                  </span>
+                  <div class="flex-grow-1">
+                    <a class="text-decoration-none text-reset fw-semibold" href="{{ url_for('account_bp.public_profile', user_id=member.user_id) }}">{{ member.user.first_name or '' }} {{ member.user.last_name or '' }}</a>
+                    <div class="text-body-secondary small">{{ member.user.email }}</div>
+                    <div class="mt-1 d-flex flex-wrap gap-1">
+                      <span class="badge text-bg-light">{{ member.role|capitalize }}</span>
+                      {% if member.user_id == workspace.owner_id %}
+                        <span class="badge text-bg-warning text-dark">Owner</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                  {% if can_manage_members and member.user_id != current_user.user_id and member.user_id != workspace.owner_id %}
+                    <div class="d-flex flex-column align-items-end gap-1">
+                      <form action="{{ url_for('workspace_bp.change_role', workspace_id=workspace.workspace_id, member_id=member.id) }}" method="POST" class="w-100">
+                        <select name="new_role" class="form-select form-select-sm" aria-label="Change member role" onchange="this.form.submit()">
+                          <option value="member" {% if member.role=='member' %}selected{% endif %}>Member</option>
+                          <option value="manager" {% if member.role=='manager' %}selected{% endif %}>Manager</option>
+                          {% if current_user.user_id == workspace.owner_id %}
+                            <option value="admin" {% if member.role=='admin' %}selected{% endif %}>Admin</option>
+                          {% endif %}
+                        </select>
+                      </form>
+                      <form action="{{ url_for('workspace_bp.remove_member', workspace_id=workspace.workspace_id, member_id=member.id) }}" method="POST" onsubmit="return confirm('Remove {{ member.user.email }}?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove"><i class="bi bi-person-x"></i></button>
+                      </form>
+                    </div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="p-3 text-center text-body-secondary">No members yet.</div>
+            {% endif %}
+
+            {% if pending_members %}
+              <div class="list-group-item list-group-item-secondary fw-semibold py-2">Pending / Invited</div>
+              {% for member in pending_members %}
+                <div class="list-group-item d-flex justify-content-between align-items-start gap-2">
+                  <span class="avatar-circle avatar-32 d-inline-block overflow-hidden border">
+                    <img src="{{ profile_url(member.user.profile_pic_url) }}" alt="{{ member.user.first_name or member.user.email }}" class="avatar-img">
+                  </span>
+                  <div class="flex-grow-1">
+                    <span class="fw-semibold">{{ member.user.first_name or '' }} {{ member.user.last_name or '' }}</span>
+                    <div class="text-body-secondary small">{{ member.user.email }}</div>
+                    <span class="badge text-bg-warning text-dark mt-1">{{ member.status|capitalize }}</span>
+                  </div>
+                  {% if can_manage_members %}
+                    <div class="d-flex flex-column gap-1">
+                      <form action="{{ url_for('workspace_bp.approve_member', workspace_id=workspace.workspace_id, member_id=member.id) }}" method="POST">
+                        <button type="submit" class="btn btn-sm btn-success" title="Approve"><i class="bi bi-check-lg"></i></button>
+                      </form>
+                      <form action="{{ url_for('workspace_bp.reject_member', workspace_id=workspace.workspace_id, member_id=member.id) }}" method="POST" onsubmit="return confirm('Reject invitation for {{ member.user.email }}?');">
+                        <button type="submit" class="btn btn-sm btn-danger" title="Reject"><i class="bi bi-x-lg"></i></button>
+                      </form>
+                    </div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Place the modal INSIDE the content block so it's rendered (previously outside any block -> not in DOM) #}
+  {% if can_manage_members or (my_membership and my_membership.role in ['admin','manager']) %}
+  <div class="modal fade" id="inviteModal" tabindex="-1" aria-labelledby="inviteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <form action="{{ url_for('workspace_bp.invite_member') }}" method="POST" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="inviteModalLabel">Invite Member</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body small">
+          <input type="hidden" name="workspace_id" value="{{ workspace.workspace_id }}">
+          <div class="mb-3">
+            <label for="inviteEmail" class="form-label">Recipient Email</label>
+            <input type="email" class="form-control" id="inviteEmail" name="email" required placeholder="user@example.com">
+          </div>
+          <div class="mb-3">
+            <label for="inviteMessage" class="form-label">Message (optional)</label>
+            <textarea class="form-control" id="inviteMessage" name="custom_message" rows="3" placeholder="Short note..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Send Invite</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+{% endblock %}
+
+

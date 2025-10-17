@@ -1,0 +1,38 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Bedrock Configuration · BrainStormX{% endblock %}
+{% block header_title %}Bedrock configuration{% endblock %}
+{% block header_subtitle %}Manage model identifiers for Amazon Bedrock integrations{% endblock %}
+
+{% block content %}
+<form method="post" action="{{ url_for('admin.bedrock_settings') }}" class="card shadow-sm">
+    {{ csrf_form.hidden_tag() }}
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-12 col-lg-6">
+                <label for="model_id" class="form-label">Model ID</label>
+                <input type="text" id="model_id" name="model_id" class="form-control" value="{{ bedrock_model_id }}">
+            </div>
+            <div class="col-12 col-lg-6">
+                <label for="nova_pro" class="form-label">Nova Pro model</label>
+                <input type="text" id="nova_pro" name="nova_pro" class="form-control" value="{{ bedrock_nova_pro }}">
+            </div>
+            <div class="col-12 col-lg-6">
+                <label for="image_gen" class="form-label">Image generation model</label>
+                <input type="text" id="image_gen" name="image_gen" class="form-control" value="{{ bedrock_nova_image_gen }}">
+            </div>
+            <div class="col-12 col-lg-6">
+                <label for="video_gen" class="form-label">Video generation model</label>
+                <input type="text" id="video_gen" name="video_gen" class="form-control" value="{{ bedrock_nova_video_gen }}">
+            </div>
+            <div class="col-12 col-lg-6">
+                <label for="speech_model" class="form-label">Speech model</label>
+                <input type="text" id="speech_model" name="speech_model" class="form-control" value="{{ bedrock_nova_speech }}">
+            </div>
+        </div>
+    </div>
+    <div class="card-footer bg-body-tertiary d-flex justify-content-end gap-2">
+        <button type="submit" class="btn btn-primary">Update configuration</button>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,247 @@
+{% extends "main_template.html" %}
+{% block title %}Change Password{% endblock %}
+
+{% block content %}
+<section class="py-4 bg-body-tertiary">
+  <div class="container">
+    <!-- Header + Breadcrumbs -->
+    <div class="d-flex flex-wrap justify-content-between align-items-start mb-3">
+      <div class="me-2">
+        <h1 class="h5 fw-bold mb-1 d-flex flex-wrap align-items-center gap-2">
+          <i class="bi bi-shield-lock"></i>
+          <span class="text-truncate d-inline-block truncate-48ch" title="Change Password">Change Password</span>
+          <span class="badge text-bg-light d-inline-flex align-items-center gap-1"><i class="bi bi-key"></i>Secure</span>
+        </h1>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item"><a href="{{ url_for('main_bp.index') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('account_bp.account') }}">Account</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Password</li>
+          </ol>
+        </nav>
+      </div>
+      <div class="d-flex gap-2 mt-3 mt-sm-0">
+        <a href="{{ url_for('account_bp.account') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Back</a>
+        <a href="{{ url_for('account_bp.edit_account') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-person"></i> Profile</a>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- Main Column -->
+      <div class="col-lg-8 d-flex flex-column gap-4">
+        <div class="card shadow-sm border-0" id="password-card">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-lock-fill text-primary"></i>
+            <span class="fw-semibold">Update Credentials</span>
+          </div>
+          <form method="POST" novalidate autocomplete="off" spellcheck="false">
+            <div class="card-body">
+              <div class="mb-3">
+                <label for="current_password" class="form-label fw-semibold">Current Password <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-shield-check"></i></span>
+                  <input type="password" class="form-control" id="current_password" name="current_password" required aria-describedby="curHelp">
+                  <button type="button" class="btn btn-outline-secondary toggle-visibility" data-target="current_password" aria-label="Show password"><i class="bi bi-eye"></i></button>
+                </div>
+                <div id="curHelp" class="form-text small text-body-secondary">Verify your identity.</div>
+              </div>
+
+              <div class="mb-3">
+                <label for="new_password" class="form-label fw-semibold">New Password <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-key"></i></span>
+                  <input type="password" class="form-control" id="new_password" name="new_password" required minlength="10" aria-describedby="pwHelp pwStrengthLabel">
+                  <button type="button" class="btn btn-outline-secondary toggle-visibility" data-target="new_password" aria-label="Show password"><i class="bi bi-eye"></i></button>
+                </div>
+                <div id="pwHelp" class="form-text small text-body-secondary">Min 10 chars; aim for strong entropy.</div>
+                <!-- Strength Meter -->
+                <div class="mt-2" aria-live="polite">
+                  <div class="progress pw-strength-progress" role="progressbar" aria-label="Password strength" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                    <div class="progress-bar bg-danger pw-strength-bar" id="pwStrengthBar"></div>
+                  </div>
+                  <div class="small mt-1"><span id="pwStrengthLabel" class="text-body-secondary">Strength: —</span></div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="confirm_password" class="form-label fw-semibold">Confirm New Password <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-check2"></i></span>
+                  <input type="password" class="form-control" id="confirm_password" name="confirm_password" required aria-describedby="confirmHelp">
+                  <button type="button" class="btn btn-outline-secondary toggle-visibility" data-target="confirm_password" aria-label="Show password"><i class="bi bi-eye"></i></button>
+                </div>
+                <div id="confirmHelp" class="form-text small text-body-secondary">Repeat exactly; mismatch blocks submission.</div>
+              </div>
+
+              <!-- Criteria Checklist -->
+              <div class="mb-3 small" id="criteriaBlock" aria-live="polite">
+                <div class="fw-semibold mb-1">Requirements</div>
+                <ul class="list-unstyled mb-0 lh-sm" id="pwCriteria">
+                  <li data-crit="length" class="text-body-secondary"><i class="bi bi-dot"></i> At least 10 characters</li>
+                  <li data-crit="upper" class="text-body-secondary"><i class="bi bi-dot"></i> Uppercase letter</li>
+                  <li data-crit="lower" class="text-body-secondary"><i class="bi bi-dot"></i> Lowercase letter</li>
+                  <li data-crit="digit" class="text-body-secondary"><i class="bi bi-dot"></i> Number</li>
+                  <li data-crit="special" class="text-body-secondary"><i class="bi bi-dot"></i> Symbol (!@#…)</li>
+                  <li data-crit="match" class="text-body-secondary"><i class="bi bi-dot"></i> Matches confirmation</li>
+                  <li data-crit="diff" class="text-body-secondary"><i class="bi bi-dot"></i> Not same as current</li>
+                </ul>
+              </div>
+
+              <div class="alert alert-light border small d-flex align-items-start gap-2 mb-4">
+                <i class="bi bi-info-circle text-primary mt-1"></i>
+                <div>We do not store raw passwords. Strength helps reduce credential stuffing risk. Avoid reusing work or personal passwords.</div>
+              </div>
+
+              <div class="border-top pt-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="small text-body-secondary d-flex align-items-center gap-2"><i class="bi bi-shield-check text-success"></i><span>All policy checks must pass.</span></div>
+                <div class="d-flex gap-2">
+                  <a href="{{ url_for('account_bp.account') }}" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Cancel</a>
+                  <button type="submit" class="btn btn-primary" id="submitBtn" disabled><i class="bi bi-check2-circle"></i> Change Password</button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Recent Security Activity Placeholder (future) -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-activity text-secondary"></i>
+            <span class="fw-semibold">Security Activity (Preview)</span>
+          </div>
+          <div class="card-body small text-body-secondary">
+            <p class="mb-2">Future enhancements may show:</p>
+            <ul class="ps-3 mb-0">
+              <li>Recent logins & devices</li>
+              <li>Active sessions</li>
+              <li>Password change history</li>
+              <li>Suspicious access alerts</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side Column -->
+      <div class="col-lg-4 d-flex flex-column gap-4">
+        <!-- Guidance Panel -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-lightbulb text-warning"></i>
+            <span class="fw-semibold">Strong Password Tips</span>
+          </div>
+          <div class="card-body small lh-sm">
+            <ul class="list-unstyled mb-0">
+              <li class="mb-2"><i class="bi bi-check2-circle text-success"></i> Use a passphrase of unrelated words.</li>
+              <li class="mb-2"><i class="bi bi-check2-circle text-success"></i> Mix case, numbers & symbols sparingly.</li>
+              <li class="mb-2"><i class="bi bi-check2-circle text-success"></i> Avoid patterns: qwerty, 1234, dates.</li>
+              <li><i class="bi bi-check2-circle text-success"></i> Don’t reuse across critical services.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Policy Preview -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-shield-lock text-secondary"></i>
+            <span class="fw-semibold">Policy Summary</span>
+          </div>
+          <div class="card-body small text-body-secondary">
+            <ul class="ps-3 mb-2">
+              <li>Length ≥ 10 required</li>
+              <li>Common password blacklist (planned)</li>
+              <li>Rotation reminders (planned)</li>
+              <li>MFA enrollment (coming soon)</li>
+            </ul>
+            <p class="mb-0">We’ll expand adaptive checks over time.</p>
+          </div>
+        </div>
+
+        <!-- Privacy Note -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-lock text-primary"></i>
+            <span class="fw-semibold">Your Privacy</span>
+          </div>
+          <div class="card-body small text-body-secondary">
+            <p class="mb-2">Passwords are salted & hashed server‑side. We never log them in plaintext or send via email.</p>
+            <p class="mb-0">Consider a reputable password manager to avoid reuse.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const newPw = document.getElementById('new_password');
+      const curPw = document.getElementById('current_password');
+      const confirmPw = document.getElementById('confirm_password');
+      const bar = document.getElementById('pwStrengthBar');
+      const label = document.getElementById('pwStrengthLabel');
+      const criteriaList = document.getElementById('pwCriteria');
+      const submitBtn = document.getElementById('submitBtn');
+
+      function setCrit(name, ok){
+        const li = criteriaList.querySelector(`[data-crit="${name}"]`);
+        if(!li) return;
+        li.classList.toggle('text-success', ok);
+        li.classList.toggle('text-body-secondary', !ok);
+        const icon = ok ? 'check-circle-fill text-success' : 'dot';
+        li.innerHTML = `<i class="bi bi-${icon}"></i> ${li.textContent.trim().replace(/^✔?\s*/,'')}`;
+      }
+
+      function scorePassword(pw){
+        let score = 0; if(!pw) return 0;
+        const unique = new Set(pw).size; score += Math.min(unique*4, 40);
+        if(/[a-z]/.test(pw)) score += 10;
+        if(/[A-Z]/.test(pw)) score += 10;
+  if(/\d/.test(pw)) score += 10;
+        if(/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(pw)) score += 15;
+        if(pw.length >= 10) score += 15;
+        if(pw.length >= 16) score += 10;
+        return Math.min(score, 100);
+      }
+
+      function update(){
+        const pw = newPw.value;
+        const cur = curPw.value;
+        const conf = confirmPw.value;
+        const lenOk = pw.length >= 10;
+        const upperOk = /[A-Z]/.test(pw);
+        const lowerOk = /[a-z]/.test(pw);
+        const digitOk = /\d/.test(pw);
+        const specialOk = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(pw);
+        const matchOk = pw && pw === conf;
+        const diffOk = pw && cur && pw !== cur;
+        setCrit('length', lenOk); setCrit('upper', upperOk); setCrit('lower', lowerOk);
+        setCrit('digit', digitOk); setCrit('special', specialOk); setCrit('match', matchOk); setCrit('diff', diffOk);
+        const s = scorePassword(pw);
+        bar.style.width = s + '%';
+        bar.classList.remove('bg-danger','bg-warning','bg-info','bg-success');
+        let strengthLabel = 'Weak'; let cls='bg-danger';
+        if(s >= 80){ strengthLabel='Strong'; cls='bg-success'; }
+        else if(s >= 60){ strengthLabel='Good'; cls='bg-info'; }
+        else if(s >= 40){ strengthLabel='Fair'; cls='bg-warning'; }
+        bar.classList.add(cls); label.textContent = `Strength: ${strengthLabel}`;
+        const allOk = lenOk && upperOk && lowerOk && digitOk && specialOk && matchOk && diffOk;
+        submitBtn.disabled = !allOk;
+      }
+
+      [newPw, curPw, confirmPw].forEach(el => el.addEventListener('input', update));
+      update();
+
+      document.querySelectorAll('.toggle-visibility').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const targetId = btn.dataset.target; const input = document.getElementById(targetId);
+            if(!input) return; const isPw = input.type === 'password'; input.type = isPw ? 'text' : 'password';
+            const icon = btn.querySelector('i'); if(icon){ icon.className = 'bi ' + (isPw ? 'bi-eye-slash' : 'bi-eye'); }
+            btn.setAttribute('aria-label', isPw ? 'Hide password' : 'Show password');
+        });
+      });
+    });
+  </script>
+{% endblock %}

@@ -1,0 +1,245 @@
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:22:52.182018Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:22:52.350735Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:24:28.124786Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:24:28.214457Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:24:58.544224Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:24:58.634569Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:27:52.296207Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:27:52.539428Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:27:59.532325Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:27:59.654360Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:31:56.512112Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:32:32.869555Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:32:39.332890Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:32:39.503292Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:32:56.086667Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:32:56.173365Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:33:53.945637Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:33:54.046496Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:34:04.475735Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:34:04.587059Z"}
+{"workshop_id": 1, "options": 4, "selected_index": 1, "task_id": 2, "type": "warmup.cache.store", "ts": "2025-10-12T23:34:06.416791Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:34:27.308414Z"}
+{"workshop_id": 1, "type": "warmup.cache.clear", "ts": "2025-10-12T23:34:27.308659Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:34:27.321007Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:34:36.347216Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:34:36.438250Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:34:49.477943Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:34:49.573686Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:38:30.976742Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:38:31.636916Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:39:50.032324Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:39:50.222418Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:44:56.207844Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:44:56.479264Z"}
+{"workshop_id": 1, "transcript_id": 21, "service_used": "bedrock", "model_used": "amazon.nova-lite-v1:0", "message": "An error occurred (ValidationException) when calling the InvokeModel operation: Malformed input request: #: required key [messages] not found, please reformat your input and try again.", "type": "llm_error", "ts": "2025-10-12T23:45:55.892582Z"}
+{"log_id": 2, "workshop_id": 1, "transcript_id": 21, "model": "amazon.nova-lite-v1:0", "latency_ms": 328, "type": "llm_polish_transcript", "ts": "2025-10-12T23:45:55.911035Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:47:14.244910Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:47:21.424551Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-12T23:47:21.867860Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-13T08:05:24.000006Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-13T08:05:24.212906Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-13T08:05:31.681998Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-13T08:05:31.898847Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-13T08:05:56.349346Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-13T08:05:56.570879Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-13T08:06:31.021980Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-13T08:06:31.217364Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-13T08:07:44.001338Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-13T08:07:44.393792Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-13T08:09:15.843126Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-13T08:09:16.172419Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-13T08:10:09.039915Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-13T08:10:09.189208Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-13T08:11:29.409908Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-13T08:11:29.649035Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-13T08:19:26.490385Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-13T08:19:26.642593Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-13T20:49:38.226927Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-13T20:49:38.287565Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T02:24:44.987936Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T02:25:08.444445Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T02:31:55.263053Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T02:32:57.923067Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T02:33:45.298783Z"}
+{"workshop_id": 1, "options": 1, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T03:51:25.659334Z"}
+{"workshop_id": 1, "options": 1, "selected_index": 0, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T03:51:25.678169Z"}
+{"workshop_id": 1, "type": "warmup.cache.clear", "ts": "2025-10-14T03:51:26.119865Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T03:51:26.131142Z"}
+{"user": 1, "url": "/media/photos/u1_20251014035148_enhanced_linkedin.jpg", "style": "linkedin", "background": "corporate_blue", "metadata": {"enhancement_style": "linkedin", "background_style": "corporate_blue", "bedrock_used": false, "fallback_used": true, "processing_steps": ["image_loaded", "resized_square", "face_detected", "fallback_pipeline"], "original_size": [512, 512], "processed_size": [1024, 1024], "target_size": 1024, "face_detected": true, "bedrock_skipped": true, "fallback_reason": "disabled", "fallback_background": "corporate_blue"}, "enhancements": {"smart_crop": false, "lighting": true, "edge_refinement": true}, "type": "photo.enhance", "ts": "2025-10-14T03:51:48.683663Z"}
+{"user": 1, "url": "/media/photos/u1_20251014035148_capture.jpg", "type": "photo.capture", "ts": "2025-10-14T03:51:48.739081Z"}
+{"user": 1, "url": "/media/photos/u1_20251014035148_enhanced_linkedin.jpg", "style": "linkedin", "background": "corporate_blue", "metadata": {"enhancement_style": "linkedin", "background_style": "corporate_blue", "bedrock_used": false, "fallback_used": true, "processing_steps": ["image_loaded", "resized_square", "face_detected", "fallback_pipeline"], "original_size": [512, 512], "processed_size": [1024, 1024], "target_size": 1024, "face_detected": true, "bedrock_skipped": true, "fallback_reason": "disabled", "fallback_background": "corporate_blue"}, "enhancements": {"smart_crop": false, "lighting": true, "edge_refinement": true}, "type": "photo.enhance", "ts": "2025-10-14T03:51:48.903884Z"}
+{"log_id": 1, "workshop_id": 1, "transcript_id": 1, "model": "amazon.nova-lite-v1:0", "latency_ms": 0, "type": "llm_polish_transcript", "ts": "2025-10-14T03:52:46.576604Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T03:52:50.259990Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T03:52:50.335329Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T03:52:50.347180Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 1, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T03:52:50.421113Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 1, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T03:52:50.429627Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 1, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T03:52:50.437803Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T03:52:50.510171Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T03:52:50.522207Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T03:52:50.529954Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T03:52:50.536409Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T03:52:50.540798Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T03:52:50.611223Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T03:52:50.622277Z"}
+{"user": 1, "url": "/media/photos/u1_20251014035708_capture.jpg", "type": "photo.capture", "ts": "2025-10-14T03:57:08.908886Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T04:15:15.591804Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T04:15:15.744949Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T04:19:38.767662Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T04:21:17.765824Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T04:21:17.856979Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T04:21:28.417247Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T04:21:28.493194Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T04:26:52.498361Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T04:26:52.502751Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T04:27:32.714311Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T04:28:13.759783Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T04:28:13.936447Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T04:28:25.645415Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T04:32:06.570953Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T04:43:09.769194Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T04:43:16.135871Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T04:46:44.552795Z"}
+{"workshop_id": 1, "options": 1, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T05:16:46.289860Z"}
+{"workshop_id": 1, "options": 1, "selected_index": 0, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T05:16:46.306739Z"}
+{"workshop_id": 1, "type": "warmup.cache.clear", "ts": "2025-10-14T05:16:46.308754Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T05:16:46.312984Z"}
+{"user": 1, "url": "/media/photos/u1_20251014051708_enhanced_linkedin.jpg", "style": "linkedin", "background": "corporate_blue", "metadata": {"enhancement_style": "linkedin", "background_style": "corporate_blue", "bedrock_used": false, "fallback_used": true, "processing_steps": ["image_loaded", "resized_square", "face_detected", "fallback_pipeline"], "original_size": [512, 512], "processed_size": [1024, 1024], "target_size": 1024, "face_detected": true, "bedrock_skipped": true, "fallback_reason": "disabled", "fallback_background": "corporate_blue"}, "enhancements": {"smart_crop": false, "lighting": true, "edge_refinement": true}, "type": "photo.enhance", "ts": "2025-10-14T05:17:08.102182Z"}
+{"user": 1, "url": "/media/photos/u1_20251014051708_capture.jpg", "type": "photo.capture", "ts": "2025-10-14T05:17:08.160032Z"}
+{"user": 1, "url": "/media/photos/u1_20251014051708_enhanced_linkedin.jpg", "style": "linkedin", "background": "corporate_blue", "metadata": {"enhancement_style": "linkedin", "background_style": "corporate_blue", "bedrock_used": false, "fallback_used": true, "processing_steps": ["image_loaded", "resized_square", "face_detected", "fallback_pipeline"], "original_size": [512, 512], "processed_size": [1024, 1024], "target_size": 1024, "face_detected": true, "bedrock_skipped": true, "fallback_reason": "disabled", "fallback_background": "corporate_blue"}, "enhancements": {"smart_crop": false, "lighting": true, "edge_refinement": true}, "type": "photo.enhance", "ts": "2025-10-14T05:17:08.327100Z"}
+{"log_id": 1, "workshop_id": 1, "transcript_id": 1, "model": "amazon.nova-lite-v1:0", "latency_ms": 0, "type": "llm_polish_transcript", "ts": "2025-10-14T05:18:10.453040Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T05:18:14.178843Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T05:18:14.253603Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T05:18:14.264275Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 1, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T05:18:14.339621Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 1, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T05:18:14.345880Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 1, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T05:18:14.353415Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T05:18:14.427785Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T05:18:14.436259Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T05:18:14.445759Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T05:18:14.451912Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T05:18:14.457985Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T05:18:14.539183Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T05:18:14.543180Z"}
+{"workshop_id": 1, "options": 1, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T11:10:23.592589Z"}
+{"workshop_id": 1, "options": 1, "selected_index": 0, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T11:10:23.610080Z"}
+{"workshop_id": 1, "type": "warmup.cache.clear", "ts": "2025-10-14T11:10:23.616924Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T11:10:23.626737Z"}
+{"user": 1, "url": "/media/photos/u1_20251014111046_enhanced_linkedin.jpg", "style": "linkedin", "background": "corporate_blue", "metadata": {"enhancement_style": "linkedin", "background_style": "corporate_blue", "bedrock_used": false, "fallback_used": true, "processing_steps": ["image_loaded", "resized_square", "face_detected", "fallback_pipeline"], "original_size": [512, 512], "processed_size": [1024, 1024], "target_size": 1024, "face_detected": true, "bedrock_skipped": true, "fallback_reason": "disabled", "fallback_background": "corporate_blue"}, "enhancements": {"smart_crop": false, "lighting": true, "edge_refinement": true}, "type": "photo.enhance", "ts": "2025-10-14T11:10:46.826915Z"}
+{"user": 1, "url": "/media/photos/u1_20251014111046_capture.jpg", "type": "photo.capture", "ts": "2025-10-14T11:10:46.878088Z"}
+{"user": 1, "url": "/media/photos/u1_20251014111047_enhanced_linkedin.jpg", "style": "linkedin", "background": "corporate_blue", "metadata": {"enhancement_style": "linkedin", "background_style": "corporate_blue", "bedrock_used": false, "fallback_used": true, "processing_steps": ["image_loaded", "resized_square", "face_detected", "fallback_pipeline"], "original_size": [512, 512], "processed_size": [1024, 1024], "target_size": 1024, "face_detected": true, "bedrock_skipped": true, "fallback_reason": "disabled", "fallback_background": "corporate_blue"}, "enhancements": {"smart_crop": false, "lighting": true, "edge_refinement": true}, "type": "photo.enhance", "ts": "2025-10-14T11:10:47.041346Z"}
+{"log_id": 1, "workshop_id": 1, "transcript_id": 1, "model": "amazon.nova-lite-v1:0", "latency_ms": 0, "type": "llm_polish_transcript", "ts": "2025-10-14T11:11:52.009781Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T11:11:55.337852Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T11:11:55.410585Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T11:11:55.422522Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 1, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T11:11:55.496912Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 1, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T11:11:55.506721Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 1, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T11:11:55.513979Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T11:11:55.588435Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T11:11:55.592861Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T11:11:55.596519Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T11:11:55.598992Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T11:11:55.601240Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T11:11:55.671290Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T11:11:55.675378Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T11:16:29.341172Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T11:16:29.503308Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T12:32:25.879009Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T12:32:25.971366Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T12:43:26.035884Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T13:04:09.023967Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T13:05:39.891467Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T13:09:21.341338Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T13:09:21.427736Z"}
+{"workshop_id": 1, "options": 1, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:09:51.303177Z"}
+{"workshop_id": 1, "options": 1, "selected_index": 0, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:09:51.324854Z"}
+{"workshop_id": 1, "type": "warmup.cache.clear", "ts": "2025-10-14T13:09:51.331495Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T13:09:51.340393Z"}
+{"user": 1, "url": "/media/photos/u1_20251014131013_enhanced_linkedin.jpg", "style": "linkedin", "background": "corporate_blue", "metadata": {"enhancement_style": "linkedin", "background_style": "corporate_blue", "bedrock_used": false, "fallback_used": true, "processing_steps": ["image_loaded", "resized_square", "face_detected", "fallback_pipeline"], "original_size": [512, 512], "processed_size": [1024, 1024], "target_size": 1024, "face_detected": true, "bedrock_skipped": true, "fallback_reason": "disabled", "fallback_background": "corporate_blue"}, "enhancements": {"smart_crop": false, "lighting": true, "edge_refinement": true}, "type": "photo.enhance", "ts": "2025-10-14T13:10:13.594845Z"}
+{"user": 1, "url": "/media/photos/u1_20251014131013_capture.jpg", "type": "photo.capture", "ts": "2025-10-14T13:10:13.659281Z"}
+{"user": 1, "url": "/media/photos/u1_20251014131013_enhanced_linkedin.jpg", "style": "linkedin", "background": "corporate_blue", "metadata": {"enhancement_style": "linkedin", "background_style": "corporate_blue", "bedrock_used": false, "fallback_used": true, "processing_steps": ["image_loaded", "resized_square", "face_detected", "fallback_pipeline"], "original_size": [512, 512], "processed_size": [1024, 1024], "target_size": 1024, "face_detected": true, "bedrock_skipped": true, "fallback_reason": "disabled", "fallback_background": "corporate_blue"}, "enhancements": {"smart_crop": false, "lighting": true, "edge_refinement": true}, "type": "photo.enhance", "ts": "2025-10-14T13:10:13.833586Z"}
+{"log_id": 1, "workshop_id": 1, "transcript_id": 1, "model": "amazon.nova-lite-v1:0", "latency_ms": 0, "type": "llm_polish_transcript", "ts": "2025-10-14T13:11:25.608433Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:11:30.068952Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:11:30.160027Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:11:30.169003Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 1, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:11:30.246772Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 1, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:11:30.254239Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 1, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:11:30.260703Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:11:30.337794Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:11:30.345857Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:11:30.352781Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:11:30.360132Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:11:30.366190Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:11:30.451426Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:11:30.460414Z"}
+{"workshop_id": 1, "options": 1, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:33:59.394277Z"}
+{"workshop_id": 1, "options": 1, "selected_index": 0, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:33:59.410218Z"}
+{"workshop_id": 1, "type": "warmup.cache.clear", "ts": "2025-10-14T13:33:59.419227Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T13:33:59.429447Z"}
+{"user": 1, "url": "/media/photos/u1_20251014133422_enhanced_linkedin.jpg", "style": "linkedin", "background": "corporate_blue", "metadata": {"enhancement_style": "linkedin", "background_style": "corporate_blue", "bedrock_used": false, "fallback_used": true, "processing_steps": ["image_loaded", "resized_square", "face_detected", "fallback_pipeline"], "original_size": [512, 512], "processed_size": [1024, 1024], "target_size": 1024, "face_detected": true, "bedrock_skipped": true, "fallback_reason": "disabled", "fallback_background": "corporate_blue"}, "enhancements": {"smart_crop": false, "lighting": true, "edge_refinement": true}, "type": "photo.enhance", "ts": "2025-10-14T13:34:22.149043Z"}
+{"user": 1, "url": "/media/photos/u1_20251014133422_capture.jpg", "type": "photo.capture", "ts": "2025-10-14T13:34:22.209109Z"}
+{"user": 1, "url": "/media/photos/u1_20251014133422_enhanced_linkedin.jpg", "style": "linkedin", "background": "corporate_blue", "metadata": {"enhancement_style": "linkedin", "background_style": "corporate_blue", "bedrock_used": false, "fallback_used": true, "processing_steps": ["image_loaded", "resized_square", "face_detected", "fallback_pipeline"], "original_size": [512, 512], "processed_size": [1024, 1024], "target_size": 1024, "face_detected": true, "bedrock_skipped": true, "fallback_reason": "disabled", "fallback_background": "corporate_blue"}, "enhancements": {"smart_crop": false, "lighting": true, "edge_refinement": true}, "type": "photo.enhance", "ts": "2025-10-14T13:34:22.372837Z"}
+{"log_id": 1, "workshop_id": 1, "transcript_id": 1, "model": "amazon.nova-lite-v1:0", "latency_ms": 0, "type": "llm_polish_transcript", "ts": "2025-10-14T13:35:30.161611Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:35:33.380160Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:35:33.455977Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:35:33.468262Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 1, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:35:33.543419Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 1, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:35:33.552554Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 1, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:35:33.560272Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:35:33.634030Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:35:33.644047Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:35:33.653003Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:35:33.660689Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:35:33.666601Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:35:33.740120Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:35:33.751608Z"}
+{"workshop_id": 1, "options": 1, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:57:04.763831Z"}
+{"workshop_id": 1, "options": 1, "selected_index": 0, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:57:04.779942Z"}
+{"workshop_id": 1, "type": "warmup.cache.clear", "ts": "2025-10-14T13:57:04.788682Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T13:57:04.797004Z"}
+{"user": 1, "url": "/media/photos/u1_20251014135725_enhanced_linkedin.jpg", "style": "linkedin", "background": "corporate_blue", "metadata": {"enhancement_style": "linkedin", "background_style": "corporate_blue", "bedrock_used": false, "fallback_used": true, "processing_steps": ["image_loaded", "resized_square", "face_detected", "fallback_pipeline"], "original_size": [512, 512], "processed_size": [1024, 1024], "target_size": 1024, "face_detected": true, "bedrock_skipped": true, "fallback_reason": "disabled", "fallback_background": "corporate_blue"}, "enhancements": {"smart_crop": false, "lighting": true, "edge_refinement": true}, "type": "photo.enhance", "ts": "2025-10-14T13:57:25.492378Z"}
+{"user": 1, "url": "/media/photos/u1_20251014135725_capture.jpg", "type": "photo.capture", "ts": "2025-10-14T13:57:25.551128Z"}
+{"user": 1, "url": "/media/photos/u1_20251014135725_enhanced_linkedin.jpg", "style": "linkedin", "background": "corporate_blue", "metadata": {"enhancement_style": "linkedin", "background_style": "corporate_blue", "bedrock_used": false, "fallback_used": true, "processing_steps": ["image_loaded", "resized_square", "face_detected", "fallback_pipeline"], "original_size": [512, 512], "processed_size": [1024, 1024], "target_size": 1024, "face_detected": true, "bedrock_skipped": true, "fallback_reason": "disabled", "fallback_background": "corporate_blue"}, "enhancements": {"smart_crop": false, "lighting": true, "edge_refinement": true}, "type": "photo.enhance", "ts": "2025-10-14T13:57:25.717259Z"}
+{"log_id": 1, "workshop_id": 1, "transcript_id": 1, "model": "amazon.nova-lite-v1:0", "latency_ms": 0, "type": "llm_polish_transcript", "ts": "2025-10-14T13:58:36.575009Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:58:39.872374Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:58:39.949227Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:58:39.961508Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 1, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:58:40.249166Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 1, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:58:40.251316Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 1, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:58:40.252831Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:58:40.321182Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:58:40.327077Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:58:40.331351Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:58:40.334838Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 2, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:58:40.336749Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.store", "ts": "2025-10-14T13:58:40.405943Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 1, "type": "warmup.cache.hit", "ts": "2025-10-14T13:58:40.416799Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T14:27:17.180469Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T14:27:17.294147Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T14:30:41.079206Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T14:30:41.219870Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T14:33:15.809519Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T14:33:15.947864Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 2, "type": "warmup.cache.store", "ts": "2025-10-14T14:34:07.261451Z"}
+{"workshop_id": 1, "options": 3, "selected_index": 0, "task_id": 2, "type": "warmup.cache.hit", "ts": "2025-10-14T14:37:15.426961Z"}
+{"workshop_id": 1, "type": "warmup.cache.clear", "ts": "2025-10-14T14:37:15.429130Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T14:37:15.442049Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T14:44:33.892251Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T14:44:34.042245Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T19:11:07.578045Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T19:12:33.749913Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T19:12:47.818717Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T19:13:04.885776Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T19:32:55.134345Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T19:34:03.928826Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T19:34:03.988939Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T21:58:50.131118Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-14T21:58:50.245357Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-15T01:41:40.488227Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-15T01:41:40.517413Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-15T04:27:00.082469Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-15T04:27:00.242028Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-15T07:05:28.102260Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-15T21:23:20.703810Z"}
+{"workshop_id": 1, "type": "warmup.cache.miss", "ts": "2025-10-15T21:23:20.847715Z"}

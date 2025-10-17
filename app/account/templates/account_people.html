@@ -1,0 +1,246 @@
+{% extends 'main_template.html' %}
+{% block title %}People{% endblock %}
+
+{% block content %}
+<section class="py-4 bg-body-tertiary">
+  <div class="container">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+      <div class="me-2">
+        <h1 class="h4 fw-bold mb-1 d-flex align-items-center gap-2"><i class="bi bi-people"></i><span>People</span></h1>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item"><a href="{{ url_for('main_bp.index') }}">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">People</li>
+          </ol>
+        </nav>
+      </div>
+      <div class="d-flex gap-2 mt-3 mt-sm-0">
+        <a href="{{ url_for('workspace_bp.create_workspace') }}" class="btn btn-primary"><i class="bi bi-building-add me-1"></i>New Workspace</a>
+        <a href="{{ url_for('workshop_bp.create_workshop_general') }}" class="btn btn-outline-primary"><i class="bi bi-calendar-plus me-1"></i>New Workshop</a>
+      </div>
+    </div>
+
+    <!-- Discovery Filters -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body py-3">
+        <form class="row g-2 align-items-center" onsubmit="return false" id="peopleFilterForm">
+          <div class="col-md-5">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-body-secondary"><i class="bi bi-search"></i></span>
+              <input type="text" id="peopleSearch" class="form-control" placeholder="Search people by name, org, title..." aria-label="Search people" />
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-body-secondary"><i class="bi bi-building"></i></span>
+              <input type="text" id="orgFilter" class="form-control" placeholder="Filter by organization" aria-label="Filter by organization" />
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="dropdown w-100">
+              <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="sortPeopleBtn" data-label="Sort">
+                Sort
+              </button>
+              <ul class="dropdown-menu small" aria-labelledby="sortPeopleBtn" id="peopleSortMenu">
+                <li><button class="dropdown-item" type="button" data-sort="recent">Recently Joined</button></li>
+                <li><button class="dropdown-item" type="button" data-sort="alpha">Name (A-Z)</button></li>
+                <li><button class="dropdown-item" type="button" data-sort="workspaces">Workspaces</button></li>
+                <li><button class="dropdown-item" type="button" data-sort="documents">Documents</button></li>
+                <li><button class="dropdown-item" type="button" data-sort="workshops">Workshops Created</button></li>
+              </ul>
+            </div>
+          </div>
+          <div class="col-md-2 d-flex justify-content-md-end">
+            <div class="btn-group btn-group-sm" role="group" aria-label="View mode">
+              <button type="button" class="btn btn-outline-secondary active" data-view="grid" id="viewGrid" aria-label="Grid view" title="Grid view"><i class="bi bi-grid-3x3-gap" aria-hidden="true"></i></button>
+              <button type="button" class="btn btn-outline-secondary" data-view="list" id="viewList" aria-label="List view" title="List view"><i class="bi bi-list" aria-hidden="true"></i></button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- People Results -->
+    {% set total = people|length %}
+    <div class="d-flex flex-wrap gap-2 small mb-3">
+      <span class="badge text-bg-light text-dark">Total {{ total }}</span>
+      <span class="badge text-bg-light text-dark" id="visibleCount" hidden></span>
+    </div>
+
+    {% if people %}
+      <div id="peopleContainer" class="row g-3" data-mode="grid">
+        {% for p in people %}
+          {% set u = p.user %}
+          <div class="col-xl-3 col-lg-4 col-md-6 person-card" data-name="{{ (u.first_name ~ ' ' ~ u.last_name)|lower }}" data-org="{{ (u.organization or '')|lower }}" data-title="{{ (u.job_title or '')|lower }}" data-workspaces="{{ p.workspaces }}" data-documents="{{ p.documents }}" data-workshops="{{ p.workshops_created }}" data-joined="{{ p.joined.strftime('%Y-%m-%dT%H:%M:%S') if p.joined }}">
+            <div class="card h-100 shadow-sm border-0 hover-shadow-sm">
+              <div class="card-body d-flex flex-column gap-3 p-3">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="avatar-circle d-inline-block overflow-hidden border bg-white shadow-sm avatar-md">
+                    <img src="{{ profile_url(u.profile_pic_url) }}" alt="Avatar of {{ u.first_name or u.username or u.email }}" class="avatar-img">
+                  </span>
+                  <div class="flex-grow-1 min-w-0">
+                    <a href="{{ url_for('account_bp.public_profile', user_id=u.user_id) }}" class="text-decoration-none fw-semibold d-inline-block text-truncate" title="{{ u.first_name or u.username or u.email }} {{ u.last_name or '' }}">
+                      {% if u.first_name or u.last_name %}{{ u.first_name or '' }} {{ u.last_name or '' }}{% elif u.username %}{{ u.username }}{% else %}{{ u.email.split('@')[0] }}{% endif %}
+                    </a>
+                    {% if u.organization %}<div class="text-body-secondary small text-truncate"><i class="bi bi-building me-1"></i>{{ u.organization }}</div>{% endif %}
+                    {% if u.job_title %}<div class="text-body-secondary small text-truncate"><i class="bi bi-briefcase me-1"></i>{{ u.job_title }}</div>{% endif %}
+                  </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2 small">
+                  <span class="badge text-bg-light" title="Active Workspaces"><i class="bi bi-diagram-3 me-1"></i>{{ p.workspaces }}</span>
+                  <span class="badge text-bg-light" title="Documents"><i class="bi bi-file-earmark-text me-1"></i>{{ p.documents }}</span>
+                  <span class="badge text-bg-light" title="Workshops Created"><i class="bi bi-easel2 me-1"></i>{{ p.workshops_created }}</span>
+                </div>
+                <div class="d-flex flex-column gap-2 mt-auto">
+                  <div class="btn-group btn-group-sm w-100" role="group" aria-label="Connect actions">
+                    <a href="{{ url_for('account_bp.public_profile', user_id=u.user_id) }}" class="btn btn-outline-secondary" title="View Profile" aria-label="View Profile"><i class="bi bi-person-badge"></i></a>
+                    {% if my_workspaces|length > 0 %}
+                      <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#inviteWorkspaceModal" data-user-id="{{ u.user_id }}" title="Invite to Workspace" aria-label="Invite to Workspace"><i class="bi bi-person-plus"></i></button>
+                    {% endif %}
+                    <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#inviteWorkshopModal" data-user-id="{{ u.user_id }}" title="Invite to Workshop" aria-label="Invite to Workshop"><i class="bi bi-calendar-plus"></i></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="card shadow-sm border-0">
+        <div class="card-body text-center py-5">
+          <div class="mb-3"><i class="bi bi-people display-6 text-primary"></i></div>
+          <h2 class="h5 mb-2">No People Yet</h2>
+          <p class="text-body-secondary mb-0">As more users join the platform they will appear here for collaboration.</p>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- Invite to Workspace Modal -->
+<div class="modal fade" id="inviteWorkspaceModal" tabindex="-1" aria-labelledby="inviteWorkspaceLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form action="{{ url_for('workspace_bp.invite_member') }}" method="post" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title d-flex align-items-center gap-2" id="inviteWorkspaceLabel"><i class="bi bi-person-plus text-primary"></i><span>Invite to Workspace</span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body small">
+        <input type="hidden" name="email" id="inviteWorkspaceEmail" />
+        <input type="hidden" name="workspace_id" id="inviteWorkspaceId" />
+        <div class="mb-3">
+          <label for="workspaceSelect" class="form-label fw-semibold">Select Workspace</label>
+          <select id="workspaceSelect" class="form-select" required>
+            <option value="" selected disabled>Choose...</option>
+            {% for w in my_workspaces %}<option value="{{ w.workspace_id }}">{{ w.name }}</option>{% endfor %}
+          </select>
+          <div class="form-text">Only your active workspaces are listed.</div>
+        </div>
+        <div class="mb-3">
+          <label for="workspaceInviteMessage" class="form-label fw-semibold">Message (optional)</label>
+          <textarea id="workspaceInviteMessage" name="custom_message" rows="3" class="form-control" placeholder="Add a short welcome or context..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-send me-1"></i>Send Invite</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Invite to Workshop Modal (placeholder - requires workshop creation flow) -->
+<div class="modal fade" id="inviteWorkshopModal" tabindex="-1" aria-labelledby="inviteWorkshopLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title d-flex align-items-center gap-2" id="inviteWorkshopLabel"><i class="bi bi-calendar-plus text-success"></i><span>Invite to Workshop</span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body small">
+        <p class="text-body-secondary mb-2">Workshop invitations will be integrated once direct participant invitations are supported here.</p>
+        <p class="mb-0">You can invite users from within a workshop's details page for now.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const peopleSearch = document.getElementById('peopleSearch');
+  const orgFilter = document.getElementById('orgFilter');
+  const container = document.getElementById('peopleContainer');
+  const sortMenu = document.getElementById('peopleSortMenu');
+  const viewGrid = document.getElementById('viewGrid');
+  const viewList = document.getElementById('viewList');
+  const visibleCount = document.getElementById('visibleCount');
+  let activeSort = 'recent';
+
+  function cards(){ return Array.from(container?.querySelectorAll('.person-card') || []); }
+
+  function apply(){
+    const q = (peopleSearch?.value || '').trim().toLowerCase();
+    const org = (orgFilter?.value || '').trim().toLowerCase();
+    let visible = 0;
+    cards().forEach(card => {
+      const name = card.getAttribute('data-name');
+      const orgAttr = card.getAttribute('data-org');
+      const titleAttr = card.getAttribute('data-title');
+      const matchesQ = !q || name.includes(q) || (titleAttr && titleAttr.includes(q));
+      const matchesOrg = !org || (orgAttr && orgAttr.includes(org));
+      const show = matchesQ && matchesOrg;
+      card.style.display = show ? '' : 'none';
+      if(show) visible++;
+    });
+    if(visibleCount){
+      visibleCount.textContent = visible + ' visible';
+      visibleCount.hidden = false;
+    }
+    sort();
+  }
+
+  function sort(){
+    if(!container) return;
+    const visCards = cards().filter(c => c.style.display !== 'none');
+    visCards.sort((a,b) => {
+      if(activeSort==='alpha') return a.getAttribute('data-name').localeCompare(b.getAttribute('data-name'));
+      if(activeSort==='workspaces') return (+b.getAttribute('data-workspaces')) - (+a.getAttribute('data-workspaces'));
+      if(activeSort==='documents') return (+b.getAttribute('data-documents')) - (+a.getAttribute('data-documents'));
+      if(activeSort==='workshops') return (+b.getAttribute('data-workshops')) - (+a.getAttribute('data-workshops'));
+      // recent (default) by joined date
+      if(activeSort==='recent') return b.getAttribute('data-joined').localeCompare(a.getAttribute('data-joined'));
+      return 0;
+    });
+    visCards.forEach(c => container.appendChild(c));
+  }
+
+  peopleSearch?.addEventListener('input', apply);
+  orgFilter?.addEventListener('input', apply);
+  sortMenu?.querySelectorAll('[data-sort]').forEach(btn => btn.addEventListener('click', function(){
+    activeSort = this.getAttribute('data-sort');
+    apply();
+  }));
+  viewGrid?.addEventListener('click', () => { container.dataset.mode='grid'; viewGrid.classList.add('active'); viewList.classList.remove('active'); container.classList.add('row'); cards().forEach(c=>c.classList.add('col-xl-3','col-lg-4','col-md-6')); });
+  viewList?.addEventListener('click', () => { container.dataset.mode='list'; viewList.classList.add('active'); viewGrid.classList.remove('active'); container.classList.remove('row'); cards().forEach(c=>c.classList.remove('col-xl-3','col-lg-4','col-md-6')); });
+
+  // Invite workspace modal wiring - capture user email via fetch (simplified placeholder)
+  const workspaceModal = document.getElementById('inviteWorkspaceModal');
+  workspaceModal?.addEventListener('show.bs.modal', function(e){
+    const trigger = e.relatedTarget;
+    if(!trigger) return;
+    const userId = trigger.getAttribute('data-user-id');
+    // This assumes backend enhancement to pre-fill email through minimal fetch; placeholder fallback uses a hidden field
+    // For now we store userId in hidden workspace_id and expect manual email edit after improvement.
+    document.getElementById('workspaceSelect')?.addEventListener('change', function(){
+      document.getElementById('inviteWorkspaceId').value = this.value;
+    }, { once: true });
+  });
+
+  apply(); // initial
+})();
+</script>
+{% endblock %}

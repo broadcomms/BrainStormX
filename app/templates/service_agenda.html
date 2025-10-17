@@ -1,0 +1,113 @@
+<!-- Display list of Agenda titles from JSON -->
+<div id="agenda-content-display" class="mt-2">
+  <ol id="agenda-titles-list" class="list-group list-group-numbered"></ol>
+  <div id="agenda-empty-state" class="text-muted">No agenda available.</div>
+</div>
+
+{# Add controls for organizer #}
+{% if user_is_organizer %}
+<div class="mt-1 text-end"> {# Use text-end for alignment #}
+<button class="btn btn-sm btn-outline-primary me-1 regenerate-btn" data-type="agenda" title="Regenerate Agenda">
+  <i class="bi bi-arrow-clockwise"></i> <span class="d-none d-md-inline">Regenerate</span>
+</button>
+{# Link to the main edit page for simplicity in this view #}
+<a href="{{ url_for('workshop_bp.edit_workshop', workshop_id=workshop.id) }}" class="btn btn-sm btn-outline-secondary" title="Edit Agenda">
+  <i class="bi bi-pencil-square"></i> <span class="d-none d-md-inline">Edit</span>
+</a>
+</div>
+{% endif %}
+
+<script>
+  (function(){
+    const emptyStateElId = 'agenda-empty-state';
+    const listElId = 'agenda-titles-list';
+    const containerId = 'agenda-content-display';
+
+    function normalizeAgendaItems(raw){
+      if (raw === null || typeof raw === 'undefined') {
+        return [];
+      }
+
+      if (typeof raw === 'object' && !Array.isArray(raw)) {
+        const inner = raw.agenda;
+        if (Array.isArray(inner)) {
+          return inner;
+        }
+      }
+
+      if (Array.isArray(raw)) {
+        return raw;
+      }
+
+      if (typeof raw === 'string') {
+        try {
+          const parsed = JSON.parse(raw);
+          return normalizeAgendaItems(parsed);
+        } catch (err) {
+          const lines = raw.split('\n').map(line => line.trim()).filter(Boolean);
+          if (lines.length) {
+            return lines.map(txt => ({ activity: txt, description: txt }));
+          }
+        }
+      }
+
+      return [];
+    }
+
+    function renderAgenda(raw){
+      const listEl = document.getElementById(listElId);
+      const emptyEl = document.getElementById(emptyStateElId);
+      const container = document.getElementById(containerId);
+      if (!listEl) {
+        return;
+      }
+
+      if (container) {
+        if (typeof raw === 'string') {
+          container.dataset.rawJson = raw;
+        } else {
+          try {
+            container.dataset.rawJson = JSON.stringify(raw);
+          } catch (err) {
+            delete container.dataset.rawJson;
+          }
+        }
+      }
+
+      const items = normalizeAgendaItems(raw);
+      listEl.innerHTML = '';
+
+      if (!items.length) {
+        if (emptyEl) {
+          emptyEl.hidden = false;
+        }
+        listEl.classList.add('d-none');
+        return;
+      }
+
+      listEl.classList.remove('d-none');
+      if (emptyEl) {
+        emptyEl.hidden = true;
+      }
+
+      items.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item';
+        if (item && typeof item === 'object') {
+          const activity = item.activity || item.title || item.description || '';
+          li.textContent = activity || 'Agenda item';
+        } else {
+          li.textContent = String(item);
+        }
+        listEl.appendChild(li);
+      });
+    }
+
+    window.renderAgendaContent = renderAgenda;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const initialRaw = {{ workshop.agenda | tojson | safe }};
+      renderAgenda(initialRaw);
+    });
+  })();
+</script>

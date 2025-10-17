@@ -1,0 +1,1655 @@
+<!-- app/workshop/templates/workshop_edit.html -->
+{% extends "main_template.html" %}
+{% block title %}Edit Workshop: {{ workshop.title or 'Workshop' }}{% endblock %}
+
+{% block content %}
+{% set status = (form_data.status if form_data else (workshop.status if workshop else 'scheduled')) %}
+{% set status_map = {
+  'scheduled': ('info text-dark','calendar-event','Scheduled'),
+  'inprogress': ('success','play-circle','In Progress'),
+  'paused': ('warning text-dark','pause-circle','Paused'),
+  'completed': ('secondary','check2-circle','Completed'),
+  'cancelled': ('danger','x-octagon','Cancelled')
+} %}
+{% set status_style, status_icon, status_label = status_map.get(status, ('light text-dark','question-circle','Unknown')) %}
+
+<section class="py-4 bg-body-tertiary">
+  <div class="container">
+    <script id="participants-for-config" type="application/json">{{ (participants_for_config or []) | tojson }}</script>
+    <script id="docs-for-config" type="application/json">{{ (docs_for_config or []) | tojson }}</script>
+    <script>
+      (function(){
+        try {
+          const el = document.getElementById('participants-for-config');
+          const txt = el ? el.textContent : '[]';
+          window.__participantsForConfig = JSON.parse(txt || '[]');
+        } catch(_) { window.__participantsForConfig = []; }
+        try {
+          const el2 = document.getElementById('docs-for-config');
+          const txt2 = el2 ? el2.textContent : '[]';
+          window.__docsForConfig = JSON.parse(txt2 || '[]');
+        } catch(_) { window.__docsForConfig = []; }
+      })();
+    </script>
+    <!-- Header + Breadcrumbs -->
+    <div class="d-flex flex-wrap justify-content-between align-items-start mb-3">
+      <div class="me-2">
+        <h1 class="h4 fw-bold mb-1 d-flex align-items-center gap-2">
+          <i class="bi bi-easel2"></i>
+          <span class="text-truncate d-inline-block truncate-48ch" title="{{ workshop.title }}">Edit: {{ workshop.title }}</span>
+          <span class="badge text-bg-{{ status_style }} d-inline-flex align-items-center gap-1">
+            <i class="bi bi-{{ status_icon }}"></i>{{ status_label }}
+          </span>
+        </h1>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item"><a href="{{ url_for('main_bp.index') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('workshop_bp.list_workshops') }}">Workshops</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Edit</li>
+          </ol>
+        </nav>
+      </div>
+      <div class="d-flex flex-wrap gap-2 mt-3 mt-sm-0">
+        <a href="{{ url_for('workshop_bp.view_workshop', workshop_id=workshop.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Cancel</a>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- Main Column -->
+      <div class="col-lg-8 d-flex flex-column gap-4">
+        <!-- Core Edit Card -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-pencil-square text-primary"></i>
+            <span class="fw-semibold">Workshop Details</span>
+          </div>
+          <form action="{{ url_for('workshop_bp.edit_workshop', workshop_id=workshop.id) }}" method="POST" novalidate>
+            <div class="card-body">
+              <div class="row g-3 mb-2">
+                <div class="col-sm-7">
+                  <label for="title" class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-fonts"></i></span>
+                    <input type="text" name="title" id="title" maxlength="120" class="form-control" required
+                      value="{{ form_data.title if form_data else (workshop.title if workshop else '') }}" placeholder="e.g. Spring Innovation Sprint" aria-describedby="titleHelp titleCount">
+                  </div>
+                  <div class="d-flex justify-content-between small mt-1">
+                    <div id="titleHelp" class="text-body-secondary">Outcome‑oriented title (max 120 chars).</div>
+                    <div id="titleCount" class="text-body-secondary">0 / 120</div>
+                  </div>
+                </div>
+                <div class="col-sm-5">
+                  <label for="status" class="form-label fw-semibold">Status</label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-{{ status_icon }}"></i></span>
+                    <select name="status" id="status" class="form-select" aria-describedby="statusHelp">
+                      {% set current_status = form_data.status if form_data else workshop.status %}
+                      <option value="scheduled"   {% if current_status=='scheduled' %}selected{% endif %}>Scheduled</option>
+                      <option value="inprogress" {% if current_status=='inprogress' %}selected{% endif %}>In Progress</option>
+                      <option value="paused"     {% if current_status=='paused' %}selected{% endif %}>Paused</option>
+                      <option value="completed"  {% if current_status=='completed' %}selected{% endif %}>Completed</option>
+                      <option value="cancelled"  {% if current_status=='cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                  </div>
+                  <div id="statusHelp" class="form-text small text-body-secondary">Set current lifecycle state.</div>
+              
+
+
+                </div>
+
+              <!-- Session Plan (Task Sequence + Durations) -->
+              <div class="col-12">
+              <div class="card shadow-sm border-0" id="planCard" data-workshop-id="{{ workshop.id }}">
+                <div class="card-header bg-transparent py-3 d-flex align-items-center justify-content-between">
+                  <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-diagram-3"></i>
+                    <span class="fw-semibold">Session Plan</span>
+                  </div>
+                  <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="resetPlanBtn">Reset to defaults</button>
+                    <button type="button" class="btn btn-sm btn-primary" id="savePlanBtn">Save plan</button>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <p class="text-body-secondary small mb-3">Choose which tasks to include and set durations. Minutes shown here are saved as seconds in the plan.</p>
+                  <div class="table-responsive">
+                    <table class="table align-middle mb-0" id="planTable">
+                      <thead>
+                        <tr>
+                          <th class="text-center w-44">#</th>
+                          <th class="text-center w-80">Include</th>
+                          <th>Task</th>
+                          <th class="w-160">Minutes</th>
+                          <th>Phase label (optional)</th>
+                          <th class="text-center w-120">Order</th>
+                          <th class="text-center w-160">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody id="planRows">
+                        <!-- Filled by JS -->
+                      </tbody>
+                    </table>
+                  </div>
+                  <!-- Per-item configuration modal placeholder -->
+                  <div class="modal fade" id="planItemConfigModal" tabindex="-1" aria-labelledby="planItemConfigModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-scrollable">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title" id="planItemConfigModalLabel">Configure Task</h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                          <div id="planItemConfigBody" class="small"></div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                          <button type="button" class="btn btn-primary" id="planItemConfigSaveBtn">Save</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="d-flex align-items-center gap-2 mt-3">
+                    <label for="addTaskSelect" class="form-label me-2 mb-0 small text-body-secondary">Add task</label>
+                    <select id="addTaskSelect" class="form-select form-select-sm w-auto"></select>
+                    <button type="button" id="addTaskBtn" class="btn btn-sm btn-outline-primary">Add</button>
+                  </div>
+                    <div class="d-flex justify-content-end mt-2 text-body-secondary small">
+                      <span>Total minutes: <span id="planTotalMinutes" class="fw-semibold">0</span></span>
+                    </div>
+                </div>
+              </div>
+              </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="objective" class="form-label fw-semibold">Objective</label>
+                <textarea name="objective" id="objective" rows="3" maxlength="500" class="form-control" placeholder="What problem are we solving?" aria-describedby="objHelp objCount">{{ form_data.objective if form_data else (workshop.objective if workshop else '') }}</textarea>
+                <div class="d-flex justify-content-between small mt-1">
+                  <div id="objHelp" class="text-body-secondary">Concise purpose (max 500 chars) improves AI guidance.</div>
+                  <div id="objCount" class="text-body-secondary">0 / 500</div>
+                </div>
+              </div>
+
+              <div class="row g-3 mb-3">
+                <div class="col-md-7">
+                  <label for="date_time" class="form-label fw-semibold">Scheduled Start <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-clock-history"></i></span>
+                    <input type="text" name="date_time" id="date_time" class="form-control flatpickr-datetime" placeholder="YYYY-MM-DD HH:MM"
+                      value="{{ form_data.date_time if form_data else (workshop.date_time_str if workshop and workshop.date_time_str else '') }}" required aria-describedby="dtHelp">
+                  </div>
+                  <div id="dtHelp" class="form-text small text-body-secondary">Local 24‑hour time.</div>
+                </div>
+                <div class="col-md-5">
+                  <label for="duration" class="form-label fw-semibold">Duration (mins)</label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-hourglass-split"></i></span>
+                    <input type="number" name="duration" id="duration" class="form-control" min="1" placeholder="e.g. 90"
+                      value="{{ form_data.duration if form_data else (workshop.duration if workshop and workshop.duration else '') }}" aria-describedby="durHelp">
+                  </div>
+                  <div id="durHelp" class="form-text small text-body-secondary">Optional total runtime.</div>
+                </div>
+              </div>
+
+              <!-- Auto-advance settings -->
+              <div class="row g-3 mb-3">
+                <div class="col-md-7">
+                  <label class="form-label fw-semibold">Auto-Advance</label>
+                  <div class="form-check form-switch">
+                    {% set ae = (form_data.auto_advance_enabled if form_data else workshop.auto_advance_enabled) %}
+                    <input class="form-check-input" type="checkbox" role="switch" id="auto_advance_enabled" name="auto_advance_enabled" {% if ae %}checked{% endif %}>
+                    <label class="form-check-label" for="auto_advance_enabled">Enable auto-advance after each timed phase</label>
+                  </div>
+                </div>
+                <div class="col-md-5">
+                  <label for="auto_advance_after_seconds" class="form-label fw-semibold">Delay (seconds)</label>
+                  {% set aas = (form_data.auto_advance_after_seconds if form_data else workshop.auto_advance_after_seconds) %}
+                  <input type="number" min="0" step="1" class="form-control" id="auto_advance_after_seconds" name="auto_advance_after_seconds" value="{{ aas or 0 }}" placeholder="e.g. 8">
+                  <div class="form-text small text-body-secondary">Wait time before automatically advancing.</div>
+                </div>
+              </div>
+
+              <div class="mt-2">
+                <label for="agenda" class="form-label fw-semibold d-flex justify-content-between align-items-center">Agenda <span class="badge text-bg-light">Markdown</span></label>
+                <textarea name="agenda" id="agenda" rows="6" class="form-control" maxlength="2000" placeholder="Introduction & Warm‑Up\nBrainstorming\nClustering & Voting\nFeasibility Assessment\nSummary & Closing" aria-describedby="agendaHelp agendaCount">{{ form_data.agenda if form_data else (workshop.agenda_draft_plaintext if workshop and workshop.agenda_draft_plaintext else (workshop.agenda if workshop else '')) }}</textarea>
+                <div class="d-flex justify-content-between small mt-1">
+                  <div id="agendaHelp" class="text-body-secondary">One activity per line. Edit anytime before start.</div>
+                  <div id="agendaCount" class="text-body-secondary">0 / 2000</div>
+                </div>
+                <div class="mt-2 d-flex gap-2 flex-wrap">
+                  <button type="button" class="btn btn-sm btn-outline-primary" id="insertDefaultAgenda"><i class="bi bi-magic"></i> Quick Insert</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" id="clearAgenda"><i class="bi bi-eraser"></i> Clear</button>
+                  <button type="button" class="btn btn-sm btn-outline-success" id="trimAgenda"><i class="bi bi-scissors"></i> Trim Whitespace</button>
+                </div>
+              </div>
+
+              <div class="border-top mt-4 pt-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="small text-body-secondary d-flex align-items-center gap-2">
+                  <i class="bi bi-info-circle text-primary"></i>
+                  <span>Edits saved here update lobby guidance instantly.</span>
+                </div>
+                <div class="d-flex gap-2">
+                  <a href="{{ url_for('workshop_bp.view_workshop', workshop_id=workshop.id) }}" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> Cancel</a>
+                  <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle"></i> Save Changes</button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Real-Time Features Toggles -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-broadcast-pin text-danger"></i>
+            <span class="fw-semibold">Live Collaboration Features</span>
+          </div>
+          <form action="{{ url_for('workshop_bp.edit_workshop', workshop_id=workshop.id) }}" method="POST" class="pb-1" novalidate>
+            <!-- Hidden fields to preserve required core values when only toggling flags -->
+            <input type="hidden" name="title" value="{{ workshop.title }}">
+            <input type="hidden" name="objective" value="{{ workshop.objective or '' }}">
+            <input type="hidden" name="date_time" value="{{ workshop.date_time_str }}">
+            <input type="hidden" name="duration" value="{{ workshop.duration or '' }}">
+            <input type="hidden" name="status" value="{{ workshop.status }}">
+            <input type="hidden" name="agenda" value="{{ workshop.agenda or '' }}">
+            <input type="hidden" name="form_section" value="live">
+            <div class="card-body">
+              <p class="small text-body-secondary mb-3">Enable or disable real-time video conference and live transcription per workshop. These flags gate access to the standalone conference view and transcript streaming.</p>
+              <div class="row g-4">
+                <div class="col-md-6">
+                  <div class="form-check form-switch">
+                    <input type="hidden" name="conference_active_present" value="1">
+                    <input class="form-check-input" type="checkbox" role="switch" id="conference_active" name="conference_active" {% if workshop.conference_active %}checked{% endif %}>
+                    <label class="form-check-label fw-semibold" for="conference_active">Enable Video Conference</label>
+                  </div>
+                  <div class="form-text small text-body-secondary mt-1">Controls participant access to WebRTC room. When off, participants are redirected.</div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-check form-switch">
+                    <input type="hidden" name="transcription_enabled_present" value="1">
+                    <input class="form-check-input" type="checkbox" role="switch" id="transcription_enabled" name="transcription_enabled" {% if workshop.transcription_enabled %}checked{% endif %}>
+                    <label class="form-check-label fw-semibold" for="transcription_enabled">Enable Live Transcription</label>
+                  </div>
+                  <div class="form-text small text-body-secondary mt-1">If enabled, participants can toggle captions; audio isn’t processed when off.</div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-check form-switch">
+                    <input type="hidden" name="participant_delete_enabled_present" value="1">
+                    <input class="form-check-input" type="checkbox" role="switch" id="participant_delete_enabled" name="participant_delete_enabled" {% if workshop.participant_can_delete_transcripts %}checked{% endif %}>
+                    <label class="form-check-label fw-semibold" for="participant_delete_enabled">Allow participant transcript deletion</label>
+                  </div>
+                  <div class="form-text small text-body-secondary mt-1">When on, participants can remove their own transcript lines. Organizers can always delete any line.</div>
+                </div>
+              </div>
+              <div class="mt-4 d-flex justify-content-end">
+                <button type="submit" class="btn btn-outline-primary btn-sm"><i class="bi bi-save"></i> Update Feature Flags</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- TTS Settings -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-volume-up text-primary"></i>
+            <span class="fw-semibold">Text-to-Speech (TTS) Settings</span>
+          </div>
+          <form action="{{ url_for('workshop_bp.edit_workshop', workshop_id=workshop.id) }}" method="POST" novalidate>
+            <!-- Preserve required core fields when updating only TTS -->
+            <input type="hidden" name="title" value="{{ workshop.title }}">
+            <input type="hidden" name="objective" value="{{ workshop.objective or '' }}">
+            <input type="hidden" name="date_time" value="{{ workshop.date_time_str }}">
+            <input type="hidden" name="duration" value="{{ workshop.duration or '' }}">
+            <input type="hidden" name="status" value="{{ workshop.status }}">
+            <input type="hidden" name="agenda" value="{{ workshop.agenda or '' }}">
+            <input type="hidden" name="form_section" value="tts">
+            <div class="card-body">
+              <p class="small text-body-secondary mb-3">Choose the default TTS provider and voice for this workshop. These defaults apply to Read Aloud in the live room; participants can still stop playback locally.</p>
+              <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                  <label for="tts_provider" class="form-label fw-semibold">Provider</label>
+                  {% set tts_provider_val = workshop.tts_provider or 'piper' %}
+                  <select id="tts_provider" name="tts_provider" class="form-select">
+                    <option value="piper" {% if tts_provider_val=='piper' %}selected{% endif %}>Piper (local)</option>
+                    <option value="polly" {% if tts_provider_val=='polly' %}selected{% endif %}>Amazon Polly</option>
+                  </select>
+                </div>
+                <div class="col-md-5">
+                  <label for="tts_voice" class="form-label fw-semibold">Voice / Model</label>
+                  {% set tts_voice_val = workshop.tts_voice or '' %}
+                  <input id="tts_voice" name="tts_voice" type="text" class="form-control" placeholder="e.g., Joanna or en_US-amy-medium" value="{{ tts_voice_val }}">
+                  <div class="form-text small text-body-secondary">Enter Polly voice name or Piper model path/name. Leave blank for default.</div>
+                </div>
+                <div class="col-md-3">
+                  <label for="tts_speed_default" class="form-label fw-semibold">Default Speed</label>
+                  {% set tts_speed_val = workshop.tts_speed_default if workshop.tts_speed_default is not none else 1.0 %}
+                  <input id="tts_speed_default" name="tts_speed_default" type="number" step="0.1" min="0.5" max="3" class="form-control" value="{{ '%.1f'|format(tts_speed_val) }}">
+                  <div class="form-text small text-body-secondary">0.5–3.0 (1.0 = normal)</div>
+                </div>
+              </div>
+              <div class="row g-3 mt-2">
+                <div class="col-md-12">
+                  <div class="form-check form-switch">
+                    <input type="hidden" name="tts_autoread_enabled_present" value="1">
+                    <input class="form-check-input" type="checkbox" role="switch" id="tts_autoread_enabled" name="tts_autoread_enabled" {% if workshop.tts_autoread_enabled %}checked{% endif %}>
+                    <label class="form-check-label fw-semibold" for="tts_autoread_enabled">Auto‑read the current task when it loads</label>
+                  </div>
+                  <div class="form-text small text-body-secondary">When enabled, the AI facilitator will automatically read aloud the task script as each phase begins. Participants can stop playback locally at any time.</div>
+                </div>
+              </div>
+              <div class="mt-4 d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check2-circle"></i> Save TTS Settings</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Agenda (Normalized Rows) -->
+        <div class="card shadow-sm border-0" id="agendaCard" data-workshop-id="{{ workshop.id }}">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-list-check"></i>
+              <span class="fw-semibold">Agenda</span>
+            </div>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="regenAgendaBtn">Regenerate</button>
+              <button type="button" class="btn btn-sm btn-primary" id="saveAgendaBtn">Save agenda</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <p class="text-body-secondary small mb-3">Edit agenda items, descriptions and durations. Drag to reorder.</p>
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th class="text-center w-44">#</th>
+                    <th class="text-center w-44"><input type="checkbox" id="agSelectAll" class="form-check-input" aria-label="Select all"></th>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th class="w-120">Minutes</th>
+                    <th class="text-center w-120">Order</th>
+                    <th class="text-center w-80">Delete</th>
+                  </tr>
+                </thead>
+                <tbody id="agendaRows">
+                  <tr class="text-body-secondary"><td colspan="7">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="d-flex align-items-center gap-2 mt-3">
+              <button type="button" id="addAgendaItem" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus"></i> Add item</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Context / Blueprint Card -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-lightning-charge text-warning"></i>
+            <span class="fw-semibold">Phase Blueprint</span>
+          </div>
+          <div class="card-body small text-body-secondary">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="border rounded-3 p-3 h-100 bg-light-subtle">
+                  <div class="fw-semibold mb-1 d-flex align-items-center gap-1"><i class="bi bi-graph-up text-primary"></i> Diverge</div>
+                  <p class="mb-2">Encourage volume: broad ideation before filtering. Defer judgement to unlock originality.</p>
+                  <ul class="ps-3 mb-0 small">
+                    <li>Prompt variety</li>
+                    <li>Time‑boxed bursts</li>
+                    <li>Psych safety first</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="border rounded-3 p-3 h-100 bg-light-subtle">
+                  <div class="fw-semibold mb-1 d-flex align-items-center gap-1"><i class="bi bi-funnel text-primary"></i> Converge</div>
+                  <p class="mb-2">Cluster, vote & evaluate for feasibility and impact. Drive toward a prioritized action set.</p>
+                  <ul class="ps-3 mb-0 small">
+                    <li>Cluster patterns</li>
+                    <li>Dot vote focus</li>
+                    <li>Assess constraints</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div class="alert alert-light border mt-3 mb-0"><i class="bi bi-info-circle"></i> Use agenda sequencing to align energy. Front‑load creative divergence; end with synthesis.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side Column -->
+      <div class="col-lg-4 d-flex flex-column gap-4">
+        <!-- Workshop Snapshot -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-speedometer2 text-secondary"></i>
+            <span class="fw-semibold">Snapshot</span>
+          </div>
+          <div class="card-body small">
+            <div class="d-flex flex-column gap-2">
+              <div class="d-flex justify-content-between"><span class="text-body-secondary">Workspace</span><a class="text-decoration-none" href="{{ url_for('workspace_bp.view_workspace', workspace_id=workshop.workspace.workspace_id) }}">{{ workshop.workspace.name }}</a></div>
+              <div class="d-flex justify-content-between"><span class="text-body-secondary">Current Status</span><span class="badge text-bg-{{ status_style }}"><i class="bi bi-{{ status_icon }}"></i> {{ status_label }}</span></div>
+              <div class="d-flex justify-content-between"><span class="text-body-secondary">Planned Start</span><span>{{ workshop.date_time_str if workshop and workshop.date_time_str else '—' }}</span></div>
+              <div class="d-flex justify-content-between"><span class="text-body-secondary">Duration</span><span>{{ workshop.duration if workshop and workshop.duration else '—' }} mins</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Editing Tips -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-lightbulb text-warning"></i>
+            <span class="fw-semibold">Editing Tips</span>
+          </div>
+          <div class="card-body small lh-sm">
+            <ul class="list-unstyled mb-0">
+              <li class="mb-2"><i class="bi bi-check2-circle text-success"></i> Clarify objective → sharper AI suggestions.</li>
+              <li class="mb-2"><i class="bi bi-check2-circle text-success"></i> Keep agenda verbs actionable.</li>
+              <li class="mb-2"><i class="bi bi-check2-circle text-success"></i> Pause vs Cancel: pause keeps momentum.</li>
+              <li><i class="bi bi-check2-circle text-success"></i> Adjust duration only before starting.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Status Legend -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+            <i class="bi bi-journal-check text-primary"></i>
+            <span class="fw-semibold">Status Legend</span>
+          </div>
+          <div class="card-body small text-body-secondary">
+            <ul class="ps-3 mb-0">
+              <li><span class="badge text-bg-info text-dark">Scheduled</span> Not started yet.</li>
+              <li><span class="badge text-bg-success">In Progress</span> Live session is running.</li>
+              <li><span class="badge text-bg-warning text-dark">Paused</span> Temporarily halted.</li>
+              <li><span class="badge text-bg-secondary">Completed</span> Finished; results locked.</li>
+              <li><span class="badge text-bg-danger">Cancelled</span> Ended early; archive only.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Plan editor bootstrap log + default debug helper (overwritten later)
+  console.debug('[Plan] script block loaded');
+  window._planDump = window._planDump || function(){ return { note: 'plan script not initialized yet' }; };
+    document.addEventListener('DOMContentLoaded', () => {
+      // Flatpickr (guarded)
+      if (typeof flatpickr !== 'undefined') {
+        flatpickr('.flatpickr-datetime', {
+          enableTime: true,
+          dateFormat: 'Y-m-d H:i',
+          time_24hr: true,
+          minuteIncrement: 5
+        });
+      }
+
+        // -------- Session Plan Editor --------
+  const planCard = document.getElementById('planCard');
+  let workshopId = Number((planCard && planCard.dataset && planCard.dataset.workshopId) ? planCard.dataset.workshopId : '0');
+  if (!workshopId) {
+    const m = window.location.pathname.match(/\/workshop\/(?:edit\/)?(\d+)/);
+    if (m) workshopId = Number(m[1]);
+  }
+        let rowsEl = document.getElementById('planRows');
+        // Create scaffold if missing (header, buttons, table, totals)
+        (function ensurePlanScaffold(){
+          if (!planCard) return;
+          const header = planCard.querySelector('.card-header');
+          if (header && !header.querySelector('#savePlanBtn')) {
+            const left = header.querySelector('.d-flex.align-items-center') || header.firstElementChild;
+            if (left && left.children.length === 0) {
+              left.innerHTML = '<i class="bi bi-diagram-3"></i><span class="fw-semibold">Session Plan</span>';
+            }
+            const right = header.querySelector('.d-flex.gap-2') || document.createElement('div');
+            right.classList.add('d-flex','gap-2');
+            right.innerHTML = '<button type="button" class="btn btn-sm btn-outline-secondary" id="resetPlanBtn">Reset to defaults</button>\
+                               <button type="button" class="btn btn-sm btn-primary" id="savePlanBtn">Save plan</button>';
+            if (!header.querySelector('.d-flex.gap-2')) header.appendChild(right);
+          }
+          const body = planCard.querySelector('.card-body');
+          if (body && !body.querySelector('#planTable')) {
+            const wrapper = body.querySelector('.table-responsive') || document.createElement('div');
+            wrapper.classList.add('table-responsive');
+            wrapper.innerHTML = `
+              <table class="table align-middle mb-0" id="planTable">
+                <thead>
+                  <tr>
+                    <th class="text-center w-44">#</th>
+                    <th class="text-center w-80">Include</th>
+                    <th>Task</th>
+                    <th class="w-160">Minutes</th>
+                    <th>Phase label (optional)</th>
+                    <th class="text-center w-120">Order</th>
+                    <th class="text-center w-160">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="planRows"></tbody>
+              </table>`;
+            if (!body.querySelector('.table-responsive')) body.appendChild(wrapper); else body.querySelector('.table-responsive').replaceWith(wrapper);
+            let totals = body.querySelector('#planTotalMinutes');
+            if (!totals) {
+              body.insertAdjacentHTML('beforeend', '<div class="d-flex justify-content-end mt-2 text-body-secondary small">\
+                <span>Total minutes: <span id="planTotalMinutes" class="fw-semibold">0</span></span></div>');
+            }
+          }
+          rowsEl = document.getElementById('planRows');
+        })();
+        if (!rowsEl && planCard) {
+          // Reconstruct minimal table body if missing
+          const table = planCard.querySelector('#planTable');
+          if (table) {
+            const tb = document.createElement('tbody'); tb.id = 'planRows'; table.appendChild(tb);
+            rowsEl = tb;
+          }
+        }
+  const saveBtn = document.getElementById('savePlanBtn');
+  const resetBtn = document.getElementById('resetPlanBtn');
+        let availableTasks = [];
+        let currentPlan = [];
+        // Debug helpers
+        window._planDump = () => ({
+          availableTasks,
+          currentPlan,
+          rowCount: (rowsEl ? rowsEl.querySelectorAll('tr').length : -1)
+        });
+        window._planRerender = () => renderRows();
+  console.debug('[Plan] initialized. planCard?', !!planCard, 'rowsEl?', !!rowsEl, 'saveBtn?', !!saveBtn);
+
+        // ---- Per-item Config Modal ----
+        function _configFieldHtml_for(type, cfg){
+          cfg = cfg || {};
+          if (type === 'presentation') {
+            // Build presenter dropdown
+            let presenterOpts = '';
+            try {
+              const list = (window.__participantsForConfig || []);
+              if (Array.isArray(list) && list.length){
+                presenterOpts = '<option value="">Select a presenter…</option>' + list.map(p => {
+                  const uid = (p && p.user_id != null) ? p.user_id : '';
+                  const dn = (p && p.display_name) ? String(p.display_name).replace(/</g,'&lt;').replace(/>/g,'&gt;') : ('User ' + uid);
+                  const sel = (cfg.presenter_user_id != null && Number(cfg.presenter_user_id) === Number(uid)) ? ' selected' : '';
+                  return `<option value="${uid}"${sel}>${dn}</option>`;
+                }).join('');
+              }
+            } catch(_) {}
+            const presenterFallback = `<input type="number" class="form-control" id="cfg_presenter_user_id_fallback" placeholder="e.g., 42" value="${cfg.presenter_user_id ?? ''}">`;
+            const presenterSelector = presenterOpts ? `<select class="form-select" id="cfg_presenter_user_id">${presenterOpts}</select>` : presenterFallback;
+            const presenterHelp = presenterOpts ? '<div class="form-text">Choose the presenter from participants.</div>' : '<div class="form-text">Enter a numeric user ID (no participants list available).</div>';
+
+            // Build document dropdown from linked docs
+            let docOpts = '';
+            try {
+              const docs = (window.__docsForConfig || []);
+              if (Array.isArray(docs) && docs.length){
+                docOpts = '<option value="">Select a document…</option>' + docs.map(d => {
+                  const id = (d && d.id != null) ? d.id : '';
+                  const title = (d && d.title) ? String(d.title).replace(/</g,'&lt;').replace(/>/g,'&gt;') : ('Document ' + id);
+                  const sel = (cfg.document_id != null && Number(cfg.document_id) === Number(id)) ? ' selected' : '';
+                  return `<option value="${id}"${sel}>${title}</option>`;
+                }).join('');
+              }
+            } catch(_) {}
+            const docFallback = `<input type="number" class="form-control" id="cfg_document_id_fallback" placeholder="Linked document id" value="${cfg.document_id ?? ''}">`;
+            const docSelector = docOpts ? `<select class="form-select" id="cfg_document_id">${docOpts}</select>` : docFallback;
+            const docHelp = docOpts ? '<div class="form-text">Pick from documents linked to this workshop.</div>' : '<div class="form-text">Enter a linked document id.</div>';
+
+            // Presentation is a pure slideshow: presenter, document, initial slide index
+            return `
+              <div class="mb-2">
+                <div class="small text-body-secondary mb-1">Presentation is a slideshow task. Use Prioritization & Shortlisting and Action Plan tasks for decision outputs.</div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Presenter</label>
+                ${presenterSelector}
+                ${presenterHelp}
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Document</label>
+                ${docSelector}
+                ${docHelp}
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Initial Slide Index</label>
+                <input type="number" min="1" class="form-control" id="cfg_initial_slide_index" value="${cfg.initial_slide_index ?? 1}">
+              </div>`;
+          }
+          if (type === 'results_prioritization') {
+            const w = (cfg && cfg.weights) || {};
+            const c = (cfg && cfg.constraints) || {};
+            return `
+              <div class="mb-2">
+                <div class="small text-body-secondary mb-2">Weights default to equal influence. Adjust as needed.</div>
+                <div class="row g-2 mb-2">
+                  <div class="col-sm-4">
+                    <label class="form-label">Weight: Votes</label>
+                    <input type="number" step="0.1" min="0" class="form-control" id="cfg_weight_votes" value="${(w.votes != null) ? w.votes : 1}">
+                  </div>
+                  <div class="col-sm-4">
+                    <label class="form-label">Weight: Feasibility</label>
+                    <input type="number" step="0.1" min="0" class="form-control" id="cfg_weight_feasibility" value="${(w.feasibility != null) ? w.feasibility : 1}">
+                  </div>
+                  <div class="col-sm-4">
+                    <label class="form-label">Weight: Objective fit</label>
+                    <input type="number" step="0.1" min="0" class="form-control" id="cfg_weight_objective_fit" value="${(w.objective_fit != null) ? w.objective_fit : 1}">
+                  </div>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label">Max items (optional)</label>
+                  <input type="number" min="1" class="form-control" id="cfg_constraint_max_items" value="${(c.max_items != null) ? c.max_items : ''}">
+                </div>
+              </div>`;
+          }
+          if (type === 'results_action_plan') {
+            return `<p class="text-body-secondary">No additional settings for Action Plan. Items derive from the shortlist; owners are heuristic‑mapped.</p>`;
+          }
+          if (type === 'speech') {
+            let opts = '';
+            try {
+              const list = (window.__participantsForConfig || []);
+              if (Array.isArray(list) && list.length) {
+                opts = '<option value="">Select a speaker…</option>' + list.map(p => {
+                  const uid = (p && p.user_id != null) ? p.user_id : '';
+                  const dn = (p && p.display_name) ? String(p.display_name).replace(/</g,'&lt;').replace(/>/g,'&gt;') : ('User ' + uid);
+                  const sel = (cfg.speaker_user_id != null && Number(cfg.speaker_user_id) === Number(uid)) ? ' selected' : '';
+                  return `<option value="${uid}"${sel}>${dn}</option>`;
+                }).join('');
+              }
+            } catch(_) {}
+            const fallback = `<input type="number" class="form-control" id="cfg_speaker_user_id_fallback" placeholder="e.g., 42" value="${cfg.speaker_user_id ?? ''}">`;
+            const selector = opts ? `<select class="form-select" id="cfg_speaker_user_id">${opts}</select>` : fallback;
+            const help = opts ? '<div class="form-text">Choose the speaker from current participants.</div>' : '<div class="form-text">Enter a numeric user ID (no participants list available).</div>';
+            const mode = (cfg.delivery_mode === 'reader') ? 'reader' : 'direct';
+            let docOpts = '';
+            try {
+              const docs = (window.__docsForConfig || []);
+              if (Array.isArray(docs) && docs.length) {
+                docOpts = '<option value="">Select a document…</option>' + docs.map(d => {
+                  const id = (d && d.id != null) ? d.id : '';
+                  const title = (d && d.title) ? String(d.title).replace(/</g,'&lt;').replace(/>/g,'&gt;') : ('Document ' + id);
+                  const sel = (cfg.document_id != null && Number(cfg.document_id) === Number(id)) ? ' selected' : '';
+                  return `<option value="${id}"${sel}>${title}</option>`;
+                }).join('');
+              }
+            } catch(_) {}
+            const readerBlock = `
+              <div id="readerFields" style="display:${mode==='reader'?'block':'none'}">
+                <div class="mb-2">
+                  <label class="form-label">Script Text</label>
+                  <textarea class="form-control" id="cfg_script_text" rows="5" placeholder="Paste or type the script to be read">${cfg.script_text ? String(cfg.script_text).replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''}</textarea>
+                  <div class="form-text">You can provide text directly or pick a linked document below.</div>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label">Linked Document</label>
+                  ${docOpts ? `<select class="form-select" id="cfg_document_id">${docOpts}</select>` : '<div class="form-text">No linked documents available.</div>'}
+                </div>
+              </div>`;
+            return `
+              <div class="mb-2">
+                <label class="form-label">Delivery Mode</label>
+                <select class="form-select" id="cfg_delivery_mode">
+                  <option value="direct" ${mode==='direct'?'selected':''}>Direct (live speaker)</option>
+                  <option value="reader" ${mode==='reader'?'selected':''}>Reader (script/document)</option>
+                </select>
+              </div>
+              <div class="mb-2" id="speakerRow">
+                <label class="form-label">Speaker</label>
+                ${selector}
+                ${help}
+              </div>
+              <div class="mb-2" id="durationRow">
+                <label class="form-label">Duration (seconds)</label>
+                <input type="number" class="form-control" id="cfg_duration_sec" min="30" max="7200" step="5" placeholder="e.g., 300" value="${(cfg.duration_sec!=null && cfg.duration_sec!=='') ? cfg.duration_sec : ''}">
+                <div class="form-text">Optional override for this speech. Leave blank to use the plan item's duration or default.</div>
+              </div>
+              <div class="form-check form-switch mb-3" id="ccRow">
+                <input class="form-check-input" type="checkbox" id="cfg_cc_enabled" ${cfg.cc_enabled === false ? '' : 'checked'}>
+                <label class="form-check-label" for="cfg_cc_enabled">Emphasize captions during speech</label>
+              </div>
+              ${readerBlock}
+              <div class="border-top pt-2 mt-2">
+                <div class="d-flex gap-2 align-items-center mb-2">
+                  <button type="button" class="btn btn-outline-primary btn-sm" id="cfg_preview_btn"><i class="bi bi-mic"></i> Preview speech</button>
+                  <button type="button" class="btn btn-outline-success btn-sm" id="cfg_preview_play" disabled><i class="bi bi-play-circle"></i> Play</button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" id="cfg_preview_stop" disabled><i class="bi bi-stop-circle"></i> Stop</button>
+                </div>
+                <div class="small text-body-secondary">Preview is local and does not alter the plan.</div>
+                <div id="cfg_preview_area" class="form-control small mt-2" style="min-height: 96px; white-space: pre-wrap;" readonly></div>
+                <div id="cfg_preview_meta" class="small text-body-secondary mt-1"></div>
+                <audio id="cfg_preview_audio" style="display:none"></audio>
+              </div>`;
+          }
+          if (type === 'framing') {
+            const kp = Array.isArray(cfg.key_points) ? cfg.key_points.join('\n') : '';
+            return `
+              <div class="mb-2">
+                <label class="form-label">Organizer Prompt</label>
+                <textarea class="form-control" id="cfg_framing_prompt" rows="3" placeholder="Guidance for AI framing">${cfg.framing_prompt ? String(cfg.framing_prompt).replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''}</textarea>
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col-sm-6">
+                  <label class="form-label">Style</label>
+                  <input class="form-control" id="cfg_style" placeholder="e.g., concise, inclusive" value="${cfg.style ? String(cfg.style).replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''}">
+                </div>
+                <div class="col-sm-6">
+                  <label class="form-label">Audience</label>
+                  <input class="form-control" id="cfg_audience" placeholder="e.g., product team" value="${cfg.audience ? String(cfg.audience).replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''}">
+                </div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Key Points (one per line)</label>
+                <textarea class="form-control" id="cfg_key_points" rows="4" placeholder="Point A\nPoint B\nPoint C">${kp}</textarea>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Duration (seconds)</label>
+                <input type="number" class="form-control" id="cfg_duration_sec" min="30" max="7200" step="5" placeholder="e.g., 240" value="${(cfg.duration_sec!=null && cfg.duration_sec!=='') ? cfg.duration_sec : ''}">
+                <div class="form-text">Optional override for framing remarks. Leave blank to use the plan item's duration or default.</div>
+              </div>
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="cfg_cc_enabled" ${cfg.cc_enabled === false ? '' : 'checked'}>
+                <label class="form-check-label" for="cfg_cc_enabled">Emphasize captions during framing</label>
+              </div>
+              <div class="border-top pt-2 mt-2">
+                <div class="d-flex gap-2 align-items-center mb-2">
+                  <button type="button" class="btn btn-outline-primary btn-sm" id="cfg_preview_btn"><i class="bi bi-megaphone"></i> Preview framing</button>
+                  <button type="button" class="btn btn-outline-success btn-sm" id="cfg_preview_play" disabled><i class="bi bi-play-circle"></i> Play</button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" id="cfg_preview_stop" disabled><i class="bi bi-stop-circle"></i> Stop</button>
+                </div>
+                <div class="small text-body-secondary">Preview is local and does not alter the plan.</div>
+                <div id="cfg_preview_area" class="form-control small mt-2" style="min-height: 96px; white-space: pre-wrap;" readonly></div>
+                <div id="cfg_preview_meta" class="small text-body-secondary mt-1"></div>
+                <audio id="cfg_preview_audio" style="display:none"></audio>
+              </div>`;
+          }
+          if (type === 'vote_generic') {
+              const stage = cfg.stage || 'clusters';
+            const manualItems = Array.isArray(cfg.items) ? cfg.items.map(it => (typeof it === 'string' ? it : (it.label || ''))).join('\n') : '';
+            return `
+              <div class="mb-2">
+                <label class="form-label">Stage</label>
+                <select class="form-select" id="cfg_stage">
+                  <option value="clusters" ${stage==='clusters'?'selected':''}>Vote on clusters</option>
+                  <option value="ideas_from_top_cluster" ${stage==='ideas_from_top_cluster'?'selected':''}>Ideas from top cluster (stage 2)</option>
+                  <option value="ideas" ${stage==='ideas'?'selected':''}>Vote on ideas (latest brainstorming)</option>
+                  <option value="manual" ${stage==='manual'?'selected':''}>Manual list</option>
+                </select>
+                <div class="form-text">Choose what to vote on. Manual lets you provide custom items.</div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Dots per user (optional override)</label>
+                <input type="number" min="1" class="form-control" id="cfg_dots_per_user" value="${(cfg.dots_per_user ?? '')}">
+              </div>
+              <div class="mb-2" id="cfg_manual_container" ${stage==='manual' ? '' : 'style="display:none;"'}>
+                <label class="form-label">Manual items (one per line)</label>
+                <textarea class="form-control" rows="4" id="cfg_manual_items" placeholder="Item A\nItem B\nItem C">${manualItems}</textarea>
+              </div>`;
+          }
+          if (type === 'meeting') {
+            return `<p class="text-body-secondary">No additional settings for Meeting.</p>`;
+          }
+          return `<p class="text-body-secondary">No configurable fields for ${type}.</p>`;
+        }
+
+        function openPlanItemConfigModal(index){
+          const node = currentPlan[index]; if (!node) return;
+          const type = node.task_type;
+          const body = document.getElementById('planItemConfigBody');
+          const title = document.getElementById('planItemConfigModalLabel');
+          if (title) title.textContent = `Configure: ${type}`;
+          if (body) body.innerHTML = _configFieldHtml_for(type, node.config_json || {});
+          // Speech-specific dynamic toggles and preview wiring
+          if (type === 'speech'){
+            const modeSel = document.getElementById('cfg_delivery_mode');
+            const readerFields = document.getElementById('readerFields');
+            const speakerRow = document.getElementById('speakerRow');
+            const durationRow = document.getElementById('durationRow');
+            const ccRow = document.getElementById('ccRow');
+            modeSel && modeSel.addEventListener('change', () => {
+              const v = modeSel.value;
+              if (readerFields) readerFields.style.display = (v==='reader') ? 'block' : 'none';
+              // Show/hide generic rows per mode (only visible for Direct)
+              if (speakerRow) speakerRow.style.display = (v==='direct') ? 'block' : 'none';
+              if (durationRow) durationRow.style.display = (v==='direct') ? 'block' : 'none';
+              if (ccRow) ccRow.style.display = (v==='direct') ? 'block' : 'none';
+            });
+            // Apply initial visibility based on current mode
+            if (modeSel) {
+              const v = modeSel.value;
+              if (readerFields) readerFields.style.display = (v==='reader') ? 'block' : 'none';
+              if (speakerRow) speakerRow.style.display = (v==='direct') ? 'block' : 'none';
+              if (durationRow) durationRow.style.display = (v==='direct') ? 'block' : 'none';
+              if (ccRow) ccRow.style.display = (v==='direct') ? 'block' : 'none';
+            }
+            const previewBtn = document.getElementById('cfg_preview_btn');
+            const playBtn = document.getElementById('cfg_preview_play');
+            const stopBtn = document.getElementById('cfg_preview_stop');
+            const area = document.getElementById('cfg_preview_area');
+            const meta = document.getElementById('cfg_preview_meta');
+            const audio = document.getElementById('cfg_preview_audio');
+            let lastScript = '';
+            function collectCfg(){
+              const cfg = {};
+              const mode = document.getElementById('cfg_delivery_mode');
+              if (mode && mode.value) cfg.delivery_mode = mode.value;
+              if (cfg.delivery_mode === 'direct'){
+                const sel = document.getElementById('cfg_speaker_user_id');
+                const fb  = document.getElementById('cfg_speaker_user_id_fallback');
+                const cc  = document.getElementById('cfg_cc_enabled');
+                const dur = document.getElementById('cfg_duration_sec');
+                if (sel && sel.tagName==='SELECT' && sel.value!=='') cfg.speaker_user_id = Number(sel.value);
+                else if (fb && fb.value!=='') cfg.speaker_user_id = Number(fb.value);
+                cfg.cc_enabled = cc ? !!cc.checked : true;
+                if (dur && dur.value!=='') cfg.duration_sec = Number(dur.value);
+              }
+              if (cfg.delivery_mode === 'reader'){
+                const txt = document.getElementById('cfg_script_text');
+                const doc = document.getElementById('cfg_document_id');
+                const docFb = document.getElementById('cfg_document_id_fallback');
+                if (txt && txt.value.trim()) cfg.script_text = txt.value;
+                if (doc && doc.tagName==='SELECT' && doc.value!=='') cfg.document_id = Number(doc.value);
+                else if (docFb && docFb.value!=='') cfg.document_id = Number(docFb.value);
+              }
+              return cfg;
+            }
+            function withDefaultsProvider(){
+              try {
+                const prov = document.getElementById('tts_provider')?.value || 'piper';
+                const voice = document.getElementById('tts_voice')?.value || '';
+                const speed = document.getElementById('tts_speed_default')?.value || '1.0';
+                return { prov, voice, speed };
+              } catch(_) { return { prov:'piper', voice:'', speed:'1.0' }; }
+            }
+            async function doPreview(){
+              try {
+                previewBtn.disabled = true; playBtn.disabled = true; stopBtn.disabled = true;
+                area.textContent = 'Generating preview…'; meta.textContent=''; lastScript='';
+                const cfg = collectCfg();
+                const r = await fetch(`/workshop/${workshopId}/speech/preview`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ config_json: cfg }) });
+                const j = await r.json().catch(()=>({success:false,message:'Invalid JSON'}));
+                if (!r.ok || j.success === false) throw new Error(j.message || `HTTP ${r.status}`);
+                const p = j.preview || {};
+                const text = p.tts_script || '';
+                lastScript = text;
+                area.textContent = text || '(No script returned)';
+                meta.textContent = p.tts_read_time_seconds ? `Estimated read time: ${p.tts_read_time_seconds}s` : '';
+                playBtn.disabled = !text; stopBtn.disabled = !text;
+              } catch(e){ area.textContent = `Preview failed: ${e.message}`; meta.textContent=''; }
+              finally { previewBtn.disabled = false; }
+            }
+            function stopAudio(){ try { audio.pause(); audio.currentTime = 0; } catch(_) {} }
+            async function playAudio(){
+              stopAudio();
+              if (!lastScript) return;
+              const { prov, voice, speed } = withDefaultsProvider();
+              const url = new URL('/service/speech/speak', window.location.origin);
+              url.searchParams.set('text', lastScript);
+              url.searchParams.set('provider', prov);
+              if (voice) url.searchParams.set('voice', voice);
+              if (speed) url.searchParams.set('speed', String(speed));
+              audio.src = url.toString();
+              audio.style.display = 'block';
+              try { await audio.play(); } catch(_) {}
+            }
+            previewBtn && previewBtn.addEventListener('click', doPreview);
+            playBtn && playBtn.addEventListener('click', playAudio);
+            stopBtn && stopBtn.addEventListener('click', stopAudio);
+          }
+          else if (type === 'framing'){
+            const previewBtn = document.getElementById('cfg_preview_btn');
+            const playBtn = document.getElementById('cfg_preview_play');
+            const stopBtn = document.getElementById('cfg_preview_stop');
+            const area = document.getElementById('cfg_preview_area');
+            const meta = document.getElementById('cfg_preview_meta');
+            const audio = document.getElementById('cfg_preview_audio');
+            let lastScript = '';
+            function collectCfg(){
+              const cfg = {};
+              const fp = document.getElementById('cfg_framing_prompt');
+              const st = document.getElementById('cfg_style');
+              const au = document.getElementById('cfg_audience');
+              const kp = document.getElementById('cfg_key_points');
+              const dur = document.getElementById('cfg_duration_sec');
+              const cc = document.getElementById('cfg_cc_enabled');
+              if (fp && fp.value) cfg.framing_prompt = fp.value;
+              if (st && st.value) cfg.style = st.value;
+              if (au && au.value) cfg.audience = au.value;
+              if (kp && kp.value) cfg.key_points = kp.value.split('\n').map(s=>s.trim()).filter(Boolean);
+              if (dur && dur.value!=='') cfg.duration_sec = Number(dur.value);
+              if (cc) cfg.cc_enabled = !!cc.checked;
+              return cfg;
+            }
+            function withDefaultsProvider(){
+              try {
+                const prov = document.getElementById('tts_provider')?.value || 'piper';
+                const voice = document.getElementById('tts_voice')?.value || '';
+                const speed = document.getElementById('tts_speed_default')?.value || '1.0';
+                return { prov, voice, speed };
+              } catch(_) { return { prov:'piper', voice:'', speed:'1.0' }; }
+            }
+            async function doPreview(){
+              try {
+                previewBtn.disabled = true; playBtn.disabled = true; stopBtn.disabled = true;
+                area.textContent = 'Generating preview…'; meta.textContent=''; lastScript='';
+                const cfg = collectCfg();
+                const r = await fetch(`/workshop/${workshopId}/framing/preview`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ config_json: cfg }) });
+                const j = await r.json().catch(()=>({success:false,message:'Invalid JSON'}));
+                if (!r.ok || j.success === false) throw new Error(j.message || `HTTP ${r.status}`);
+                const p = j.preview || {};
+                const text = p.tts_script || '';
+                lastScript = text;
+                area.textContent = text || '(No script returned)';
+                meta.textContent = p.tts_read_time_seconds ? `Estimated read time: ${p.tts_read_time_seconds}s` : '';
+                playBtn.disabled = !text; stopBtn.disabled = !text;
+              } catch(e){ area.textContent = `Preview failed: ${e.message}`; meta.textContent=''; }
+              finally { previewBtn.disabled = false; }
+            }
+            function stopAudio(){ try { audio.pause(); audio.currentTime = 0; } catch(_) {} }
+            async function playAudio(){
+              stopAudio();
+              if (!lastScript) return;
+              const { prov, voice, speed } = withDefaultsProvider();
+              const url = new URL('/service/speech/speak', window.location.origin);
+              url.searchParams.set('text', lastScript);
+              url.searchParams.set('provider', prov);
+              if (voice) url.searchParams.set('voice', voice);
+              if (speed) url.searchParams.set('speed', String(speed));
+              audio.src = url.toString();
+              audio.style.display = 'block';
+              try { await audio.play(); } catch(_) {}
+            }
+            previewBtn && previewBtn.addEventListener('click', doPreview);
+            playBtn && playBtn.addEventListener('click', playAudio);
+            stopBtn && stopBtn.addEventListener('click', stopAudio);
+          }
+          // Toggle manual area visibility when stage changes
+          const stageSel = document.getElementById('cfg_stage');
+          if (stageSel) stageSel.addEventListener('change', () => {
+            const c = document.getElementById('cfg_manual_container');
+            if (c) c.style.display = (stageSel.value === 'manual') ? '' : 'none';
+          });
+          const modalEl = document.getElementById('planItemConfigModal');
+          const saveBtn = document.getElementById('planItemConfigSaveBtn');
+          const modal = (window.bootstrap && modalEl) ? window.bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+          if (saveBtn){
+            saveBtn.onclick = () => {
+              let cfg = {};
+              if (type === 'presentation'){
+                // Presenter: support both select and fallback
+                const pSel = document.getElementById('cfg_presenter_user_id');
+                const pFb = document.getElementById('cfg_presenter_user_id_fallback');
+                let presenter;
+                if (pSel && pSel.tagName === 'SELECT') {
+                  presenter = pSel.value !== '' ? Number(pSel.value) : undefined;
+                } else if (pFb) {
+                  presenter = pFb.value !== '' ? Number(pFb.value) : undefined;
+                }
+                // Document: support both select and fallback
+                const dSel = document.getElementById('cfg_document_id');
+                const dFb = document.getElementById('cfg_document_id_fallback');
+                let doc;
+                if (dSel && dSel.tagName === 'SELECT') {
+                  doc = dSel.value !== '' ? Number(dSel.value) : undefined;
+                } else if (dFb) {
+                  doc = dFb.value !== '' ? Number(dFb.value) : undefined;
+                }
+                const s = document.getElementById('cfg_initial_slide_index');
+                const idx = s && s.value !== '' ? Math.max(1, Number(s.value)) : 1;
+                if (presenter !== undefined) cfg.presenter_user_id = presenter;
+                if (doc !== undefined) cfg.document_id = doc;
+                cfg.initial_slide_index = idx;
+              } else if (type === 'results_prioritization'){
+                const wVotes = document.getElementById('cfg_weight_votes');
+                const wFeas = document.getElementById('cfg_weight_feasibility');
+                const wFit = document.getElementById('cfg_weight_objective_fit');
+                const cMax = document.getElementById('cfg_constraint_max_items');
+                const weights = {};
+                if (wVotes && wVotes.value !== '') weights.votes = Number(wVotes.value);
+                if (wFeas && wFeas.value !== '') weights.feasibility = Number(wFeas.value);
+                if (wFit && wFit.value !== '') weights.objective_fit = Number(wFit.value);
+                const constraints = {};
+                if (cMax && cMax.value !== '') constraints.max_items = Math.max(1, Number(cMax.value));
+                if (Object.keys(weights).length) cfg.weights = weights;
+                if (Object.keys(constraints).length) cfg.constraints = constraints;
+              } else if (type === 'results_action_plan'){
+                cfg = {};
+              } else if (type === 'speech'){
+                // Persist full speech config including mode-specific fields
+                const collected = collectCfg();
+                cfg = collected;
+              } else if (type === 'framing'){
+                const fp = document.getElementById('cfg_framing_prompt');
+                const st = document.getElementById('cfg_style');
+                const au = document.getElementById('cfg_audience');
+                const kp = document.getElementById('cfg_key_points');
+                const dur = document.getElementById('cfg_duration_sec');
+                const cc = document.getElementById('cfg_cc_enabled');
+                if (fp && fp.value) cfg.framing_prompt = fp.value;
+                if (st && st.value) cfg.style = st.value;
+                if (au && au.value) cfg.audience = au.value;
+                if (kp && kp.value) cfg.key_points = kp.value.split('\n').map(s=>s.trim()).filter(Boolean);
+                if (dur && dur.value!=='') cfg.duration_sec = Number(dur.value);
+                if (cc) cfg.cc_enabled = !!cc.checked;
+              } else if (type === 'vote_generic'){
+                const st = document.getElementById('cfg_stage');
+                const dots = document.getElementById('cfg_dots_per_user');
+                const txt = document.getElementById('cfg_manual_items');
+                cfg.stage = st ? st.value : 'clusters';
+                if (dots && dots.value !== '') cfg.dots_per_user = Math.max(1, Number(dots.value));
+                if (cfg.stage === 'manual' && txt) {
+                  const lines = txt.value.split('\n').map(s=>s.trim()).filter(Boolean);
+                  if (lines.length) cfg.items = lines;
+                }
+              } else if (type === 'meeting'){
+                cfg = {};
+              }
+              node.config_json = cfg; // persist in plan
+              try { if (modal) modal.hide(); } catch(_) {}
+              renderRows();
+            };
+          }
+          // No dynamic toggles for presentation (slideshow only)
+          try { if (modal) modal.show(); } catch(_) {}
+        }
+        // Expose for buttons
+        window.openPlanItemConfigModal = openPlanItemConfigModal;
+
+        function renderRows() {
+          if (!rowsEl) { console.error('[Plan] Missing #planRows element'); return; }
+          let html = '';
+          if (!currentPlan.length) {
+            html = '<tr><td colspan="6" class="text-center text-body-secondary">No tasks in plan. Use "Reset to defaults" or add tasks.</td></tr>';
+            rowsEl.innerHTML = html;
+            updateTotalMinutes();
+            return;
+          }
+          for (let i = 0; i < currentPlan.length; i++) {
+            const n = currentPlan[i] || {};
+            const minsVal = (n && Number(n.duration) > 0) ? Math.max(0.5, (Number(n.duration) / 60)) : '';
+            const stageBadge = (n.task_type === 'vote_generic') ? (n.config_json && n.config_json.stage ? n.config_json.stage : 'clusters') : null;
+            const isPriorCfg = (n.task_type === 'results_prioritization') && n.config_json && ( (n.config_json.weights && Object.keys(n.config_json.weights).length>0) || (n.config_json.constraints && Object.keys(n.config_json.constraints).length>0) );
+            html += `
+              <tr data-index="${i}">
+                <td class="text-center"><span class="badge bg-secondary">${i + 1}</span></td>
+                <td class="text-center"><input type="checkbox" class="form-check-input include-checkbox" ${n.enabled === false ? '' : 'checked'}></td>
+                <td>
+                  <span class="fw-semibold">${n.task_type || ''}</span>
+                  ${stageBadge ? `<span class=\"badge text-bg-info ms-2\" title=\"vote stage\">${stageBadge}</span>` : ''}
+                  ${isPriorCfg ? '<span class="badge text-bg-success ms-2" title="weights/constraints set">Configured</span>' : ''}
+                  ${(!isPriorCfg && n && n.config_json && Object.keys(n.config_json||{}).length>0) ? '<span class="badge text-bg-success ms-2">Configured</span>' : ''}
+                </td>
+                <td>
+                  <div class="input-group input-group-sm">
+                    <input type="number" class="form-control minutes-input" min="0.5" max="480" step="0.5" value="${minsVal}" ${n.enabled === false ? 'disabled' : ''}>
+                    <span class="input-group-text">min</span>
+                  </div>
+                </td>
+                <td>
+                  <input type="text" class="form-control form-control-sm phase-input" value="${n.phase || ''}" ${n.enabled === false ? 'disabled' : ''}>
+                </td>
+                <td class="text-center">
+                  <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-secondary move-up" title="Move up">▲</button>
+                    <button type="button" class="btn btn-outline-secondary move-down" title="Move down">▼</button>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <div class="btn-group btn-group-sm" role="group">
+                    ${['presentation','speech','framing','vote_generic','meeting'].includes(n.task_type||'') ? '<button type="button" class="btn btn-outline-secondary configure" title="Configure"><i class="bi bi-gear"></i></button>' : ''}
+                    <button type="button" class="btn btn-outline-primary duplicate" title="Duplicate">⎘</button>
+                    <button type="button" class="btn btn-outline-danger delete" title="Remove">✖</button>
+                  </div>
+                </td>
+              </tr>`;
+          }
+          rowsEl.innerHTML = html;
+          // Wire per-row events
+          rowsEl.querySelectorAll('.include-checkbox').forEach((cb, i) => {
+            cb.addEventListener('change', () => {
+              const enabled = cb.checked;
+              currentPlan[i].enabled = enabled;
+              const row = cb.closest('tr');
+              row.querySelectorAll('.minutes-input, .phase-input').forEach(el => el.disabled = !enabled);
+              updateTotalMinutes();
+            });
+          });
+          rowsEl.querySelectorAll('.minutes-input').forEach((inp, i) => {
+            inp.addEventListener('input', () => {
+              const raw = inp.value;
+              if (raw === '' || isNaN(parseFloat(raw))) {
+                currentPlan[i].duration = 0; // blank = no override (use LLM)
+              } else {
+                const mins = parseFloat(raw);
+                if (mins < 0.5) {
+                  currentPlan[i].duration = 0; // treat sub-min as no override
+                } else {
+                  const sec = Math.round(Math.min(7200, Math.max(30, mins * 60)));
+                  currentPlan[i].duration = sec;
+                }
+              }
+              updateTotalMinutes();
+            });
+          });
+          rowsEl.querySelectorAll('.phase-input').forEach((inp, i) => {
+            inp.addEventListener('input', () => {
+              currentPlan[i].phase = inp.value || null;
+            });
+          });
+          rowsEl.querySelectorAll('.move-up').forEach((btn, i) => {
+            btn.addEventListener('click', () => {
+              if (i <= 0) return;
+              const tmp = currentPlan[i-1]; currentPlan[i-1] = currentPlan[i]; currentPlan[i] = tmp; renderRows();
+            });
+          });
+          rowsEl.querySelectorAll('.move-down').forEach((btn, i) => {
+            btn.addEventListener('click', () => {
+              if (i >= currentPlan.length-1) return;
+              const tmp = currentPlan[i+1]; currentPlan[i+1] = currentPlan[i]; currentPlan[i] = tmp; renderRows();
+            });
+          });
+          rowsEl.querySelectorAll('.duplicate').forEach((btn, i) => {
+            btn.addEventListener('click', () => {
+              const node = JSON.parse(JSON.stringify(currentPlan[i]));
+              currentPlan.splice(i+1, 0, node);
+              renderRows();
+            });
+          });
+          rowsEl.querySelectorAll('.delete').forEach((btn, i) => {
+            btn.addEventListener('click', () => {
+              currentPlan.splice(i, 1);
+              renderRows();
+            });
+          });
+          rowsEl.querySelectorAll('.configure').forEach((btn) => {
+            btn.addEventListener('click', (ev) => {
+              try {
+                const target = ev && ev.currentTarget ? ev.currentTarget : btn;
+                const row = target.closest('tr');
+                const idxAttr = row ? row.getAttribute('data-index') : null;
+                const idx = idxAttr != null ? Number(idxAttr) : NaN;
+                if (!Number.isNaN(idx) && typeof openPlanItemConfigModal === 'function') {
+                  openPlanItemConfigModal(idx);
+                }
+              } catch (_) {
+                // Fallback: do nothing
+              }
+            });
+          });
+          updateTotalMinutes();
+        }
+
+        function updateTotalMinutes(){
+          const totalSec = currentPlan.reduce((acc, n) => acc + (n.enabled === false ? 0 : (Number(n.duration) > 0 ? Number(n.duration) : 0)), 0);
+          const mins = Math.max(0, Math.round(totalSec/60));
+          const el = document.getElementById('planTotalMinutes');
+          if (el) el.textContent = String(mins);
+        }
+
+        async function loadPlan() {
+          try {
+            const r = await fetch(`/workshop/${workshopId}/plan`, {
+              headers: { 'Accept': 'application/json' }
+            });
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const j = await r.json();
+            console.debug('[Plan] API payload:', j);
+            availableTasks = Array.isArray(j.available_tasks) ? j.available_tasks : [];
+            const defaultPlan = Array.isArray(j.default_plan) ? j.default_plan : [];
+            // Normalize: ensure enabled:true default
+            const fromCurrent = Array.isArray(j.current_plan) ? j.current_plan : [];
+            currentPlan = fromCurrent.map(n => ({
+              task_type: n.task_type,
+              duration: Number(n.duration || 0), // preserve 0 as blank
+              phase: n.phase || null,
+              description: n.description || null,
+              config_json: (n.config_json && typeof n.config_json === 'object') ? n.config_json : null,
+              enabled: (n.enabled !== false)
+            }));
+            // Front-end fallback: if current plan is empty, build from availableTasks defaults
+            if (!currentPlan.length) {
+              if (defaultPlan.length) {
+                currentPlan = defaultPlan.map(n => ({
+                  task_type: n.task_type,
+                  duration: Number(n.duration || 0),
+                  phase: n.phase || null,
+                  description: n.description || null,
+                  config_json: (n.config_json && typeof n.config_json === 'object') ? n.config_json : null,
+                  enabled: (n.enabled !== false)
+                }));
+                console.debug('[Plan] Using default_plan fallback; count:', currentPlan.length);
+              } else if (availableTasks.length) {
+                currentPlan = availableTasks.map(a => ({
+                  task_type: a.task_type,
+                  duration: 0, // default to blank override; LLM will provide duration
+                  phase: null,
+                  description: null,
+                  config_json: null,
+                  enabled: true,
+                }));
+                console.debug('[Plan] Using available_tasks fallback; count:', currentPlan.length);
+              }
+            } else if (!currentPlan.length && !availableTasks.length) {
+              // Last-resort fallback to common defaults so the UI isn't blank
+              currentPlan = [
+                { task_type: 'brainstorming',        duration: 0,  phase: null, description: null, config_json: null, enabled: true },
+                { task_type: 'clustering_voting',    duration: 0,  phase: null, description: null, config_json: null, enabled: true },
+                { task_type: 'results_feasibility',  duration: 0,  phase: null, description: null, config_json: null, enabled: true },
+                { task_type: 'discussion',           duration: 0,  phase: null, description: null, config_json: null, enabled: true },
+                { task_type: 'summary',              duration: 0,  phase: null, description: null, config_json: null, enabled: true },
+              ];
+              console.warn('[Plan] Using hard-coded default fallback; TASK_REGISTRY may be empty.');
+            } else {
+              console.debug('[Plan] Using current_plan; count:', currentPlan.length);
+            }
+            renderRows();
+            updateTotalMinutes();
+            // Populate add task menu
+            const sel = document.getElementById('addTaskSelect');
+            if (sel) {
+              sel.innerHTML = '';
+              for (const a of availableTasks){
+                const opt = document.createElement('option');
+                opt.value = a.task_type; opt.textContent = a.task_type;
+                sel.appendChild(opt);
+              }
+            }
+          } catch (e) {
+            console.error('Failed to load plan', e);
+            const container = document.getElementById('planTable');
+            if (container) {
+              container.insertAdjacentHTML('afterend', `<div class="text-danger small mt-2">Failed to load plan: ${e.message}</div>`);
+            }
+          }
+        }
+
+        function _validatePlanClientSide() {
+          // Enforce simple IO ordering constraints using availableTasks metadata (with optional markers honored)
+          const metaByType = Object.fromEntries(availableTasks.map(a => [a.task_type, a]));
+          const produced = new Set();
+          for (let i=0;i<currentPlan.length;i++){
+            const n = currentPlan[i] || {};
+            if (n.enabled === false) continue;
+            const meta = metaByType[n.task_type] || {};
+            // Stage-aware rule for vote_generic to align with server-side validation
+            if (n.task_type === 'vote_generic'){
+              const stage = (n.config_json && typeof n.config_json === 'object') ? (n.config_json.stage || 'clusters') : 'clusters';
+              if (stage === 'clusters' || stage === 'ideas_from_top_cluster'){
+                if (!produced.has('clusters')){
+                  return { ok:false, message: `vote_generic (stage=${stage}) at #${i+1} requires prior 'clusters'.` };
+                }
+              } else if (stage === 'manual') {
+                // no dependency
+              } else {
+                // direct ideas voting requires ideas or clusters
+                if (!produced.has('ideas') && !produced.has('clusters')){
+                  return { ok:false, message: `vote_generic (stage=${stage}) at #${i+1} requires 'ideas' or 'clusters' earlier.` };
+                }
+              }
+            } else if (n.task_type !== 'discussion') {
+              const inputs = Array.isArray(meta.inputs) ? meta.inputs : [];
+              for (const inpRaw of inputs){
+                const optional = typeof inpRaw === 'string' && inpRaw.endsWith('?');
+                const inp = optional ? inpRaw.slice(0, -1) : inpRaw;
+                if (optional) continue; // honor optional inputs
+                if (!produced.has(inp)){
+                  return { ok:false, message: `${n.task_type} at #${i+1} requires prior output '${inp}'.` };
+                }
+              }
+            }
+            const outputs = Array.isArray(meta.outputs) ? meta.outputs : [];
+            outputs.forEach(o => produced.add(o));
+          }
+          return { ok:true };
+        }
+
+        async function savePlan() {
+          const cv = _validatePlanClientSide();
+          if (!cv.ok){
+            alert(cv.message);
+            return;
+          }
+          // Build payload with only enabled items
+          const payload = currentPlan.map(n => ({
+            task_type: n.task_type,
+            duration: Number(n.duration || 0), // preserve 0 for blank
+            phase: n.phase || null,
+            description: n.description || null,
+            config_json: (n.config_json && typeof n.config_json === 'object' && Object.keys(n.config_json).length>0) ? n.config_json : null,
+            enabled: !!n.enabled,
+          }));
+          try {
+            saveBtn.disabled = true;
+            const r = await fetch(`${window.location.origin}/workshop/${workshopId}/plan`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            const j = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
+            // Toast
+            if (window.bootstrap) {
+              const area = document.getElementById('notification-area');
+              if (area) {
+                const t = document.createElement('div');
+                t.className = 'toast align-items-center text-bg-success border-0';
+                t.role = 'alert';
+                t.innerHTML = `<div class="d-flex"><div class="toast-body">Plan saved.</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>`;
+                area.appendChild(t);
+                new bootstrap.Toast(t, { delay: 2000 }).show();
+              }
+            }
+          } catch (e) {
+            alert(`Failed to save: ${e.message}`);
+          } finally {
+            saveBtn.disabled = false;
+          }
+        }
+
+    async function resetPlan() {
+      // Reset to defaults using server-provided default_plan (with config_json defaults)
+      try {
+        const r = await fetch(`/workshop/${workshopId}/plan`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const j = await r.json();
+        const defaultPlan = Array.isArray(j.default_plan) ? j.default_plan : [];
+        if (defaultPlan.length) {
+          currentPlan = defaultPlan.map(n => ({
+            task_type: n.task_type,
+            duration: Number(n.duration || 0),
+            phase: n.phase || null,
+            description: n.description || null,
+            config_json: (n.config_json && typeof n.config_json === 'object') ? n.config_json : null,
+            enabled: (n.enabled !== false)
+          }));
+        } else {
+          // fallback to available_tasks if default_plan missing
+          currentPlan = (j.available_tasks || []).map(a => ({
+            task_type: a.task_type,
+            duration: 0,
+            phase: null,
+            description: null,
+            config_json: null,
+            enabled: true,
+          }));
+        }
+        renderRows();
+        updateTotalMinutes();
+      } catch (e) {
+        console.error('Failed to reset plan', e);
+      }
+    }
+
+        if (saveBtn) saveBtn.addEventListener('click', savePlan);
+        if (resetBtn) resetBtn.addEventListener('click', resetPlan);
+        loadPlan();
+
+        // Add task wiring
+        const addBtn = document.getElementById('addTaskBtn');
+        const addSel = document.getElementById('addTaskSelect');
+        if (addBtn && addSel){
+          addBtn.addEventListener('click', () => {
+            const tt = addSel.value;
+            if (!tt) return;
+            const meta = (availableTasks.find(a => a.task_type === tt)) || {};
+            currentPlan.push({
+              task_type: tt,
+              duration: 0, // default to blank override when adding
+              phase: null,
+              description: null,
+              config_json: null,
+              enabled: true,
+            });
+            renderRows();
+          });
+        }
+
+      // Character counters
+      const counters = [
+        { id: 'title', max: 120, countId: 'titleCount' },
+        { id: 'objective', max: 500, countId: 'objCount' },
+        { id: 'agenda', max: 2000, countId: 'agendaCount' }
+      ];
+      counters.forEach(c => {
+        const el = document.getElementById(c.id);
+        let counter = document.getElementById(c.countId);
+        if (!counter && el) { // create if missing (for robustness)
+          counter = document.createElement('span');
+          counter.id = c.countId; counter.className='text-body-secondary';
+          el.insertAdjacentElement('afterend', counter);
+        }
+        if (!el || !counter) return;
+        const update = () => { counter.textContent = `${el.value.length} / ${c.max}`; };
+        el.addEventListener('input', update); update();
+      });
+
+      // Agenda helpers
+      const quickBtn = document.getElementById('insertDefaultAgenda');
+      const clearBtn = document.getElementById('clearAgenda');
+      const trimBtn  = document.getElementById('trimAgenda');
+      const agendaField = document.getElementById('agenda');
+      if (quickBtn && agendaField) {
+        quickBtn.addEventListener('click', () => {
+          const snippet = 'Introduction & Warm‑Up\nBrainstorming Ideation (Timed)\nClustering & Dot Voting\nFeasibility Scan\nDiscussion & Decisions\nSummary & Closing';
+          if (!agendaField.value.trim()) agendaField.value = snippet; else agendaField.value += '\n' + snippet;
+          agendaField.dispatchEvent(new Event('input'));
+        });
+      }
+      if (clearBtn && agendaField) {
+        clearBtn.addEventListener('click', () => {
+          if (confirm('Clear agenda content?')) { agendaField.value=''; agendaField.dispatchEvent(new Event('input')); }
+        });
+      }
+      if (trimBtn && agendaField) {
+        trimBtn.addEventListener('click', () => {
+          agendaField.value = agendaField.value.split('\n').map(l => l.trim()).filter(l => l).join('\n');
+          agendaField.dispatchEvent(new Event('input'));
+        });
+      }
+    });
+  
+  // ====== Agenda Editor ======
+  (function(){
+    const card = document.getElementById('agendaCard'); if (!card) return;
+    const wsId = Number(card.dataset.workshopId || '0');
+    const tbody = document.getElementById('agendaRows');
+    const saveBtn = document.getElementById('saveAgendaBtn');
+    const regenBtn = document.getElementById('regenAgendaBtn');
+    const addBtn = document.getElementById('addAgendaItem');
+    let items = [];
+
+    function rowHtml(i, it){
+      const idx = i + 1;
+      const title = it.activity_title || '';
+      const desc = it.activity_description || '';
+      const mins = (it.estimated_duration != null ? it.estimated_duration : '');
+      const idAttr = it.id ? ` data-id="${it.id}"` : '';
+      return `<tr class="agenda-row" data-index="${i}"${idAttr}>
+        <td class="text-center"><span class="badge bg-secondary">${idx}</span></td>
+        <td class="text-center"><input type="checkbox" class="form-check-input ag-sel" aria-label="Select row"></td>
+        <td><input type="text" class="form-control form-control-sm ag-title" value="${escapeHtml(title)}" placeholder="Activity title"></td>
+        <td><input type="text" class="form-control form-control-sm ag-desc" value="${escapeHtml(desc)}" placeholder="Optional description"></td>
+        <td><div class="input-group input-group-sm"><input type="number" class="form-control ag-mins" min="0" step="1" value="${mins}"><span class="input-group-text">min</span></div></td>
+        <td class="text-center">
+          <div class="btn-group btn-group-sm">
+            <button type="button" class="btn btn-outline-secondary ag-up">▲</button>
+            <button type="button" class="btn btn-outline-secondary ag-down">▼</button>
+          </div>
+        </td>
+        <td class="text-center"><button type="button" class="btn btn-outline-danger btn-sm ag-del" title="Remove">✖</button></td>
+      </tr>`;
+    }
+
+    function render(){
+      if (!tbody) return;
+      if (!items.length){ tbody.innerHTML = '<tr><td colspan="7" class="text-center text-body-secondary">No items. Add one.</td></tr>'; updateTotals(); toggleBulkControls(); return; }
+      tbody.innerHTML = items.map((it,i)=>rowHtml(i,it)).join('');
+      updateTotals();
+      toggleBulkControls();
+    }
+
+    function renumber(){ Array.from(tbody.querySelectorAll('tr')).forEach((tr,i)=>{ const b = tr.querySelector('.badge'); if (b) b.textContent = String(i+1); tr.dataset.index = String(i); }); }
+
+    function bindHandlers(){
+      tbody.addEventListener('input', e => {
+        const tr = e.target.closest('tr'); if (!tr) return; const i = Number(tr.dataset.index);
+        if (e.target.classList.contains('ag-title')) items[i].activity_title = e.target.value;
+        if (e.target.classList.contains('ag-desc')) items[i].activity_description = e.target.value || null;
+        if (e.target.classList.contains('ag-mins')) { items[i].estimated_duration = e.target.value ? Number(e.target.value) : null; updateTotals(); }
+      });
+      tbody.addEventListener('click', e => {
+        const tr = e.target.closest('tr'); if (!tr) return; const i = Number(tr.dataset.index);
+        if (e.target.classList.contains('ag-up')){ if (i>0){ const t=items[i-1]; items[i-1]=items[i]; items[i]=t; render(); } }
+        if (e.target.classList.contains('ag-down')){ if (i<items.length-1){ const t=items[i+1]; items[i+1]=items[i]; items[i]=t; render(); } }
+        if (e.target.classList.contains('ag-del')){ if (items[i] && items[i].id){ if (!confirm('Delete this item?')) return; fetch(`/workshop/${wsId}/agenda/${items[i].id}`, { method:'DELETE' }).then(r=>{ if(!r.ok) throw new Error('Delete failed'); items.splice(i,1); render(); }).catch(err=>alert(err.message)); } else { items.splice(i,1); render(); } }
+        if (e.target.classList.contains('ag-sel')){ toggleBulkControls(); }
+      });
+      const selAll = document.getElementById('agSelectAll');
+      selAll && selAll.addEventListener('change', () => {
+        tbody.querySelectorAll('.ag-sel').forEach(cb => { cb.checked = selAll.checked; });
+        toggleBulkControls();
+      });
+    }
+
+    function getSelectedIndexes(){
+      const idxs = [];
+      tbody.querySelectorAll('tr').forEach((tr, i) => { const cb = tr.querySelector('.ag-sel'); if (cb && cb.checked) idxs.push(Number(tr.dataset.index)); });
+      return idxs.sort((a,b)=>b-a); // descending for safe splice
+    }
+
+    function toggleBulkControls(){
+      const btn = document.getElementById('bulkDeleteAgenda');
+      if (!btn) return;
+      const any = tbody.querySelector('.ag-sel:checked');
+      btn.disabled = !any;
+    }
+
+    function updateTotals(){
+      const total = items.reduce((acc, it) => acc + (Number(it.estimated_duration||0)), 0);
+      const el = document.getElementById('agendaTotalMinutes');
+      if (el) el.textContent = String(total);
+    }
+
+    function escapeHtml(s){ return (s||'').replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+
+    async function load(){
+      try {
+        const r = await fetch(`/workshop/${wsId}/agenda`); if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const j = await r.json();
+        items = Array.isArray(j) ? j.map((x)=>({ id:x.id, activity_title:x.activity_title||'', activity_description:x.activity_description||null, estimated_duration:x.estimated_duration })) : [];
+        if (!items.length){
+          // Seed from legacy text if present
+          const legacy = document.getElementById('agenda');
+          if (legacy && legacy.value.trim()){
+            items = legacy.value.split('\n').map(s=>s.trim()).filter(Boolean).map((t)=>({ activity_title:t, activity_description:null, estimated_duration:null }));
+          }
+        }
+        render();
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-danger small">Failed to load: ${e.message}</td></tr>`;
+      }
+    }
+
+    async function save(){
+      try {
+        saveBtn.disabled = true;
+        const payload = { source: 'organizer', items: items.map((x)=>({ activity_title:x.activity_title, activity_description:x.activity_description, estimated_duration: x.estimated_duration })) };
+        const r = await fetch(`/workshop/${wsId}/agenda`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        const j = await r.json().catch(()=>({}));
+        if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
+        // Reload to refresh IDs/positions
+        await load();
+        toast('Agenda saved');
+      } catch (e) { alert(e.message); } finally { saveBtn.disabled = false; }
+    }
+
+    async function regen(){
+      try {
+        regenBtn.disabled = true;
+        const r = await fetch(`/workshop/${wsId}/regenerate/agenda`, { method:'POST', headers:{'Accept':'application/json'} });
+        const j = await r.json().catch(()=>({}));
+        if (!r.ok || j.success === false) throw new Error(j.message || `HTTP ${r.status}`);
+        await load();
+        toast('Agenda regenerated');
+      } catch (e) { alert(e.message); } finally { regenBtn.disabled = false; }
+    }
+
+    function toast(msg){ if (!window.bootstrap) return; let area=document.getElementById('notification-area'); if(!area){ area=document.createElement('div'); area.id='notification-area'; area.className='toast-container position-fixed bottom-0 end-0 p-3'; document.body.appendChild(area);} const t=document.createElement('div'); t.className='toast align-items-center text-bg-success border-0'; t.innerHTML=`<div class="d-flex"><div class="toast-body">${msg}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>`; area.appendChild(t); new bootstrap.Toast(t,{delay:1800}).show(); }
+
+    addBtn?.addEventListener('click', ()=>{ items.push({ activity_title:'', activity_description:null, estimated_duration:null }); render(); });
+    const bulkBtn = document.getElementById('bulkDeleteAgenda');
+    bulkBtn && bulkBtn.addEventListener('click', async () => {
+      const idxs = getSelectedIndexes();
+      if (!idxs.length) return;
+      if (!confirm(`Delete ${idxs.length} selected item(s)?`)) return;
+      // Delete server-side for rows with IDs, then remove remainder locally.
+      for (const idx of idxs){
+        const it = items[idx];
+        if (it && it.id){
+          try { const r = await fetch(`/workshop/${wsId}/agenda/${it.id}`, { method:'DELETE' }); if (!r.ok) throw new Error('Delete failed'); } catch(e){ console.error(e); }
+        }
+      }
+      // Remove all selected locally
+      idxs.forEach(i => { if (i>=0 && i<items.length) items.splice(i,1); });
+      render();
+    });
+    saveBtn?.addEventListener('click', save);
+    regenBtn?.addEventListener('click', regen);
+    bindHandlers();
+    load();
+  })();
+  
+  // --- Voting Settings (Dots per User) ---
+  (function(){
+    const sideCol = document.querySelector('.col-lg-4');
+    if (!sideCol) return;
+    let card = document.getElementById('votingSettingsCard');
+    if (!card) {
+      card = document.createElement('div');
+      card.id = 'votingSettingsCard';
+      card.className = 'card shadow-sm border-0';
+      card.innerHTML = `
+        <div class="card-header bg-transparent py-3 d-flex align-items-center justify-content-between">
+          <span class="fw-semibold"><i class="bi bi-emoji-smile"></i> Voting Settings</span>
+          <button id="saveVotingBtn" class="btn btn-sm btn-primary">Save</button>
+        </div>
+        <div class="card-body">
+          <div class="mb-2">
+            <label for="dotsPerUser" class="form-label fw-semibold">Dots per participant</label>
+            <input type="number" min="0" max="1000" step="1" id="dotsPerUser" class="form-control" placeholder="5" />
+            <div class="form-text small text-body-secondary">Default number of dot votes each participant gets in Clusters & Voting.</div>
+          </div>
+        </div>`;
+      sideCol.appendChild(card);
+    }
+    let workshopIdGuess = Number((document.getElementById('planCard')?.dataset?.workshopId)||'0');
+    if (!workshopIdGuess){ const m=window.location.pathname.match(/(\d+)/); if (m) workshopIdGuess = Number(m[1]); }
+    const input = document.getElementById('dotsPerUser');
+    const saveBtn = document.getElementById('saveVotingBtn');
+    try {
+      const existing = Number('{{ workshop.dots_per_user or 5 }}');
+      if (input && !Number.isNaN(existing)) input.value = String(existing);
+    } catch {}
+    saveBtn?.addEventListener('click', async () => {
+      const dots = Math.max(0, parseInt(input.value || '0', 10) || 0);
+      try {
+        const r = await fetch(`/workshop/${workshopIdGuess}/settings/voting`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          body: JSON.stringify({ dots_per_user: dots })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || d.success !== true) throw new Error(d.message || 'Failed to save voting settings');
+        // Toast
+        if (window.bootstrap) {
+          let area=document.getElementById('notification-area'); if(!area){ area=document.createElement('div'); area.id='notification-area'; area.className='toast-container position-fixed bottom-0 end-0 p-3'; document.body.appendChild(area);} 
+          const t=document.createElement('div'); t.className='toast align-items-center text-bg-success border-0'; t.innerHTML=`<div class="d-flex"><div class="toast-body">Saved voting settings</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>`; area.appendChild(t); new bootstrap.Toast(t,{delay:1500}).show();
+        }
+      } catch (e) { alert(e.message || 'Error saving voting settings'); }
+    });
+  })();
+  </script>
+{% endblock %}

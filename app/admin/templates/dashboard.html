@@ -1,0 +1,172 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Dashboard · BrainStorm X{% endblock %}
+{% block extra_head %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+{% endblock %}
+{% block header_title %}Platform overview{% endblock %}
+{% block header_subtitle %}Real-time metrics across users, workshops, and infrastructure{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4" data-metrics-endpoint="{{ metrics_api }}">
+    <section>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-3">
+            <div class="col">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <span class="text-uppercase text-body-secondary small">Total users</span>
+                        <h3 class="display-6 fw-semibold mb-1" data-metric="users.total">{{ metrics.users.total }}</h3>
+                        <p class="mb-0 text-body-secondary small">
+                            Admins <span data-metric="users.admins">{{ metrics.users.admins }}</span>
+                            · Managers <span data-metric="users.managers">{{ metrics.users.managers }}</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <span class="text-uppercase text-body-secondary small">Active today</span>
+                        <h3 class="display-6 fw-semibold mb-1" data-metric="users.active_today">{{ metrics.users.active_today }}</h3>
+                        <p class="mb-0 text-body-secondary small">Users updated or logged in during the past 24h</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <span class="text-uppercase text-body-secondary small">Workshops</span>
+                        <h3 class="display-6 fw-semibold mb-1" data-metric="workshops.total">{{ metrics.workshops.total }}</h3>
+                        <p class="mb-0 text-body-secondary small">
+                            In progress <span data-metric="workshops.active">{{ metrics.workshops.active }}</span>
+                            · Completed today <span data-metric="workshops.completed_today">{{ metrics.workshops.completed_today }}</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <span class="text-uppercase text-body-secondary small">Chat messages (24h)</span>
+                        <h3 class="display-6 fw-semibold mb-1" data-metric="activity.chat_messages_today">{{ metrics.activity.chat_messages_today }}</h3>
+                        <p class="mb-0 text-body-secondary small">Across <span data-metric="activity.workspaces">{{ metrics.activity.workspaces }}</span> active workspaces</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="row g-3">
+        <div class="col-12 col-xl-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0">
+                    <h2 class="h5 mb-1">Usage trend</h2>
+                    <p class="text-body-secondary small mb-0">Live user activity (updates every 30s)</p>
+                </div>
+                <div class="card-body">
+                    <div class="ratio ratio-16x9">
+                        <canvas id="admin-metrics-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+                    <div>
+                        <h2 class="h5 mb-1">Infrastructure health</h2>
+                        <p class="text-body-secondary small mb-0">System diagnostics</p>
+                    </div>
+                    <span class="badge text-bg-secondary">Last refreshed: <span id="health-timestamp">{{ health.timestamp }}</span></span>
+                </div>
+                <div class="card-body">
+                    <div class="row row-cols-1 row-cols-sm-2 g-3">
+                        <div class="col">
+                            <div class="border rounded-3 p-3 h-100">
+                                <div class="text-body-secondary small mb-1">CPU usage</div>
+                                <div class="fs-4 mb-0" id="health-cpu">{{ '%.1f'|format(health.system.cpu_percent) }}%</div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="border rounded-3 p-3 h-100">
+                                <div class="text-body-secondary small mb-1">Memory</div>
+                                <div class="fs-4 mb-0"><span id="health-mem">{{ health.system.memory.percent }}%</span> used</div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="border rounded-3 p-3 h-100">
+                                <div class="text-body-secondary small mb-1">Disk</div>
+                                <div class="fs-4 mb-0"><span id="health-disk">{{ health.system.disk.percent }}%</span> used</div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="border rounded-3 p-3 h-100">
+                                <div class="text-body-secondary small mb-1">DB pool</div>
+                                <div class="fs-5 mb-0">
+                                    <span id="health-db-active">{{ health.database.active_connections }}</span>
+                                    active of
+                                    <span id="health-db-pool">{{ health.database.connection_pool }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="card shadow-sm">
+            <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                <div>
+                    <h2 class="h5 mb-1">Recent admin actions</h2>
+                    <p class="text-body-secondary small mb-0">Last {{ recent_logs | length }} recorded events</p>
+                </div>
+                <a class="btn btn-outline-primary btn-sm" href="{{ url_for('admin.logs') }}">
+                    View all logs
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" aria-describedby="recentAdminActions">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">When</th>
+                                <th scope="col">Admin</th>
+                                <th scope="col">Action</th>
+                                <th scope="col">Target</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-logs">
+                            {% for log in recent_logs %}
+                                <tr>
+                                    <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M UTC') if log.created_at else '—' }}</td>
+                                    <td>{{ log.actor.display_name if log.actor else 'System' }}</td>
+                                    <td>{{ log.action }}</td>
+                                    <td>{{ log.entity_type or '' }} {{ log.entity_id or '' }}</td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-body-secondary">No admin events recorded yet.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+    {{ super() }}
+    <script id="admin-dashboard-config" type="application/json">{{ {
+        "metricsEndpoint": metrics_api,
+        "initialMetrics": metrics,
+        "initialHealth": health,
+        "recentLogIds": recent_logs|map(attribute='id')|list,
+        "refreshIntervalSeconds": 30
+    } | tojson }}</script>
+    <script src="{{ url_for('admin.static', filename='js/admin-dashboard.js') }}" defer></script>
+{% endblock %}

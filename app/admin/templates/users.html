@@ -1,0 +1,105 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Users · BrainStorm X{% endblock %}
+{% block header_title %}User management{% endblock %}
+{% block header_subtitle %}Invite, promote, and audit participants across all workspaces{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+        <form method="get" class="w-100 w-lg-auto">
+            <div class="row g-2 align-items-center">
+                <div class="col-12 col-md-8 col-lg-auto">
+                    <label for="user-search" class="form-label visually-hidden">Search users</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input
+                            id="user-search"
+                            name="search"
+                            type="search"
+                            class="form-control"
+                            placeholder="Search by name or email"
+                            value="{{ search }}"
+                        >
+                    </div>
+                </div>
+                <div class="col-12 col-md-4 col-lg-auto d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                    {% if search %}
+                        <a class="btn btn-outline-secondary" href="{{ url_for('admin.user_list') }}">Reset</a>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+        <a class="btn btn-success align-self-lg-end" href="{{ url_for('admin.create_user') }}">
+            <i class="bi bi-person-plus me-2"></i>Create user
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">ID</th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Email</th>
+                            <th scope="col">Role</th>
+                            <th scope="col">Created</th>
+                            <th scope="col" class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                            <tr>
+                                <td>{{ user.user_id }}</td>
+                                <td>{{ user.display_name }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>
+                                    <span class="badge text-bg-{% if user.role == 'admin' %}primary{% elif user.role == 'manager' %}success{% else %}secondary{% endif %}">
+                                        {{ user.role|capitalize }}
+                                    </span>
+                                </td>
+                                <td>{{ user.created_timestamp.strftime('%Y-%m-%d') if user.created_timestamp else '—' }}</td>
+                                <td class="text-end">
+                                    <div class="d-flex justify-content-end flex-wrap gap-2">
+                                        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.user_detail', user_id=user.user_id) }}">View</a>
+                                        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin.edit_user', user_id=user.user_id) }}">Edit</a>
+                                        <form
+                                            method="post"
+                                            action="{{ url_for('admin.delete_user', user_id=user.user_id) }}"
+                                            onsubmit="return confirm('Delete {{ user.display_name }}?');"
+                                        >
+                                            {{ delete_form.hidden_tag() }}
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-body-secondary py-4">No users found.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if pagination.pages > 1 %}
+        <nav aria-label="User pagination">
+            <ul class="pagination justify-content-end mb-0">
+                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('admin.user_list', page=pagination.prev_num, search=search) }}" tabindex="-1">Previous</a>
+                </li>
+                <li class="page-item disabled"><span class="page-link">Page {{ pagination.page }} of {{ pagination.pages }}</span></li>
+                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('admin.user_list', page=pagination.next_num, search=search) }}">Next</a>
+                </li>
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+{% endblock %}

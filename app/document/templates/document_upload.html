@@ -1,0 +1,176 @@
+{% extends "main_template.html" %}
+{% block title %}Upload Document{% endblock %}
+
+{% block content %}
+<section class="py-4 bg-body-tertiary">
+  <div class="container">
+    <!-- Page Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+      <div class="me-2">
+        <h1 class="h4 fw-bold mb-1 d-flex align-items-center gap-2"><i class="bi bi-upload"></i><span>Upload Document</span></h1>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item"><a href="{{ url_for('main_bp.index') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('document_bp.list_documents') }}">Documents</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Upload</li>
+          </ol>
+        </nav>
+      </div>
+      <div class="d-flex gap-2 mt-3 mt-sm-0">
+        <a href="{{ url_for('document_bp.list_documents') }}" class="btn btn-outline-secondary"><i class="bi bi-files me-1"></i>Library</a>
+        {% if workspaces %}
+          <a href="{{ url_for('workspace_bp.create_workspace') }}" class="btn btn-outline-primary"><i class="bi bi-building-add me-1"></i>New Workspace</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- Main Form -->
+      <div class="col-lg-8">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-header bg-transparent py-3 fw-semibold d-inline-flex align-items-center gap-2">
+            <i class="bi bi-file-earmark-plus text-primary"></i><span>Document Details</span>
+          </div>
+          <div class="card-body">
+            <form action="{{ url_for('document_bp.upload_document') }}" method="post" enctype="multipart/form-data" id="uploadForm" novalidate>
+              <!-- Workspace Selection -->
+              <div class="mb-3">
+                <label for="workspace_id" class="form-label fw-semibold">Workspace <span class="text-danger" aria-hidden="true">*</span></label>
+                <select name="workspace_id" id="workspace_id" class="form-select" required aria-required="true" aria-describedby="workspaceHelp">
+                  <option value="" disabled selected>Select a workspace...</option>
+                  {% for ws in workspaces %}
+                    <option value="{{ ws.workspace_id }}">{{ ws.name }}</option>
+                  {% else %}
+                    <option value="" disabled>You have no active workspaces.</option>
+                  {% endfor %}
+                </select>
+                <div id="workspaceHelp" class="form-text">Only workspaces where you are an active member are listed.</div>
+                {% if not workspaces %}
+                  <div class="small text-danger mt-1">You must create or join a workspace to upload documents.</div>
+                {% endif %}
+              </div>
+
+              <!-- File Input -->
+              <div class="mb-3">
+                <label for="file" class="form-label fw-semibold">File <span class="text-danger" aria-hidden="true">*</span></label>
+                <input type="file" class="form-control" id="file" name="file" required aria-required="true" aria-describedby="fileHelp">
+                <div id="fileHelp" class="form-text">Accepted: PDFs, Word docs, text & slides (size limits may apply).</div>
+              </div>
+
+              <!-- Title -->
+              <div class="mb-3">
+                <label for="title" class="form-label fw-semibold">Title</label>
+                <input type="text" class="form-control" id="title" name="title" placeholder="Auto-filled from filename if left blank" maxlength="150" aria-describedby="titleHelp">
+                <div id="titleHelp" class="form-text"><span id="titleCount">0</span>/150 characters.</div>
+              </div>
+
+              <!-- Description (Rich) -->
+              <div class="mb-3">
+                <label for="description" class="form-label fw-semibold">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="8" placeholder="Describe the document purpose, scope, or key contents..."></textarea>
+              </div>
+
+              <!-- Meta Preview -->
+              <div class="border rounded-3 p-3 mb-3 bg-body-secondary small" id="metaPreview" hidden>
+                <div class="fw-semibold mb-1 d-flex align-items-center gap-2"><i class="bi bi-info-circle text-primary"></i>File Preview</div>
+                <div class="row g-2">
+                  <div class="col-md-6"><span class="text-body-secondary">Name:</span> <span id="metaName">—</span></div>
+                  <div class="col-md-3"><span class="text-body-secondary">Type:</span> <span id="metaType">—</span></div>
+                  <div class="col-md-3"><span class="text-body-secondary">Size:</span> <span id="metaSize">—</span></div>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary" {% if not workspaces %}disabled{% endif %}><i class="bi bi-upload me-1"></i>Upload</button>
+                <a href="{{ url_for('document_bp.list_documents') }}" class="btn btn-outline-secondary">Cancel</a>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side Panel: Tips & Guidance -->
+      <div class="col-lg-4">
+        <div class="card shadow-sm border-0 mb-4">
+          <div class="card-header bg-transparent py-3 fw-semibold d-inline-flex align-items-center gap-2">
+            <i class="bi bi-lightbulb text-warning"></i><span>Helpful Tips</span>
+          </div>
+          <div class="card-body small">
+            <ul class="list-unstyled mb-0">
+              <li class="mb-2 d-flex gap-2"><i class="bi bi-check-circle text-success"></i><span>Use a clear, descriptive title that others can search.</span></li>
+              <li class="mb-2 d-flex gap-2"><i class="bi bi-check-circle text-success"></i><span>Include a summary so teammates know the context quickly.</span></li>
+              <li class="mb-2 d-flex gap-2"><i class="bi bi-check-circle text-success"></i><span>Keep versions organized—append v2, v3 if updating.</span></li>
+              <li class="mb-2 d-flex gap-2"><i class="bi bi-check-circle text-success"></i><span>Sensitive info? Confirm workspace privacy first.</span></li>
+              <li class="mb-0 d-flex gap-2"><i class="bi bi-check-circle text-success"></i><span>Large files may take a moment—don’t navigate away.</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent py-3 fw-semibold d-inline-flex align-items-center gap-2">
+            <i class="bi bi-shield-lock text-primary"></i><span>Access</span>
+          </div>
+          <div class="card-body small">
+            <p class="mb-2">Documents inherit the visibility rules of their workspace.</p>
+            <ul class="list-unstyled mb-2">
+              <li class="d-flex gap-2 mb-1"><i class="bi bi-lock-fill text-secondary"></i><span><strong>Private:</strong> Members only.</span></li>
+              <li class="d-flex gap-2"><i class="bi bi-globe2 text-info"></i><span><strong>Public:</strong> Discoverable inside BrainStormX.</span></li>
+            </ul>
+            <a class="small text-decoration-none" href="{{ url_for('workspace_bp.list_workspaces') }}"><i class="bi bi-diagram-3 me-1"></i>Manage Workspaces</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TinyMCE (rich text editor) -->
+<script src="https://cdn.tiny.cloud/1/mhrhnr24v1a6tbmutlvgeb0kf546ip1y8tcx6rox4mhty74j/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+<script>
+  tinymce.init({
+    selector: '#description',
+    plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount',
+    toolbar: 'undo redo | bold italic underline | bullist numlist | link | alignleft aligncenter alignright | removeformat',
+    height: 260,
+    menubar: false,
+  });
+</script>
+
+<script>
+  // Client enhancements: auto title, char count, file meta
+  (function(){
+    const titleInput = document.getElementById('title');
+    const titleCount = document.getElementById('titleCount');
+    const fileInput = document.getElementById('file');
+    const metaBox = document.getElementById('metaPreview');
+    const metaName = document.getElementById('metaName');
+    const metaType = document.getElementById('metaType');
+    const metaSize = document.getElementById('metaSize');
+
+    function formatSize(bytes){
+      if(!bytes && bytes !== 0) return '—';
+      if(bytes < 1024) return bytes + ' B';
+      if(bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
+      if(bytes < 1073741824) return (bytes/1048576).toFixed(1) + ' MB';
+      return (bytes/1073741824).toFixed(1) + ' GB';
+    }
+
+    titleInput?.addEventListener('input', ()=>{ titleCount.textContent = titleInput.value.length; });
+
+    fileInput?.addEventListener('change', function(){
+      const f = this.files && this.files[0];
+      if(!f) { metaBox.hidden = true; return; }
+      metaName.textContent = f.name;
+      metaType.textContent = f.type || (f.name.split('.').pop() || '').toUpperCase();
+      metaSize.textContent = formatSize(f.size);
+      metaBox.hidden = false;
+      if(!titleInput.value.trim()){
+        const base = f.name.lastIndexOf('.')>0 ? f.name.slice(0,f.name.lastIndexOf('.')) : f.name;
+        titleInput.value = base.substring(0,150);
+        titleCount.textContent = titleInput.value.length;
+      }
+    });
+  })();
+</script>
+{% endblock %}

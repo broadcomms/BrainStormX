@@ -1,0 +1,229 @@
+<!-- app/auth/templates/auth_login.html -->
+{% extends "main_template.html" %}
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<section class="py-5 bg-body-tertiary">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-xxl-8 col-xl-9 col-lg-10">
+
+        <!-- Shell -->
+        <div class="row g-0 shadow-lg rounded-3 overflow-hidden">
+          <!-- Left: Brand/Value (marketing panel) -->
+          <div class="col-lg-6 d-none d-lg-block bg-primary text-white p-4 p-xl-5">
+
+            <p class="mb-4 h2">Sign in to run AI-powered workshops that turn ideas into action, fast.</p>
+
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item bg-transparent text-white-50 border-0 ps-0 d-flex align-items-start">
+                <i class="bi bi-stars me-2 text-white"></i>
+                <div>
+                  <div class="fw-semibold text-white">Frictionless Collaboration</div>
+                  <small>Capture ideas, cluster them, and vote—without leaving the session.</small>
+                </div>
+              </li>
+              <li class="list-group-item bg-transparent text-white-50 border-0 ps-0 d-flex align-items-start">
+                <i class="bi bi-graph-up-arrow me-2 text-white"></i>
+                <div>
+                  <div class="fw-semibold text-white">Measurable Outcomes</div>
+                  <small>Auto-generate action items and feasibility scores.</small>
+                </div>
+              </li>
+              <li class="list-group-item bg-transparent text-white-50 border-0 ps-0 d-flex align-items-start">
+                <i class="bi bi-shield-check me-2 text-white"></i>
+                <div>
+                  <div class="fw-semibold text-white">Enterprise-Ready</div>
+                  <small>Security-first workflows powered by AWS Bedrock (Nova).</small>
+                </div>
+              </li>
+            </ul>
+
+            <div class="mt-4">
+              <span class="badge text-bg-light text-primary me-1">Innovation Teams</span>
+              <span class="badge text-bg-light text-primary me-1">Consultancies</span>
+              <span class="badge text-bg-light text-primary">Product Orgs</span>
+            </div>
+          </div>
+
+          <!-- Right: Login form -->
+          <div class="col-lg-6 bg-white p-4 p-xl-5">
+            <div class="mb-4">
+              <h2 class="h4 fw-bold mb-1">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Account Login
+              </h2>
+              <p class="text-body-secondary mb-0">Welcome back. Let’s build something brilliant.</p>
+            </div>
+
+            <form
+              class="needs-validation"
+              novalidate
+              method="POST"
+              action="{{ url_for('auth_bp.login') }}"
+            >
+              {% if request.args.get('next') %}
+                <input type="hidden" name="next" value="{{ request.args.get('next') }}">
+              {% endif %}
+
+              <!-- Email -->
+              <div class="mb-3">
+                <label for="email" class="form-label">Work email</label>
+                <div class="input-group">
+                  <span class="input-group-text" id="email-addon">
+                    <i class="bi bi-envelope"></i>
+                  </span>
+                  <input
+                    type="email"
+                    class="form-control"
+                    id="email"
+                    name="email"
+                    aria-describedby="email-addon emailHelp"
+                    required
+                    autocomplete="email"
+                    placeholder="you@company.com"
+                  >
+                  <div class="invalid-feedback">Please enter a valid email address.</div>
+                </div>
+                <div id="emailHelp" class="form-text">Use your company email to join your team workspace.</div>
+              </div>
+
+              <!-- Password -->
+              <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <div class="input-group">
+                  <span class="input-group-text" id="password-addon">
+                    <i class="bi bi-shield-lock"></i>
+                  </span>
+                  <input
+                    type="password"
+                    class="form-control"
+                    id="password"
+                    name="password"
+                    aria-describedby="password-addon"
+                    required
+                    autocomplete="current-password"
+                    placeholder="••••••••"
+                  >
+                  <button
+                    class="btn btn-outline-secondary"
+                    type="button"
+                    id="togglePassword"
+                    aria-label="Show password"
+                  >
+                    <i class="bi bi-eye" aria-hidden="true"></i>
+                  </button>
+                  <div class="invalid-feedback">Please enter your password.</div>
+                </div>
+              </div>
+
+              <!-- Row: Remember + Forgot -->
+              <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" value="1" id="remember" name="remember">
+                  <label class="form-check-label" for="remember">Remember me</label>
+                </div>
+                <a class="small" href="{{ url_for('auth_bp.forgot_password') }}">
+                  <i class="bi bi-question-circle me-1"></i>Forgot password?
+                </a>
+              </div>
+
+              <!-- Submit -->
+              <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary py-2">
+                  <i class="bi bi-box-arrow-in-right me-1"></i>Sign in
+                </button>
+              </div>
+
+              <!-- Divider -->
+              <div class="text-center my-4">
+                <span class="text-body-secondary small">or</span>
+              </div>
+
+              <!-- Optional SSO (text-only to stay icon-agnostic/brand-safe) -->
+              <div class="d-grid gap-2">
+                <a href="{{ url_for('auth_bp.register') }}" class="btn btn-outline-secondary">
+                  Create a free account
+                </a>
+              </div>
+            </form>
+
+            <!-- Tiny social proof -->
+            <div class="mt-4 text-center">
+              <small class="text-body-secondary">
+                Trusted by modern product & innovation teams.
+              </small>
+              <div class="d-flex justify-content-center align-items-center gap-2 mt-2">
+                <span class="badge text-bg-light"><i class="bi bi-people-fill me-1"></i> 50+ teams</span>
+                <span class="badge text-bg-light"><i class="bi bi-speedometer2 me-1"></i> 40% faster</span>
+                <span class="badge text-bg-light"><i class="bi bi-check2-circle me-1"></i> Action-ready</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <!-- /Shell -->
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Validation + Password toggle + (Dev-only) Auto-fill -->
+<script>
+  // Bootstrap validation (native pattern)
+  (function () {
+    'use strict';
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms).forEach(function (form) {
+      form.addEventListener('submit', function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  })();
+
+  // Password visibility toggle (Bootstrap-only controls)
+  (function () {
+    const btn = document.getElementById('togglePassword');
+    const input = document.getElementById('password');
+    if (btn && input) {
+      btn.addEventListener('click', function () {
+        const isText = input.getAttribute('type') === 'text';
+        input.setAttribute('type', isText ? 'password' : 'text');
+        const icon = this.querySelector('i');
+        if (icon) {
+          icon.classList.toggle('bi-eye');
+          icon.classList.toggle('bi-eye-slash');
+        }
+        this.setAttribute('aria-label', isText ? 'Show password' : 'Hide password');
+      });
+    }
+  })();
+
+  // DEBUG SCRIPT — dev only; remove for production
+  document.addEventListener('DOMContentLoaded', function () {
+    // Enable/disable via console: toggleAutoFillLogin(true|false)
+    window.toggleAutoFillLogin = function (enable) {
+      localStorage.setItem('autoFillLogin', enable ? 'true' : 'false');
+      applyAutoFill();
+    };
+
+    function applyAutoFill() {
+      const enabled = localStorage.getItem('autoFillLogin') === 'true';
+      const email = document.querySelector('input[name="email"]');
+      const password = document.querySelector('input[name="password"]');
+      if (enabled && email && password) {
+        email.value = 'patrick@broadcomms.net';
+        password.value = 'Secret123';
+      }
+    }
+    applyAutoFill();
+    // Development default (comment out in prod)
+    toggleAutoFillLogin(false);
+    //console.log('Login auto-fill ready: toggleAutoFillLogin(true|false)');
+  });
+</script>
+{% endblock %}

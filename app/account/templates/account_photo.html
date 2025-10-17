@@ -1,0 +1,1296 @@
+<!-- app/account/templates/account_photo.html -->
+{% extends "main_template.html" %}
+{% block title %}Professional Headshot Studio{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+.camera-preview {
+	background: #1a1a1a;
+	border-radius: 1rem;
+	overflow: hidden;
+	position: relative; /* establishes stacking context */
+}
+
+.camera-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(135deg, rgba(0,0,0,0.1) 0%, rgba(255,255,255,0.05) 100%);
+	pointer-events: none;
+	z-index: 18; /* below guidance canvas, above video */
+}
+
+.photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.style-selector {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.style-selector:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.style-selector.active {
+    border-color: var(--bs-primary);
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+.enhancement-preview {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: inherit;
+}
+/* Ensure video/canvas/placeholder overlap instead of stacking */
+.camera-preview > .camera-layer { 
+	position: absolute !important; 
+	inset: 0 !important; 
+}
+
+/* Guidance overlay should not intercept mouse/touch but be visible */
+/* Guidance overlay must sit on top of the preview */
+#guidanceCanvas { 
+	pointer-events: none; 
+	z-index: 30; /* highest among preview layers */
+	background-color: transparent !important;
+}
+
+/* Ensure video is below overlay */
+/* Live video sits at the base */
+#cameraVideo { z-index: 10; }
+
+/* Captured canvas in middle */
+/* Captured still above video but below overlays */
+#cameraCanvas { z-index: 15; }
+
+/* Placeholder sits above all when shown */
+#cameraPlaceholder { z-index: 40; }
+
+/* Utility classes to replace inline styles */
+.square-aspect { aspect-ratio: 1 / 1; }
+.progress-thin { height: 4px; }
+.w-0 { width: 0%; }
+
+/* Enhanced camera preview styling (duplicate kept for clarity) */
+.camera-preview { position: relative; }
+
+/* Ensure any canvas stays transparent */
+.camera-preview canvas { 
+    background-color: transparent !important; 
+}
+</style>
+<meta id="bsx-config" data-bedrock-configured="{{ '1' if bedrock_configured else '0' }}">
+{% endblock %}
+
+{% block content %}
+<section class="py-4 bg-body-tertiary">
+	<div class="container">
+		<!-- Header -->
+		<div class="d-flex flex-wrap justify-content-between align-items-start mb-4">
+			<div class="me-2">
+				<h1 class="h4 fw-bold mb-2 d-flex flex-wrap align-items-center gap-2">
+					<i class="bi bi-camera-fill text-primary"></i>
+					<span>Professional Headshot Studio</span>
+					<span class="badge text-bg-primary d-inline-flex align-items-center gap-1">
+						<i class="bi bi-magic"></i>AI Enhanced
+					</span>
+				</h1>
+				<p class="text-body-secondary mb-0">Create stunning professional headshots with AI enhancement</p>
+				<nav aria-label="breadcrumb">
+					<ol class="breadcrumb mb-0 small">
+						<li class="breadcrumb-item"><a href="{{ url_for('main_bp.index') }}">Home</a></li>
+						<li class="breadcrumb-item"><a href="{{ url_for('account_bp.account') }}">Account</a></li>
+						<li class="breadcrumb-item active" aria-current="page">Headshot Studio</li>
+					</ol>
+				</nav>
+			</div>
+			<div class="d-flex gap-2 mt-3 mt-sm-0">
+				<a href="{{ url_for('account_bp.account') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+			</div>
+		</div>
+
+		<!-- Photo Studio Interface -->
+		<div class="row g-4">
+			<!-- Main Studio Column -->
+			<div class="col-xl-8">
+				<!-- Camera & Preview Section -->
+				<div class="card shadow-sm border-0 mb-4">
+					<div class="card-header bg-transparent py-3 d-flex align-items-center justify-content-between">
+						<div class="d-flex align-items-center gap-2">
+							<i class="bi bi-camera-video text-primary"></i>
+							<span class="fw-semibold">Photo Capture</span>
+						</div>
+						<div class="btn-group btn-group-sm" role="group">
+							<button type="button" class="btn btn-outline-primary active" id="uploadTab">Upload</button>
+							<button type="button" class="btn btn-outline-primary" id="cameraTab">Camera</button>
+						</div>
+					</div>
+					<div class="card-body">
+						<!-- Upload Interface -->
+						<div id="uploadInterface">
+							<div class="row g-4 align-items-start">
+								<div class="col-md-6">
+									<div class="camera-preview position-relative square-aspect">
+										<img id="currentPreview" src="{{ profile_url(current_user.profile_pic_url) }}" alt="Current profile photo preview" class="w-100 h-100 object-fit-cover">
+										<div class="camera-overlay"></div>
+									</div>
+									<div class="text-center mt-2">
+										<small class="text-body-secondary" id="previewMeta">Current Photo</small>
+									</div>
+								</div>
+								<div class="col-md-6">
+									<form id="uploadForm" enctype="multipart/form-data" novalidate>
+										<div class="mb-3">
+											<label for="profile_pic" class="form-label fw-semibold">
+												<i class="bi bi-cloud-upload me-1"></i>Choose Photo
+											</label>
+											<input class="form-control form-control-lg" type="file" id="profile_pic" name="profile_pic" accept="image/png,image/jpeg,image/jpg,image/gif">
+											<div class="form-text">PNG, JPG, JPEG, or GIF • Max 5MB</div>
+										</div>
+										
+										<div class="d-grid gap-2">
+											<button type="submit" class="btn btn-primary btn-lg" id="uploadBtn" disabled>
+												<i class="bi bi-cloud-arrow-up me-1"></i>Upload & Process
+											</button>
+										</div>
+									</form>
+								</div>
+							</div>
+						</div>
+
+						<!-- Camera Interface -->
+						<div id="cameraInterface" class="d-none">
+							<div class="row g-4 align-items-start">
+								<div class="col-md-6">
+									<div class="camera-preview position-relative square-aspect">
+										<video id="cameraVideo" class="camera-layer w-100 h-100 object-fit-cover d-none" autoplay muted></video>
+										<canvas id="cameraCanvas" class="camera-layer w-100 h-100 object-fit-cover d-none"></canvas>
+										<!-- AI guidance overlay canvas above video; hidden until camera starts -->
+										<canvas id="guidanceCanvas" class="camera-layer w-100 h-100 d-none"></canvas>
+										<div id="cameraPlaceholder" class="camera-layer w-100 h-100 d-flex align-items-center justify-content-center bg-light border">
+											<div class="text-center text-muted">
+												<i class="bi bi-camera-video-fill display-1 mb-2"></i>
+												<p class="mb-0">Click "Start Camera" to begin</p>
+											</div>
+										</div>
+										<div class="camera-overlay"></div>
+									</div>
+									<div class="text-center mt-2">
+										<small class="text-body-secondary" id="cameraStatus">Camera Ready</small>
+										<div class="small text-success" id="guidanceStatus"></div>
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="d-grid gap-2">
+										<button type="button" class="btn btn-primary btn-lg" id="startCamera">
+											<i class="bi bi-camera-video me-1"></i>Start Camera
+										</button>
+										<button type="button" class="btn btn-success btn-lg d-none" id="capturePhoto">
+											<i class="bi bi-camera me-1"></i>Capture Photo
+										</button>
+										<button type="button" class="btn btn-outline-secondary d-none" id="retakePhoto">
+											<i class="bi bi-arrow-counterclockwise me-1"></i>Retake
+										</button>
+										<button type="button" class="btn btn-danger d-none" id="stopCamera">
+											<i class="bi bi-camera-video-off me-1"></i>Stop Camera
+										</button>
+									</div>
+									<hr class="my-3">
+									<div class="small">
+										<div class="form-check form-switch mb-2">
+											<input class="form-check-input" type="checkbox" id="autoCaptureToggle">
+											<label class="form-check-label fw-semibold" for="autoCaptureToggle">Auto‑capture when aligned</label>
+										</div>
+										<div class="row g-2">
+											<div class="col-6">
+												<label for="centerTol" class="form-label small mb-1">Center tolerance (0.05–0.30)</label>
+												<input type="number" step="0.01" min="0.05" max="0.30" id="centerTol" class="form-control form-control-sm">
+											</div>
+											<div class="col-6">
+												<label for="rollTolDeg" class="form-label small mb-1">Tilt tolerance (deg)</label>
+												<input type="number" step="1" min="0" max="20" id="rollTolDeg" class="form-control form-control-sm">
+											</div>
+											<div class="col-6">
+												<label for="sizeMin" class="form-label small mb-1">Face size min (0.40–0.95)</label>
+												<input type="number" step="0.01" min="0.40" max="0.95" id="sizeMin" class="form-control form-control-sm">
+											</div>
+											<div class="col-6">
+												<label for="sizeMax" class="form-label small mb-1">Face size max (0.50–1.00)</label>
+												<input type="number" step="0.01" min="0.50" max="1.00" id="sizeMax" class="form-control form-control-sm">
+											</div>
+											<div class="col-6">
+												<label for="smileThresh" class="form-label small mb-1">Smile threshold (0–1)</label>
+												<input type="number" step="0.01" min="0" max="1" id="smileThresh" class="form-control form-control-sm">
+												<div class="form-check form-switch mt-1">
+													<input class="form-check-input" type="checkbox" id="requireSmile" checked>
+													<label class="form-check-label small" for="requireSmile">Require smile</label>
+												</div>
+												<div class="form-check form-switch mt-1">
+													<input class="form-check-input" type="checkbox" id="showDebug">
+													<label class="form-check-label small" for="showDebug">Show debug info</label>
+												</div>
+											</div>
+											<div class="col-6">
+												<label for="stabilityMs" class="form-label small mb-1">Stability time (ms)</label>
+												<input type="number" step="100" min="400" max="3000" id="stabilityMs" class="form-control form-control-sm">
+												<small class="form-text text-muted">Time to hold position before auto-capture</small>
+											</div>
+											<div class="col-6">
+												<label for="eyeGazeTolerance" class="form-label small mb-1">Eye contact tolerance</label>
+												<input type="number" step="0.05" min="0.1" max="0.5" id="eyeGazeTolerance" class="form-control form-control-sm">
+												<small class="form-text text-muted">Lower = stricter eye contact</small>
+											</div>
+										</div>
+										<div class="d-flex gap-2 mt-2">
+											<button type="button" class="btn btn-outline-secondary btn-sm" id="resetGuidance">Reset Defaults</button>
+											<button type="button" class="btn btn-outline-primary btn-sm" id="saveGuidance">Save Preferences</button>
+										</div>
+
+										{% if current_user.role in ['admin','manager'] %}
+										<hr class="my-3">
+										<div class="form-check form-switch">
+											<input class="form-check-input" type="checkbox" id="rekognitionToggle">
+											<label class="form-check-label fw-semibold" for="rekognitionToggle">Validate capture with AWS Rekognition</label>
+										</div>
+										<div class="form-text">Checks face presence, eyes open, sharpness after capture and suggests retake if needed.</div>
+										{% endif %}
+									</div>
+									
+									<div class="alert alert-info mt-3 small">
+										<i class="bi bi-info-circle me-1"></i>
+										<strong>Tips for best results:</strong>
+										<ul class="mb-0 mt-1">
+											<li>Face the camera directly</li>
+											<li>Ensure good lighting</li>
+											<li>Keep a neutral expression</li>
+											<li>Fill the frame with your head and shoulders</li>
+										</ul>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- AI Enhancement Section -->
+				<div class="card shadow-sm border-0 d-none" id="enhancementSection">
+					<div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+						<i class="bi bi-magic text-success"></i>
+						<span class="fw-semibold">AI Enhancement Studio</span>
+						{% if bedrock_configured %}
+						<span class="badge text-bg-success">Bedrock Powered</span>
+						{% else %}
+						<span class="badge text-bg-secondary" title="Bedrock is not configured">Bedrock Not Configured</span>
+						{% endif %}
+					</div>
+					<div class="card-body">
+						<div class="row g-3 align-items-end">
+							<div class="col-md-6">
+								<label for="enhancementSelect" class="form-label fw-semibold">Enhancement Style</label>
+								<select id="enhancementSelect" class="form-select">
+									<option value="linkedin_professional" selected>LinkedIn Professional (AI Pipeline)</option>
+									<option value="corporate_executive">Corporate Executive (AI Pipeline)</option>
+									<option value="creative_professional">Creative Professional (AI Pipeline)</option>
+									<option value="medical_professional">Medical Professional (AI Pipeline)</option>
+									<option value="tech_professional">Tech Professional (AI Pipeline)</option>
+									<option value="linkedin">Basic LinkedIn</option>
+									<option value="corporate">Basic Corporate</option>
+								</select>
+								<div class="form-text">AI Pipeline options provide multi-stage professional enhancement.</div>
+							</div>
+							<div class="col-md-6">
+								<label for="backgroundSelect" class="form-label fw-semibold">Background Style</label>
+								<select id="backgroundSelect" class="form-select">
+									<option value="corporate_blue" selected>Corporate gradient (blue)</option>
+									<option value="studio_gray">Studio gray</option>
+									<option value="minimalist">Minimalist white</option>
+								</select>
+							</div>
+						</div>
+						
+						<div class="row g-3 mb-4">
+							<div class="col-md-6">
+								{% if bedrock_configured %}
+									<div class="form-check form-switch mb-2">
+										<input class="form-check-input" type="checkbox" id="useProfessionalPipeline" checked>
+										<label class="form-check-label fw-semibold" for="useProfessionalPipeline">
+											Use Professional AI Pipeline
+										</label>
+									</div>
+									<div class="form-check form-switch mb-2">
+										<input class="form-check-input" type="checkbox" id="outfitEnhancement">
+										<label class="form-check-label fw-semibold" for="outfitEnhancement">
+											Enhance to Professional Attire
+										</label>
+									</div>
+									<div class="form-check form-switch mb-2">
+										<input class="form-check-input" type="checkbox" id="removeBackgroundOnly">
+										<label class="form-check-label fw-semibold" for="removeBackgroundOnly">
+											Remove Background Only
+										</label>
+									</div>
+									<div class="form-check form-switch">
+										<input class="form-check-input" type="checkbox" id="useBedrock" checked disabled>
+										<label class="form-check-label fw-semibold" for="useBedrock">
+											Use AI Enhancement (Bedrock)
+										</label>
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="form-check form-switch mb-2">
+										<input class="form-check-input" type="checkbox" id="enableSmartCrop">
+										<label class="form-check-label fw-semibold" for="enableSmartCrop">
+											Smart Cropping & Positioning
+											<small class="text-muted d-block">Auto-crop to optimal headshot composition</small>
+										</label>
+									</div>
+									<div class="form-check form-switch mb-2">
+										<input class="form-check-input" type="checkbox" id="enableLighting" checked>
+										<label class="form-check-label fw-semibold" for="enableLighting">
+											Professional Lighting Enhancement
+											<small class="text-muted d-block">Improve brightness, contrast & color</small>
+										</label>
+									</div>
+									<div class="form-check form-switch">
+										<input class="form-check-input" type="checkbox" id="enableEdgeRefinement" checked>
+										<label class="form-check-label fw-semibold" for="enableEdgeRefinement">
+											Edge Refinement & Smoothing
+											<small class="text-muted d-block">Smooth background removal edges</small>
+										</label>
+									</div>
+								</div>
+							</div>
+							<div class="row g-3 mb-4">
+								<div class="col-12">
+									<div class="form-text">High-Quality AI Pipeline: background removal → combined enhancement → professional background (maximum quality output).</div>
+								{% else %}
+									<div class="alert alert-warning py-2 mb-0 small">
+										<i class="bi bi-exclamation-triangle me-1"></i>
+										Enhancement unavailable: AWS Bedrock is not configured. An admin must enable Bedrock and grant model access.
+									</div>
+								{% endif %}
+							</div>
+							<div class="col-md-6 text-end">
+								<button type="button" class="btn btn-primary btn-lg" id="processEnhancement" {% raw %}{% if not bedrock_configured %}disabled title="Enable Bedrock to use enhancement"{% endif %}{% endraw %}>
+									<span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true" id="enhanceSpinner"></span>
+									<i class="bi bi-magic me-1" id="enhanceIcon"></i>Enhance Photo
+								</button>
+							</div>
+						</div>
+						
+						<!-- Enhancement Preview -->
+						<div id="enhancementPreview" class="enhancement-preview d-none">
+							<div class="border rounded p-3 bg-light">
+								<div class="row g-3 align-items-center">
+									<div class="col-md-4">
+										<div class="position-relative">
+											<img id="enhancedImage" class="img-fluid rounded" alt="Enhanced preview">
+											<div class="loading-overlay d-none" id="enhancementLoader">
+												<div class="spinner-border text-primary" role="status">
+													<span class="visually-hidden">Processing...</span>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="col-md-8">
+										<div id="enhancementMetadata"></div>
+										<div class="d-flex gap-2 mt-3">
+											<button type="button" class="btn btn-success" id="acceptEnhancement">
+												<i class="bi bi-check-circle me-1"></i>Use This Photo
+											</button>
+											<button type="button" class="btn btn-outline-secondary" id="tryAgain">
+												<i class="bi bi-arrow-counterclockwise me-1"></i>Try Different Style
+											</button>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Generate Variants Section -->
+				<div class="card shadow-sm border-0 d-none" id="variantsSection">
+					<div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+						<i class="bi bi-grid-3x3 text-info"></i>
+						<span class="fw-semibold">Style Variants</span>
+					</div>
+					<div class="card-body">
+						<div class="photo-grid" id="styleVariants">
+							<!-- Variants will be displayed here -->
+						</div>
+					</div>
+				</div>
+				<div class="card shadow-sm border-0">
+					<div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+						<i class="bi bi-gear-wide-connected text-secondary"></i>
+						<span class="fw-semibold">Upcoming Enhancements</span>
+					</div>
+					<div class="card-body small text-body-secondary">
+						<p class="mb-2">Planned features:</p>
+						<ul class="ps-3 mb-0">
+							<li>Inline cropping & scaling</li>
+							<li>Automatic background cleanup</li>
+							<li>Avatar generator (AI)</li>
+							<li>Content safety scanning</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+
+			<!-- Sidebar -->
+			<div class="col-xl-4">
+				<!-- Current Profile -->
+				<div class="card shadow-sm border-0 mb-4">
+					<div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+						<i class="bi bi-person-circle text-primary"></i>
+						<span class="fw-semibold">Current Profile</span>
+					</div>
+					<div class="card-body text-center">
+						<div class="mb-3 avatar-circle bg-light border mx-auto avatar-120 d-flex align-items-center justify-content-center">
+							<img src="{{ profile_url(current_user.profile_pic_url) }}" alt="Current profile" class="avatar-img" id="currentProfileImage">
+						</div>
+						<h6 class="mb-1">{{ current_user.first_name }} {{ current_user.last_name }}</h6>
+						<p class="text-body-secondary small mb-0">{{ current_user.job_title or current_user.organization or "BrainStormX Member" }}</p>
+					</div>
+				</div>
+				<!-- Professional Tips -->
+				<div class="card shadow-sm border-0 mb-4">
+					<div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+						<i class="bi bi-lightbulb text-warning"></i>
+						<span class="fw-semibold">Professional Tips</span>
+					</div>
+					<div class="card-body small">
+						<div class="row g-3">
+							<div class="col-12">
+								<h6 class="text-success mb-2"><i class="bi bi-check-circle-fill me-1"></i>Best Practices</h6>
+								<ul class="list-unstyled mb-3">
+									<li class="mb-1">• Face camera directly with good lighting</li>
+									<li class="mb-1">• Wear professional attire</li>
+									<li class="mb-1">• Use neutral facial expression</li>
+									<li>• Clear, uncluttered background</li>
+								</ul>
+							</div>
+							<div class="col-12">
+								<h6 class="text-info mb-2"><i class="bi bi-magic me-1"></i>AI Enhancement</h6>
+								<p class="mb-2">Our AI will automatically:</p>
+								<ul class="list-unstyled mb-0">
+									<li class="mb-1">• Improve lighting and contrast</li>
+									<li class="mb-1">• Remove background distractions</li>
+									<li class="mb-1">• Apply professional styling</li>
+									<li>• Enhance image quality</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Processing Status -->
+				<div class="card shadow-sm border-0 mb-4 d-none" id="processingStatus">
+					<div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+						<div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+						<span class="fw-semibold">Processing</span>
+					</div>
+					<div class="card-body small">
+						<div class="progress mb-2 progress-thin">
+							<div class="progress-bar progress-bar-striped progress-bar-animated w-0" id="processingProgress"></div>
+						</div>
+						<p class="mb-0 text-body-secondary" id="processingMessage">Initializing...</p>
+					</div>
+				</div>
+
+				<!-- Privacy & Security -->
+				<div class="card shadow-sm border-0">
+					<div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+						<i class="bi bi-shield-check text-success"></i>
+						<span class="fw-semibold">Privacy & Security</span>
+					</div>
+					<div class="card-body small text-body-secondary">
+						<div class="row g-3">
+							<div class="col-12">
+								<h6 class="text-primary mb-2">Secure Storage</h6>
+								<p class="mb-2">Photos are encrypted and stored securely. Only you can access your images.</p>
+							</div>
+							<div class="col-12">
+								<h6 class="text-success mb-2">AI Processing</h6>
+								<p class="mb-2">Enhancement uses AWS Bedrock with enterprise-grade security. No data is retained by AI models.</p>
+							</div>
+							<div class="col-12">
+								<div class="alert alert-light border-0 mb-0">
+									<i class="bi bi-info-circle text-info me-1"></i>
+									<strong>Note:</strong> Images are processed server-side for best quality and security.
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>				<!-- Privacy & Safety -->
+				<div class="card shadow-sm border-0">
+					<div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+						<i class="bi bi-shield-lock text-secondary"></i>
+						<span class="fw-semibold">Privacy & Safety</span>
+					</div>
+					<div class="card-body small text-body-secondary">
+						<p class="mb-2">Avoid sensitive info in the image. Metadata (EXIF) may be stripped. Offensive content will be removed.</p>
+						<ul class="ps-3 mb-2">
+							<li>No explicit content</li>
+							<li>No copyrighted logos (unless owned)</li>
+							<li>Respect others’ likeness rights</li>
+						</ul>
+						<p class="mb-0">Report misuse through support channels.</p>
+					</div>
+				</div>
+
+				<!-- Current Details Snapshot -->
+				<div class="card shadow-sm border-0">
+					<div class="card-header bg-transparent py-3 d-flex align-items-center gap-2">
+						<i class="bi bi-person-badge text-primary"></i>
+						<span class="fw-semibold">Profile Snapshot</span>
+					</div>
+					<div class="card-body small text-body-secondary">
+						<div class="d-flex align-items-center gap-3 mb-3">
+							<span class="avatar-circle avatar-64 d-inline-block overflow-hidden border">
+								<img src="{{ profile_url(current_user.profile_pic_url) }}" alt="Current photo" class="avatar-img">
+							</span>
+							<div class="flex-grow-1">
+								<div class="fw-semibold">{{ current_user.first_name }} {{ current_user.last_name }}</div>
+								<div class="text-body-secondary small">{{ current_user.organization or current_user.job_title or 'No org/role set' }}</div>
+							</div>
+						</div>
+						<p class="mb-2">Updating your photo helps teammates recognize you across workshops and documents.</p>
+						<p class="mb-0">It may take a fresh page load to invalidate cached images.</p>
+					</div>
+				</div>
+
+				{% if recent_events and current_user.role == 'admin' %}
+				<!-- Admin Debug Panel -->
+				<div class="card shadow-sm border-0 mt-4">
+					<div class="card-header bg-transparent py-3 d-flex align-items-center justify-content-between">
+						<div class="d-flex align-items-center gap-2">
+							<i class="bi bi-activity text-danger"></i>
+							<span class="fw-semibold">Admin Debug Panel</span>
+						</div>
+						<button class="btn btn-sm btn-outline-secondary" id="toggleDebugPanel" type="button">Toggle</button>
+					</div>
+					<div class="card-body d-none" id="debugPanel">
+						<div class="table-responsive">
+							<table class="table table-sm align-middle mb-0">
+								<thead class="table-light">
+									<tr>
+										<th scope="col">Time (UTC)</th>
+										<th scope="col">Type</th>
+										<th scope="col">Details</th>
+									</tr>
+								</thead>
+								<tbody class="small">
+								{% for ev in recent_events[:15] %}
+									<tr>
+										<td class="text-nowrap">{{ ev.ts or '-' }}</td>
+										<td>{{ ev.type or '-' }}</td>
+										<td><code class="text-body-secondary">{{ ev | tojson }}</code></td>
+									</tr>
+								{% endfor %}
+								</tbody>
+							</table>
+						</div>
+						<div class="form-text">Showing last {{ recent_events|length }} events from instance/logs/events.jsonl</div>
+					</div>
+				</div>
+				{% endif %}
+			</div>
+		</div>
+	</div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- Face guidance module (MediaPipe Tasks Vision) -->
+<script type="module" src="{{ url_for('static', filename='js/photo.js') }}"></script>
+<script>
+// Expose media prefix for client-side checks; aligns with media_bp route
+window.BSX_MEDIA_PREFIX = '/media/photos';
+// Read bedrock configured from meta to avoid template JS injection issues
+(function(){
+	const cfg = document.getElementById('bsx-config');
+	window.BSX_BEDROCK_CONFIGURED = !!(cfg && cfg.dataset.bedrockConfigured === '1');
+})();
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+	// Elements
+	const preview = document.getElementById('currentPreview');
+	const fileInput = document.getElementById('profile_pic');
+	const uploadForm = document.getElementById('uploadForm');
+	const uploadBtn = document.getElementById('uploadBtn');
+	const previewMeta = document.getElementById('previewMeta');
+	const currentProfileImage = document.getElementById('currentProfileImage');
+	
+	// Tab elements
+	const uploadTab = document.getElementById('uploadTab');
+	const cameraTab = document.getElementById('cameraTab');
+	const uploadInterface = document.getElementById('uploadInterface');
+	const cameraInterface = document.getElementById('cameraInterface');
+	
+	// Camera elements
+	const video = document.getElementById('cameraVideo');
+	const canvas = document.getElementById('cameraCanvas');
+	const placeholder = document.getElementById('cameraPlaceholder');
+	const guidanceOverlay = document.getElementById('guidanceCanvas');
+	const startCameraBtn = document.getElementById('startCamera');
+	const captureBtn = document.getElementById('capturePhoto');
+	const retakeBtn = document.getElementById('retakePhoto');
+	const stopCameraBtn = document.getElementById('stopCamera');
+	const cameraStatus = document.getElementById('cameraStatus');
+	
+	// Enhancement elements
+	const enhancementSection = document.getElementById('enhancementSection');
+	const enhancementSelect = document.getElementById('enhancementSelect');
+	const backgroundSelect = document.getElementById('backgroundSelect');
+	const processEnhancementBtn = document.getElementById('processEnhancement');
+	const enhancementPreview = document.getElementById('enhancementPreview');
+	const enhancedImage = document.getElementById('enhancedImage');
+	const enhancementLoader = document.getElementById('enhancementLoader');
+	const enhancementMetadata = document.getElementById('enhancementMetadata');
+	const acceptEnhancementBtn = document.getElementById('acceptEnhancement');
+	const tryAgainBtn = document.getElementById('tryAgain');
+	const useBedrock = document.getElementById('useBedrock');
+	const removeBackgroundOnly = document.getElementById('removeBackgroundOnly');
+	const useProfessionalPipeline = document.getElementById('useProfessionalPipeline');
+	const outfitEnhancement = document.getElementById('outfitEnhancement');
+	const enableSmartCrop = document.getElementById('enableSmartCrop');
+	const enableLighting = document.getElementById('enableLighting');
+	const enableEdgeRefinement = document.getElementById('enableEdgeRefinement');
+
+	// Admin debug panel toggle (if present)
+	const dbgToggle = document.getElementById('toggleDebugPanel');
+	const dbgPanel = document.getElementById('debugPanel');
+	if (dbgToggle && dbgPanel) {
+		dbgToggle.addEventListener('click', () => dbgPanel.classList.toggle('d-none'));
+	}
+	
+	// Variants elements
+	const variantsSection = document.getElementById('variantsSection');
+	const styleVariants = document.getElementById('styleVariants');
+	
+	// Processing status
+	const processingStatus = document.getElementById('processingStatus');
+	const processingProgress = document.getElementById('processingProgress');
+	const processingMessage = document.getElementById('processingMessage');
+	
+	// State
+	let cameraStream = null;
+	let capturedImageData = null;
+	let currentImageData = null; // may be data URL or media URL
+	let lastDataUrl = null; // preserve last data URL even if preview switches to media URL
+	let selectedEnhancementStyle = 'linkedin';
+	let selectedBackgroundStyle = 'corporate_blue';
+	const PREFS_KEY = 'bsx_headshot_prefs_v1';
+	let validateWithRekognition = false;
+	
+	// Constants
+	const MAX_BYTES = 5 * 1024 * 1024; // 5MB
+	const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
+
+	// Initialize
+	init();
+
+	function init() {
+	// Defaults already present; can load from server later if needed
+		setupEventListeners();
+		updateUI();
+		loadGuidancePrefs();
+	}
+
+	function setupEventListeners() {
+		// Tab switching
+		uploadTab.addEventListener('click', () => switchTab('upload'));
+		cameraTab.addEventListener('click', () => switchTab('camera'));
+		
+		// File upload
+		fileInput.addEventListener('change', handleFileSelect);
+		uploadForm.addEventListener('submit', handleUpload);
+		
+		// Camera controls
+	startCameraBtn.addEventListener('click', startCamera);
+		captureBtn.addEventListener('click', capturePhoto);
+		retakeBtn.addEventListener('click', retakePhoto);
+		stopCameraBtn.addEventListener('click', stopCamera);
+
+		// Guidance controls
+		const autoCaptureToggle = document.getElementById('autoCaptureToggle');
+		const centerTol = document.getElementById('centerTol');
+		const rollTolDeg = document.getElementById('rollTolDeg');
+		const sizeMin = document.getElementById('sizeMin');
+		const sizeMax = document.getElementById('sizeMax');
+		const smileThresh = document.getElementById('smileThresh');
+		const stabilityMs = document.getElementById('stabilityMs');
+		const requireSmile = document.getElementById('requireSmile');
+		const eyeGazeTolerance = document.getElementById('eyeGazeTolerance');
+		const showDebug = document.getElementById('showDebug');
+		const resetGuidance = document.getElementById('resetGuidance');
+		const saveGuidance = document.getElementById('saveGuidance');
+		const rekognitionToggle = document.getElementById('rekognitionToggle');
+
+		autoCaptureToggle?.addEventListener('change', () => dispatchGuidanceUpdate());
+		[centerTol, rollTolDeg, sizeMin, sizeMax, smileThresh, stabilityMs, requireSmile, eyeGazeTolerance, showDebug].forEach(el => {
+			el?.addEventListener('change', () => dispatchGuidanceUpdate());
+		});
+		resetGuidance?.addEventListener('click', () => {
+			try { localStorage.removeItem(PREFS_KEY); } catch {}
+			setGuidanceFormValues();
+			dispatchGuidanceUpdate();
+			showSuccess('Guidance settings reset to defaults');
+		});
+		saveGuidance?.addEventListener('click', () => {
+			dispatchGuidanceUpdate(true);
+			showSuccess('Guidance preferences saved');
+		});
+		rekognitionToggle?.addEventListener('change', (e) => {
+			validateWithRekognition = !!e.target.checked;
+		});
+		
+	// Enhancement
+	enhancementSelect.addEventListener('change', () => selectedEnhancementStyle = enhancementSelect.value);
+	backgroundSelect.addEventListener('change', () => selectedBackgroundStyle = backgroundSelect.value);
+		processEnhancementBtn.addEventListener('click', processEnhancement);
+		acceptEnhancementBtn.addEventListener('click', acceptEnhancement);
+		tryAgainBtn.addEventListener('click', () => hide(enhancementPreview));
+	}
+
+	function setGuidanceFormValues() {
+		const defaults = { 
+			analysisSize: 512, 
+			frameStride: 2, 
+			stabilityMs: 1500, 
+			centerTol: 0.12, 
+			sizeRange: [0.15, 0.35], 
+			rollTolDeg: 8, 
+			smileThresh: 0.15, 
+			blinkMax: 0.6, 
+			autoCapture: true,
+			requireSmile: true,
+			eyeGazeTolerance: 0.2,
+			showDebug: false
+		};
+		let saved = {};
+		try { const raw = localStorage.getItem(PREFS_KEY); if (raw) saved = JSON.parse(raw); } catch {}
+		const opts = { ...defaults, ...saved };
+		const autoEl = document.getElementById('autoCaptureToggle'); if (autoEl) autoEl.checked = !!opts.autoCapture;
+		const requireSmileEl = document.getElementById('requireSmile'); if (requireSmileEl) requireSmileEl.checked = !!opts.requireSmile;
+		const showDebugEl = document.getElementById('showDebug'); if (showDebugEl) showDebugEl.checked = !!opts.showDebug;
+		const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+		setVal('centerTol', opts.centerTol);
+		setVal('rollTolDeg', opts.rollTolDeg);
+		setVal('sizeMin', opts.sizeRange[0]);
+		setVal('sizeMax', opts.sizeRange[1]);
+		setVal('smileThresh', opts.smileThresh);
+		setVal('stabilityMs', opts.stabilityMs);
+		setVal('eyeGazeTolerance', opts.eyeGazeTolerance);
+	}
+
+	function loadGuidancePrefs() {
+		setGuidanceFormValues();
+		// Apply on boot as well
+		dispatchGuidanceUpdate(false);
+	}
+
+	function dispatchGuidanceUpdate(persist=true) {
+		const autoCapture = !!document.getElementById('autoCaptureToggle')?.checked;
+		const centerTolV = parseFloat(document.getElementById('centerTol')?.value || '0.12');
+		const rollTolDegV = parseFloat(document.getElementById('rollTolDeg')?.value || '8');
+		const sizeMinV = parseFloat(document.getElementById('sizeMin')?.value || '0.15');
+		const sizeMaxV = parseFloat(document.getElementById('sizeMax')?.value || '0.35');
+		const smileThreshV = parseFloat(document.getElementById('smileThresh')?.value || '0.15');
+		const stabilityMsV = parseInt(document.getElementById('stabilityMs')?.value || '1500');
+		const requireSmileV = !!document.getElementById('requireSmile')?.checked;
+		const eyeGazeToleranceV = parseFloat(document.getElementById('eyeGazeTolerance')?.value || '0.2');
+		const showDebugV = !!document.getElementById('showDebug')?.checked;
+		
+		const detail = {
+			autoCapture,
+			centerTol: centerTolV,
+			rollTolDeg: rollTolDegV,
+			sizeRange: [sizeMinV, sizeMaxV],
+			smileThresh: smileThreshV,
+			stabilityMs: stabilityMsV,
+			requireSmile: requireSmileV,
+			eyeGazeTolerance: eyeGazeToleranceV,
+			showDebug: showDebugV,
+		};
+		if (persist) {
+			try {
+				const raw = localStorage.getItem(PREFS_KEY);
+				const existing = raw ? JSON.parse(raw) : {};
+				localStorage.setItem(PREFS_KEY, JSON.stringify({ ...existing, ...detail }));
+			} catch {}
+		}
+		document.dispatchEvent(new CustomEvent('bsx:headshot:updateOptions', { detail }));
+	}
+
+	// Helpers to toggle visibility consistently
+	function show(el) { if (!el) return; el.classList.remove('d-none'); el.style.display = ''; }
+	function hide(el) { if (!el) return; el.classList.add('d-none'); el.style.display = 'none'; }
+
+	function switchTab(tab) {
+		if (tab === 'upload') {
+			uploadTab.classList.add('active');
+			cameraTab.classList.remove('active');
+			show(uploadInterface);
+			hide(cameraInterface);
+			stopCamera();
+		} else {
+			cameraTab.classList.add('active');
+			uploadTab.classList.remove('active');
+			hide(uploadInterface);
+			show(cameraInterface);
+			// Ensure placeholder visibility reflects actual camera state
+			if (cameraStream) {
+				hide(placeholder);
+				show(video);
+				hide(canvas);
+			} else {
+				show(placeholder);
+				hide(video);
+				hide(canvas);
+			}
+		}
+	}
+
+	function handleFileSelect(event) {
+		const file = event.target.files[0];
+		if (!file) {
+			updateUI();
+			return;
+		}
+		
+		if (!ALLOWED_TYPES.includes(file.type)) {
+			showError('Please select a valid image file (PNG, JPG, JPEG, or GIF)');
+			return;
+		}
+		
+		if (file.size > MAX_BYTES) {
+			showError('File too large. Please select an image under 5MB.');
+			return;
+		}
+		
+		// Preview the file
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			preview.src = e.target.result;
+			currentImageData = e.target.result;
+			previewMeta.textContent = `${file.name} (${formatBytes(file.size)})`;
+			uploadBtn.disabled = false;
+			showEnhancementSection();
+		};
+		reader.readAsDataURL(file);
+	}
+
+	async function handleUpload(event) {
+		event.preventDefault();
+		const file = fileInput.files[0];
+		if (!file) return;
+		
+		showProcessing('Uploading photo...');
+		
+		try {
+			const formData = new FormData();
+			formData.append('profile_pic', file);
+			
+			const response = await fetch('{{ url_for("photo_bp.upload_photo") }}', {
+				method: 'POST',
+				body: formData
+			});
+			
+			const result = await response.json();
+			if (result.ok) {
+				updateProfileImage(result.url);
+				showSuccess('Photo uploaded successfully!');
+				showEnhancementSection();
+			} else {
+				showError(result.error || 'Upload failed');
+			}
+		} catch (error) {
+			showError('Upload failed: ' + error.message);
+		} finally {
+			hideProcessing();
+		}
+	}
+
+	async function startCamera() {
+		try {
+			cameraStream = await navigator.mediaDevices.getUserMedia({ 
+				video: { 
+					width: { ideal: 1280 },
+					height: { ideal: 1280 },
+					facingMode: 'user'
+				},
+				audio: false 
+			});
+			
+			video.srcObject = cameraStream;
+			await video.play();
+			hide(placeholder);
+			show(video);
+			// show overlay once camera is active
+			guidanceOverlay && guidanceOverlay.classList.remove('d-none');
+			
+			hide(startCameraBtn);
+			show(captureBtn);
+			show(stopCameraBtn);
+			
+			cameraStatus.textContent = 'Camera active - Ready to capture';
+
+			// If camera disconnects, restore placeholder and reset controls
+			const tracks = cameraStream.getVideoTracks();
+			if (tracks && tracks[0]) {
+				tracks[0].addEventListener('ended', () => {
+					show(placeholder);
+					hide(video);
+					hide(canvas);
+					show(startCameraBtn);
+					hide(captureBtn);
+					hide(retakeBtn);
+					hide(stopCameraBtn);
+					cameraStatus.textContent = 'Camera disconnected';
+				});
+			}
+			
+		} catch (error) {
+			console.error('Camera access failed:', error);
+			cameraStatus.textContent = 'Camera access denied';
+			showError('Could not access camera. Please check permissions.');
+			// Ensure placeholder visible on failure
+			show(placeholder);
+			hide(video);
+			hide(canvas);
+		}
+	}
+
+	function capturePhoto() {
+		if (!cameraStream) return;
+		
+		// Set canvas size to video dimensions
+		canvas.width = video.videoWidth;
+		canvas.height = video.videoHeight;
+		
+		// Draw video frame to canvas
+		const ctx = canvas.getContext('2d');
+		ctx.drawImage(video, 0, 0);
+		
+		// Get image data
+		capturedImageData = canvas.toDataURL('image/png');
+		currentImageData = capturedImageData;
+		lastDataUrl = capturedImageData;
+		
+		// Update preview
+		preview.src = capturedImageData;
+		previewMeta.textContent = 'Captured from camera';
+		
+	// Hide placeholder while showing captured frame
+	hide(placeholder);
+	hide(video);
+	show(canvas);
+		
+		// Update buttons
+		hide(captureBtn);
+		show(retakeBtn);
+		// Hide overlay while reviewing captured frame
+		guidanceOverlay && guidanceOverlay.classList.add('d-none');
+		
+		cameraStatus.textContent = 'Photo captured - Ready to enhance';
+		showEnhancementSection();
+		
+		// Auto-save capture
+		saveCapturedPhoto();
+	}
+
+	function retakePhoto() {
+		// Return to live video; keep placeholder hidden
+		hide(placeholder);
+		show(video);
+		hide(canvas);
+		show(captureBtn);
+		hide(retakeBtn);
+		// Show overlay again for alignment
+		guidanceOverlay && guidanceOverlay.classList.remove('d-none');
+		cameraStatus.textContent = 'Camera active - Ready to capture';
+	}
+
+	function stopCamera() {
+		if (cameraStream) {
+			cameraStream.getTracks().forEach(track => track.stop());
+			cameraStream = null;
+		}
+		
+		hide(video);
+		hide(canvas);
+		// Show placeholder when camera is closed
+		show(placeholder); placeholder.style.display = 'flex';
+		video.srcObject = null;
+		// Hide overlay when camera stopped
+		guidanceOverlay && guidanceOverlay.classList.add('d-none');
+		
+		show(startCameraBtn);
+		hide(captureBtn);
+		hide(retakeBtn);
+		hide(stopCameraBtn);
+		
+		cameraStatus.textContent = 'Camera ready';
+	}
+
+	async function saveCapturedPhoto() {
+		if (!capturedImageData) return;
+		
+		showProcessing('Saving captured photo...');
+		
+		try {
+			const response = await fetch('{{ url_for("photo_bp.capture_photo") }}', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ imageData: capturedImageData })
+			});
+			
+			const result = await response.json();
+			if (result.ok) {
+				// Keep lastDataUrl for enhancement while updating profile image URL
+				updateProfileImage(result.url);
+				showSuccess('Photo captured and saved!');
+				// Optional post-capture validation
+				if (validateWithRekognition) {
+					try {
+									const vres = await fetch('/photo/validate', {
+							method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_url: result.url })
+						});
+						const vjson = await vres.json();
+						if (vjson.ok) {
+							if (!vjson.passed) {
+								showError('Quality check: ' + (vjson.message || 'Please retake photo'));
+							} else {
+								showSuccess('Quality check passed');
+							}
+						} else {
+							showError('Validation failed: ' + (vjson.error || 'Unknown error'));
+						}
+					} catch (e) {
+						showError('Validation error: ' + e.message);
+					}
+				}
+			} else {
+				showError(result.error || 'Failed to save captured photo');
+			}
+		} catch (error) {
+			showError('Failed to save photo: ' + error.message);
+		} finally {
+			hideProcessing();
+		}
+	}
+
+	// Removed grid-based selectors in favor of dropdowns
+
+	async function processEnhancement() {
+		if (!currentImageData && !lastDataUrl) {
+			showError('No image to enhance');
+			return;
+		}
+		
+	show(enhancementLoader); enhancementLoader.style.display = 'flex';
+	// Disable relevant buttons and show spinner
+	const enhanceSpinner = document.getElementById('enhanceSpinner');
+	const enhanceIcon = document.getElementById('enhanceIcon');
+	enhanceSpinner.classList.remove('d-none');
+	enhanceIcon.classList.add('d-none');
+	processEnhancementBtn.disabled = true;
+	startCameraBtn.disabled = true;
+	captureBtn.disabled = true;
+	retakeBtn.disabled = true;
+	stopCameraBtn.disabled = true;
+		showProcessing('Enhancing photo with AI...');
+		
+		try {
+			// Ensure we send a data URL. If currentImageData is a media URL, convert to data URL or fall back to lastDataUrl
+			let imageDataToSend = null;
+			if (currentImageData && currentImageData.startsWith('data:image/')) {
+				imageDataToSend = currentImageData;
+			} else if (currentImageData && currentImageData.startsWith(window.BSX_MEDIA_PREFIX || '/media/photos')) {
+				// Fetch the media and convert to data URL
+				const resp = await fetch(currentImageData, { credentials: 'same-origin' });
+				const blob = await resp.blob();
+				imageDataToSend = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(blob); });
+			} else if (lastDataUrl) {
+				imageDataToSend = lastDataUrl;
+			}
+
+			if (!imageDataToSend) {
+				showError('No image data available to enhance.');
+				return;
+			}
+
+	    const response = await fetch('{{ url_for("photo_bp.enhance_photo") }}', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					imageData: imageDataToSend,
+					enhancement_style: selectedEnhancementStyle,
+					background_style: selectedBackgroundStyle,
+					use_bedrock: true,
+					remove_background_only: removeBackgroundOnly?.checked || false,
+					use_professional_pipeline: useProfessionalPipeline?.checked || false,
+					outfit_enhancement: outfitEnhancement?.checked || false,
+					enable_smart_crop: enableSmartCrop?.checked === true,
+					enable_lighting: enableLighting?.checked === true,
+					enable_edge_refinement: enableEdgeRefinement?.checked === true
+				})
+			});
+			
+			const result = await response.json();
+			if (result.ok) {
+				enhancedImage.src = result.url;
+				show(enhancementPreview);
+				renderEnhancementMetadata(result.metadata);
+				showSuccess('Photo enhanced successfully!');
+			} else {
+				showError(result.error || 'Enhancement failed (Bedrock-only mode).');
+			}
+		} catch (error) {
+			showError('Enhancement failed: ' + error.message);
+		} finally {
+			hide(enhancementLoader);
+			hideProcessing();
+			const enhanceSpinner = document.getElementById('enhanceSpinner');
+			const enhanceIcon = document.getElementById('enhanceIcon');
+			enhanceSpinner.classList.add('d-none');
+			enhanceIcon.classList.remove('d-none');
+			processEnhancementBtn.disabled = false;
+			startCameraBtn.disabled = false;
+			captureBtn.disabled = false;
+			retakeBtn.disabled = false;
+			stopCameraBtn.disabled = false;
+		}
+	}
+
+			function renderEnhancementMetadata(metadata) {
+		const html = `
+			<div class="small">
+				<div class="row g-2">
+					<div class="col-sm-6">
+						<strong>Enhancement:</strong> ${selectedEnhancementStyle.replace('_', ' ')}<br>
+						<strong>Background:</strong> ${selectedBackgroundStyle.replace('_', ' ')}
+					</div>
+					<div class="col-sm-6">
+								<strong>AI Processing:</strong> ${metadata.bedrock_used ? '✅ Bedrock' : '— Not used'}<br>
+						<strong>Processing:</strong> ${metadata.processing_steps?.length || 0} steps
+					</div>
+				</div>
+				${metadata.bedrock_error ? `<div class="text-warning mt-2"><small>⚠️ ${metadata.bedrock_error}</small></div>` : ''}
+			</div>
+		`;
+		enhancementMetadata.innerHTML = html;
+	}
+
+	function acceptEnhancement() {
+		const enhancedSrc = enhancedImage.src;
+		updateProfileImage(enhancedSrc);
+		hide(enhancementPreview);
+		showSuccess('Enhanced photo set as profile image!');
+	}
+
+	function showEnhancementSection() {
+		show(enhancementSection);
+	}
+
+	function updateProfileImage(url) {
+		preview.src = url;
+		currentProfileImage.src = url;
+		currentImageData = url;
+	}
+
+	function showProcessing(message) {
+		processingMessage.textContent = message;
+		show(processingStatus);
+		
+		// Animate progress
+		let progress = 0;
+		const interval = setInterval(() => {
+			progress += Math.random() * 15;
+			if (progress > 90) progress = 90;
+			processingProgress.style.width = progress + '%';
+		}, 200);
+		
+		processingStatus.dataset.interval = interval;
+	}
+
+	function hideProcessing() {
+		const interval = processingStatus.dataset.interval;
+		if (interval) clearInterval(interval);
+		
+		processingProgress.style.width = '100%';
+		setTimeout(() => {
+			hide(processingStatus);
+			processingProgress.style.width = '0%';
+		}, 500);
+	}
+
+	// Simple Bootstrap toast helpers
+	function ensureToastContainer() {
+		let el = document.getElementById('toastContainer');
+		if (!el) {
+			el = document.createElement('div');
+			el.id = 'toastContainer';
+			el.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+			document.body.appendChild(el);
+		}
+		return el;
+	}
+
+	function makeToast(message, variant='success') {
+		const container = ensureToastContainer();
+		const toast = document.createElement('div');
+		toast.className = `toast align-items-center text-bg-${variant}`;
+		toast.setAttribute('role', 'alert');
+		toast.setAttribute('aria-live', 'assertive');
+		toast.setAttribute('aria-atomic', 'true');
+		toast.innerHTML = `<div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>`;
+		container.appendChild(toast);
+		const bsToast = new bootstrap.Toast(toast, { delay: 2500 });
+		bsToast.show();
+		toast.addEventListener('hidden.bs.toast', () => toast.remove());
+	}
+
+	function showSuccess(message) { makeToast(message, 'success'); }
+	function showError(message) { makeToast(message, 'danger'); }
+
+	function updateUI() {
+		uploadBtn.disabled = !fileInput.files[0];
+	}
+
+	function formatBytes(bytes) {
+		if (bytes === 0) return '0 Bytes';
+		const k = 1024;
+		const sizes = ['Bytes', 'KB', 'MB'];
+		const i = Math.floor(Math.log(bytes) / Math.log(k));
+		return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+	}
+});
+</script>
+{% endblock %}

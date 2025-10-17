@@ -1,0 +1,270 @@
+<!-- app/auth/templates/auth_reset.html -->
+{% extends "main_template.html" %}
+{% block title %}Reset Password{% endblock %}
+
+{% block content %}
+<section class="py-5 bg-body-tertiary">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-xxl-8 col-xl-9 col-lg-10">
+
+        <!-- Shell -->
+        <div class="row g-0 shadow-lg rounded-3 overflow-hidden">
+          <!-- Left: Brand/value panel -->
+          <div class="col-lg-5 d-none d-lg-block bg-primary text-white p-4 p-xl-5">
+            <div class="d-flex align-items-center mb-4">
+              <i class="bi bi-lightbulb-fill fs-3 me-2"></i>
+              <h1 class="h4 fw-bold mb-0">BrainStormX</h1>
+            </div>
+
+            <p class="lead mb-4">Set a new password and jump back into AI-powered workshops.</p>
+
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item bg-transparent text-white-50 border-0 ps-0 d-flex">
+                <i class="bi bi-shield-lock me-2 text-white"></i>
+                <div>
+                  <div class="fw-semibold text-white">Security-first</div>
+                  <small>Reset links expire automatically to protect your account.</small>
+                </div>
+              </li>
+              <li class="list-group-item bg-transparent text-white-50 border-0 ps-0 d-flex">
+                <i class="bi bi-lightning-charge me-2 text-white"></i>
+                <div>
+                  <div class="fw-semibold text-white">Fast recovery</div>
+                  <small>Update your password in seconds—no support ticket needed.</small>
+                </div>
+              </li>
+              <li class="list-group-item bg-transparent text-white-50 border-0 ps-0 d-flex">
+                <i class="bi bi-people-fill me-2 text-white"></i>
+                <div>
+                  <div class="fw-semibold text-white">Team-ready</div>
+                  <small>Rejoin your sessions and keep momentum.</small>
+                </div>
+              </li>
+            </ul>
+
+            <div class="mt-4">
+              <span class="badge text-bg-light text-primary me-1">Product Teams</span>
+              <span class="badge text-bg-light text-primary me-1">Consultancies</span>
+              <span class="badge text-bg-light text-primary">Innovation Leaders</span>
+            </div>
+          </div>
+
+          <!-- Right: Reset form -->
+          <div class="col-lg-7 bg-white p-4 p-xl-5">
+            <div class="mb-3">
+              <h2 class="h4 fw-bold mb-1"><i class="bi bi-key-fill me-2"></i>Set a new password</h2>
+              <p class="text-body-secondary mb-0">Choose a strong password you don’t use elsewhere.</p>
+            </div>
+
+            <form class="needs-validation" novalidate method="POST" action="">
+              {% if token %}<input type="hidden" name="token" value="{{ token }}">{% endif %}
+
+              <!-- New password -->
+              <div class="mb-3">
+                <label for="new_password" class="form-label">New password</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+                  <input
+                    type="password"
+                    class="form-control"
+                    id="new_password"
+                    name="new_password"
+                    autocomplete="new-password"
+                    placeholder="Create a strong password"
+                    required
+                    aria-describedby="pwHelp"
+                  >
+                  <button class="btn btn-outline-secondary" type="button" id="toggleNew" aria-label="Show password">
+                    <i class="bi bi-eye" aria-hidden="true"></i>
+                  </button>
+                  <div class="invalid-feedback">Please enter a new password.</div>
+                </div>
+
+                <!-- Strength meter -->
+                <div class="small text-body-secondary mt-2" id="pwHelp">
+                  Use at least 8 characters with a mix of upper/lowercase, numbers, and symbols.
+                </div>
+                <div class="mt-2">
+                  <div class="progress" aria-label="Password strength">
+                    <div id="pwBar" class="progress-bar" style="width: 0%"></div>
+                  </div>
+                  <div class="d-flex justify-content-between small mt-1">
+                    <span class="text-body-secondary">Strength</span>
+                    <span id="pwLabel" class="fw-semibold">–</span>
+                  </div>
+                </div>
+
+                <!-- Live checklist (pure Bootstrap) -->
+                <ul class="list-group list-group-flush mt-2">
+                  <li class="list-group-item ps-0">
+                    <i id="reqLen" class="bi bi-circle text-secondary me-2"></i>
+                    <small>At least 8 characters</small>
+                  </li>
+                  <li class="list-group-item ps-0">
+                    <i id="reqVar" class="bi bi-circle text-secondary me-2"></i>
+                    <small>Mix of upper/lowercase, numbers, and symbols</small>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Confirm password -->
+              <div class="mb-3">
+                <label for="confirm_password" class="form-label">Confirm new password</label>
+                <div class="input-group has-validation">
+                  <span class="input-group-text"><i class="bi bi-check2-circle"></i></span>
+                  <input
+                    type="password"
+                    class="form-control"
+                    id="confirm_password"
+                    name="confirm_password"
+                    autocomplete="new-password"
+                    placeholder="Re-enter your new password"
+                    required
+                  >
+                  <button class="btn btn-outline-secondary" type="button" id="toggleConfirm" aria-label="Show password">
+                    <i class="bi bi-eye" aria-hidden="true"></i>
+                  </button>
+                  <div class="invalid-feedback">Please confirm your new password.</div>
+                </div>
+                <div id="matchHelp" class="form-text"></div>
+              </div>
+
+              <!-- Submit -->
+              <div class="d-grid gap-2">
+                <button type="submit" id="updateBtn" class="btn btn-primary py-2" disabled>
+                  <span class="spinner-border spinner-border-sm me-2 d-none" id="upSpinner" role="status" aria-hidden="true"></span>
+                  <i class="bi bi-save2 me-1" id="upIcon" aria-hidden="true"></i>
+                  <span id="upText">Update password</span>
+                </button>
+              </div>
+
+              <!-- Secondary actions -->
+              <div class="d-flex justify-content-between align-items-center mt-4">
+                <a href="{{ url_for('auth_bp.login') }}" class="small">
+                  <i class="bi bi-box-arrow-in-left me-1"></i>Back to sign in
+                </a>
+                <a href="{{ url_for('auth_bp.forgot_password') }}" class="small">
+                  <i class="bi bi-envelope me-1"></i>Request another link
+                </a>
+              </div>
+            </form>
+
+          </div>
+        </div>
+        <!-- /Shell -->
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Bootstrap validation + strength + matching + toggles + submit spinner -->
+<script>
+  // Helpers
+  function scorePassword(v) {
+    let s = 0;
+    if (!v) return 0;
+    if (v.length >= 8) s += 1;
+    if (/[A-Z]/.test(v)) s += 1;
+    if (/[a-z]/.test(v)) s += 1;
+    if (/\d/.test(v)) s += 1;
+    if (/[^A-Za-z0-9]/.test(v)) s += 1;
+    return Math.min(4, Math.floor(s * 0.8)); // normalize to 0..4
+  }
+  function updateStrength(v) {
+    const s = scorePassword(v);
+    const pwBar = document.getElementById('pwBar');
+    const pwLabel = document.getElementById('pwLabel');
+    const pct = [0, 25, 50, 75, 100][s];
+    const cls = ['bg-danger','bg-warning','bg-info','bg-primary','bg-success'][s];
+    pwBar.className = 'progress-bar ' + cls;
+    pwBar.style.width = pct + '%';
+    pwLabel.textContent = ['Weak','Weak','Fair','Good','Strong'][s];
+
+    // Checklist icons
+    const reqLen = document.getElementById('reqLen');
+    const reqVar = document.getElementById('reqVar');
+    const hasLen = v && v.length >= 8;
+    const hasVar = /[A-Z]/.test(v) && /[a-z]/.test(v) && /\d/.test(v) && /[^A-Za-z0-9]/.test(v);
+    reqLen.className = 'bi ' + (hasLen ? 'bi-check-circle-fill text-success' : 'bi-circle text-secondary') + ' me-2';
+    reqVar.className = 'bi ' + (hasVar ? 'bi-check-circle-fill text-success' : 'bi-circle text-secondary') + ' me-2';
+
+    return s;
+  }
+  function updateMatch() {
+    const a = document.getElementById('new_password');
+    const b = document.getElementById('confirm_password');
+    const help = document.getElementById('matchHelp');
+    const match = a.value && b.value && a.value === b.value;
+    b.classList.toggle('is-valid', !!b.value && match);
+    b.classList.toggle('is-invalid', !!b.value && !match);
+    help.textContent = match ? 'Passwords match.' : (b.value ? 'Passwords do not match.' : '');
+    help.className = 'form-text ' + (match ? 'text-success' : (b.value ? 'text-danger' : 'text-body-secondary'));
+    return match;
+  }
+  function updateSubmitState() {
+    const a = document.getElementById('new_password');
+    const s = updateStrength(a.value);
+    const m = updateMatch();
+    const btn = document.getElementById('updateBtn');
+    btn.disabled = !(s >= 2 && m); // require at least "Fair" + match
+  }
+
+  // Password visibility toggles
+  (function () {
+    const pairs = [
+      ['toggleNew', 'new_password'],
+      ['toggleConfirm', 'confirm_password']
+    ];
+    pairs.forEach(([btnId, inputId]) => {
+      const btn = document.getElementById(btnId);
+      const input = document.getElementById(inputId);
+      if (btn && input) {
+        btn.addEventListener('click', function () {
+          const isText = input.getAttribute('type') === 'text';
+          input.setAttribute('type', isText ? 'password' : 'text');
+          const icon = this.querySelector('i');
+          if (icon) { icon.classList.toggle('bi-eye'); icon.classList.toggle('bi-eye-slash'); }
+          this.setAttribute('aria-label', isText ? 'Show password' : 'Hide password');
+        });
+      }
+    });
+  })();
+
+  // Live updates
+  (function () {
+    const a = document.getElementById('new_password');
+    const b = document.getElementById('confirm_password');
+    if (a) a.addEventListener('input', () => { updateStrength(a.value); updateSubmitState(); });
+    if (b) b.addEventListener('input', () => { updateMatch(); updateSubmitState(); });
+    updateSubmitState();
+  })();
+
+  // Bootstrap validation + submit spinner
+  (function () {
+    'use strict';
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.from(forms).forEach(function (form) {
+      form.addEventListener('submit', function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault(); event.stopPropagation();
+        } else {
+          // Show spinner & disable button
+          const btn = document.getElementById('updateBtn');
+          const spin = document.getElementById('upSpinner');
+          const icon = document.getElementById('upIcon');
+          const text = document.getElementById('upText');
+          if (btn && spin && icon && text) {
+            btn.setAttribute('disabled', 'disabled');
+            spin.classList.remove('d-none');
+            icon.classList.add('d-none');
+            text.textContent = 'Updating...';
+          }
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  })();
+</script>
+{% endblock %}
