@@ -6,8 +6,6 @@ BrainStormX is an AI-embedded collaborative brainstorming platform built with Py
 
 ## 🎯 Key Features
 
-```markdown
-## 🎯 Key Features
 
 1. **Participant & Document Management** – Invite collaborators, assign roles, and centralize workshop artifacts.
 2. **AI-Powered Workshop Assistant** – Interactive AI companion that provides real-time guidance, answers questions, facilitates discussions, and offers contextual suggestions throughout workshops using AWS Bedrock Nova models.
@@ -20,7 +18,7 @@ BrainStormX is an AI-embedded collaborative brainstorming platform built with Py
 9. **AI-Facilitated Discussion Phase** – Structured discussion workflows introduced specialized AI/Assistant roles including Mediator (guides conversation flow), Scribe (captures key points and decisions), and Devil's Advocate (challenges assumptions and explores alternative perspectives).
 10. **Market Trend Forecasting** – Surface trend outlooks and external signals to inform decision making.
 11. **Session Intelligence** – Produce workshop minutes, transcripts, highlights, and action-item trackers automatically.
-```
+
 
 ## 🏗️ Architecture Overview
 
