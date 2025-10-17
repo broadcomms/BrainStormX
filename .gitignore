@@ -242,6 +242,11 @@ copilot-instructions.md
 .env.production
 .env.staging
 .env.docker
+.env.server
+
+# Keep .env.local as example template
+# .env.local
+.env
 
 # Speech-to-Text Model files (large files)
 stt_models/
