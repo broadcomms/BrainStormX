@@ -4,10 +4,11 @@
 #!/bin/bash
 
 # BrainStormX EC2 Auto Deployment Script
-# Version: 1.3.2
+# Version: 1.3.3
 # Description: Automated deployment of BrainStormX on Ubuntu 24.04 LTS
 # 
 # CHANGELOG:
+# v1.3.3 - Fixed unbound variable error in MAIL_USERNAME_INPUT reference
 # v1.3.2 - Fixed additional unbound variable error in AgentCore configuration section
 # v1.3.1 - Fixed variable scope issue causing "unbound variable" error in email configuration
 # v1.3.0 - Added EC2 instance reset functionality and enhanced user experience
@@ -34,7 +35,7 @@ WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
 # Configuration variables
-SCRIPT_VERSION="1.3.2"
+SCRIPT_VERSION="1.3.3"
 APP_USER="brainstormx"
 APP_DIR="/home/${APP_USER}/BrainStormX"
 REPO_URL="https://github.com/broadcomms/BrainStormX.git"
@@ -398,7 +399,7 @@ collect_user_configuration() {
     read -r MAIL_USERNAME_INPUT
     MAIL_USERNAME="${MAIL_USERNAME_INPUT:-no-reply@broadcomms.net}"
     
-    if [[ -n "$MAIL_USERNAME_INPUT" ]]; then
+    if [[ -n "${MAIL_USERNAME_INPUT:-}" ]]; then
         echo -e "${WHITE}Enter SMTP password:${NC}"
         read -rs MAIL_PASSWORD
         echo ""
