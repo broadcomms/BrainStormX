@@ -4,10 +4,11 @@
 #!/bin/bash
 
 # BrainStormX EC2 Auto Deployment Script
-# Version: 1.3.1
+# Version: 1.3.2
 # Description: Automated deployment of BrainStormX on Ubuntu 24.04 LTS
 # 
 # CHANGELOG:
+# v1.3.2 - Fixed additional unbound variable error in AgentCore configuration section
 # v1.3.1 - Fixed variable scope issue causing "unbound variable" error in email configuration
 # v1.3.0 - Added EC2 instance reset functionality and enhanced user experience
 # v1.2.0 - Enhanced with interactive configuration collection for AWS and email settings
@@ -33,7 +34,7 @@ WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
 # Configuration variables
-SCRIPT_VERSION="1.3.1"
+SCRIPT_VERSION="1.3.2"
 APP_USER="brainstormx"
 APP_DIR="/home/${APP_USER}/BrainStormX"
 REPO_URL="https://github.com/broadcomms/BrainStormX.git"
@@ -415,7 +416,7 @@ collect_user_configuration() {
     read -n 1 -r AGENTCORE_RESPONSE
     echo ""
     
-    if [[ $AGENTCORE_RESPONSE =~ ^[Yy]$ ]]; then
+    if [[ "${AGENTCORE_RESPONSE:-}" =~ ^[Yy]$ ]]; then
         echo -e "${WHITE}Enter AgentCore Memory ID:${NC}"
         read -r AGENTCORE_MEMORY_ID
         
@@ -1170,7 +1171,7 @@ check_existing_installation() {
                     echo -e "${YELLOW}⚠ Warning: Continuing with existing installation may cause conflicts.${NC}"
                     read -p "Are you sure you want to continue? (y/N): " -n 1 -r CONFIRM
                     echo ""
-                    if [[ $CONFIRM =~ ^[Yy]$ ]]; then
+                    if [[ "${CONFIRM:-}" =~ ^[Yy]$ ]]; then
                         return 0
                     fi
                     ;;
@@ -1295,7 +1296,7 @@ case "${1:-}" in
         echo ""
         read -p "Are you sure you want to reset this instance? (y/N): " -n 1 -r
         echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
+        if [[ "${REPLY:-}" =~ ^[Yy]$ ]]; then
             detect_ec2_metadata
             reset_instance
             echo -e "${GREEN}✅ Instance reset completed successfully!${NC}"
