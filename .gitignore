@@ -241,7 +241,6 @@ copilot-instructions.md
 .env.developer
 .env.production
 .env.staging
-.env.docker
 .env.server
 
 # Keep .env.local as example template

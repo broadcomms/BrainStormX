@@ -1,22 +1,26 @@
 # BrainStormX 1.0
 
-BrainStormX is an AI-embedded collaborative brainstorming platform built with Flask (Python) and JavaScript, leveraging AWS Bedrock (Nova) foundation models. The system enables workshop organizers to create, manage, and execute structured brainstorming sessions with real-time collaboration, AI assistance, and comprehensive reporting.
+BrainStormX is an AI-embedded collaborative brainstorming platform built with Python (Flask + Socket.IO) and JavaScript, leveraging AWS Bedrock (Nova) foundation models. The application enables workshop organizers to create, manage, and execute structured brainstorming sessions with real-time collaboration, AI assistance, and comprehensive reporting.
 
 ---
 
 ## 🎯 Key Features
 
-1. **Participant & Document Management** – Invite collaborators, assign roles, and centralize workshop artifacts.
-2. **Digital Sticky Notes** – Capture brainstorming inputs as color-coded virtual notes that remain linked to session context.
-3. **Problem/Solution Enhancement** – Refine raw ideas into crisp problem statements and solution summaries with Nova models.
-4. **Automated Workshop Planning** – Generate phase-aware agendas, task sequences, rules, icebreakers, tips, and nudges on demand.
-5. **Engagement Monitoring** – Detect inactivity and proactively nudge quiet participants back into the conversation.
-6. **Clustering & Voting Workflows** – Group ideas, launch timed dot-voting rounds, and prioritize outcomes interactively.
-7. **Feasibility Analysis** – Evaluate proposals against feasibility heuristics using Bedrock AgentCore Memory context.
-8. **Market Trend Forecasting** – Surface trend outlooks and external signals to inform decision making.
-9. **Session Intelligence** – Produce workshop minutes, transcripts, highlights, and action-item trackers automatically.
+```markdown
+## 🎯 Key Features
 
----
+1. **Participant & Document Management** – Invite collaborators, assign roles, and centralize workshop artifacts.
+2. **AI-Powered Workshop Assistant** – Interactive AI companion that provides real-time guidance, answers questions, facilitates discussions, and offers contextual suggestions throughout workshops using AWS Bedrock Nova models.
+3. **Digital Sticky Notes** – Capture brainstorming inputs as color-coded virtual notes that remain linked to session context.
+4. **Problem/Solution Enhancement** – Refine raw ideas into crisp problem statements and solution summaries with Nova models.
+5. **Automated Workshop Planning** – Generate phase-aware agendas, task sequences, rules, icebreakers, tips, and nudges on demand.
+6. **Engagement Monitoring** – Detect inactivity and proactively nudge quiet participants back into the conversation.
+7. **Clustering & Voting Workflows** – Group ideas, launch timed dot-voting rounds, and prioritize outcomes interactively.
+8. **Feasibility Analysis** – Evaluate proposals against feasibility heuristics using Bedrock AgentCore Memory context.
+9. **AI-Facilitated Discussion Phase** – Structured discussion workflows introduced specialized AI/Assistant roles including Mediator (guides conversation flow), Scribe (captures key points and decisions), and Devil's Advocate (challenges assumptions and explores alternative perspectives).
+10. **Market Trend Forecasting** – Surface trend outlooks and external signals to inform decision making.
+11. **Session Intelligence** – Produce workshop minutes, transcripts, highlights, and action-item trackers automatically.
+```
 
 ## 🏗️ Architecture Overview
 
@@ -38,49 +42,35 @@ BrainStormX blends real-time collaboration, AI orchestration, and telemetry-driv
 - **Deployment Footprint**
   - Ships as a single-container image for Docker/Fargate and as a traditional Flask stack for EC2 or on-prem installs.
 
-A high-level module map lives in the root `README.md` under **Architecture → Structure** for deeper reference.
+A high-level module map is provided in`ARCHITECTURE.md` under **Architecture → Structure** for deeper reference.
 
 ---
 
-## 📦 Release Contents
-
-| Path                                    | Description                                                                         |
-| --------------------------------------- | ----------------------------------------------------------------------------------- |
-| `release/README.md`                   | This release guide.                                                                 |
-| `requirements.txt`                    | Python dependency lock for virtualenv installs.                                     |
-| `Dockerfile` & `docker-compose.yml` | Container build assets and local monitoring snapshot.                               |
-| `LOCAL-DEPLOYMENT-VENV.md`            | Detailed virtualenv setup (Linux/macOS).                                            |
-| `DOCKER-DEPLOYMENT.md`                | Extended Docker build and troubleshooting notes.                                    |
-| `EC2-DEPLOYMENT-WITH-PUBLIC-DNS.md`   | Production-grade EC2 deployment walkthrough.                                        |
-| `ssl/`                                | Sample self-signed certs for HTTPS development.                                     |
-| `instance/`                           | SQLite DB seed, uploads/log directories (create writable copies before production). |
-
-> 💡 **Packaging Tip:** Create an archive for distribution with `tar -czvf BrainStormX-<version>.tar.gz release/ Dockerfile docker-compose.yml requirements.txt app/ instance/ssl_run.py`. Include only sanitized `.env` templates (never real secrets).
 
 ---
 
 ## 🚀 Installation & Deployment
 
-Each section below assumes a clean checkout or release archive and references supporting docs where available.
+Each section below assumes a clean checkout of the release archive and references supporting docs where available.
 
 ### 1. Downloading the Release
 
-**Option A – Git Clone (recommended for contributors):**
+**Option A – Git Clone (recommended for contributors and developers):**
 
 ```bash
 # Clone the staging or production branch
-git clone -b staging https://github.com/broadcomms/brainstorm_x.git
-cd brainstorm_x
+git clone -b staging https://github.com/broadcomms/BrainStormX.git
+cd BrainStormX
 ```
 
-**Option B – Download Release Archive:**
+**Option B – Download from Release Archive:**
 
 1. Navigate to the published GitHub Release.
 2. Download `BrainStormX-<version>.tar.gz` (or `.zip`).
 3. Extract it locally:
    ```bash
    tar -xzvf BrainStormX-<version>.tar.gz
-   cd brainstorm_x
+   cd BrainStormX-<version>
    ```
 
 Verify critical files (`requirements.txt`, `Dockerfile`, `release/README.md`) are present before continuing.
@@ -107,7 +97,7 @@ Additional setup for speech features (optional but recommended):
 
 ```bash
 # Copy environment template and adjust credentials
-cp .env.developer .env
+cp .env.local .env
 nano .env  # set SECRET_KEY, AWS credentials if needed
 
 # Activate the environment and start Flask
@@ -121,16 +111,16 @@ Access the app at [http://localhost:5001](http://localhost:5001). Use seeded dem
 
 ```bash
 # Build image
-docker build -t brainstormx:latest .
+docker build -t BrainStormX:latest .
 
 # Run container with persistent instance storage
 mkdir -p instance/uploads instance/logs
 
-docker run -d --name brainstormx \
+docker run -d --name BrainStormX \
   --env-file .env.docker \
   -p 5001:5001 \
   -v $(pwd)/instance:/app/instance \
-  brainstormx:latest
+  BrainStormX:latest
 ```
 
 Optional enhancements:
@@ -142,21 +132,21 @@ Optional enhancements:
 
 ```bash
 # Tag for registry (Docker Hub example)
-docker tag brainstormx:latest broadcomms/brainstorm_x:<version>
+docker tag BrainStormX:latest broadcomms/BrainStormX:<version>
 
 # Authenticate and push
 docker login
-docker push broadcomms/brainstorm_x:<version>
+docker push broadcomms/BrainStormX:<version>
 ```
 
 Consumers can then pull and start the image:
 
 ```bash
-docker pull broadcomms/brainstorm_x:<version>
-docker run -d --name brainstormx \
+docker pull broadcomms/BrainStormX:<version>
+docker run -d --name BrainStormX \
   --env-file .env.docker \
   -p 5001:5001 \
-  broadcomms/brainstorm_x:<version>
+  broadcomms/BrainStormX:<version>
 ```
 
 ### 6. Deploy to **Amazon Elastic Container Service (ECS)**
@@ -166,15 +156,15 @@ docker run -d --name brainstormx \
 1. **Package & Push Image to Amazon ECR**
 
    ```bash
-   aws ecr create-repository --repository-name brainstormx --region us-east-1
+   aws ecr create-repository --repository-name BrainStormX --region us-east-1
    aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <account-id>.dkr.ecr.us-east-1.amazonaws.com
-   docker tag brainstormx:latest <account-id>.dkr.ecr.us-east-1.amazonaws.com/brainstormx:<version>
-   docker push <account-id>.dkr.ecr.us-east-1.amazonaws.com/brainstormx:<version>
+   docker tag BrainStormX:latest <account-id>.dkr.ecr.us-east-1.amazonaws.com/BrainStormX:<version>
+   docker push <account-id>.dkr.ecr.us-east-1.amazonaws.com/BrainStormX:<version>
    ```
 2. **Create ECS Cluster (Fargate)**
 
    ```bash
-   aws ecs create-cluster --cluster-name brainstormx-prod --region us-east-1
+   aws ecs create-cluster --cluster-name BrainStormX-prod --region us-east-1
    ```
 3. **Define Task Execution Role**
 
@@ -193,18 +183,18 @@ docker run -d --name brainstormx \
 
    ```bash
    aws ecs create-service \
-     --cluster brainstormx-prod \
-     --service-name brainstormx-web \
-     --task-definition brainstormx-task:<revision> \
+     --cluster BrainStormX-prod \
+     --service-name BrainStormX-web \
+     --task-definition BrainStormX-task:<revision> \
      --desired-count 1 \
      --launch-type FARGATE \
      --network-configuration "awsvpcConfiguration={subnets=[subnet-abc,subnet-def],securityGroups=[sg-123],assignPublicIp=ENABLED}" \
-     --load-balancers "targetGroupArn=arn:aws:elasticloadbalancing:...,containerName=brainstormx,containerPort=5001"
+     --load-balancers "targetGroupArn=arn:aws:elasticloadbalancing:...,containerName=BrainStormX,containerPort=5001"
    ```
 7. **Post-Deployment Checks**
 
    - Confirm service stability in the ECS console.
-   - Tail logs with `aws logs tail /ecs/brainstormx --follow`.
+   - Tail logs with `aws logs tail /ecs/BrainStormX --follow`.
    - Update DNS (Route 53 / Cloudflare) to the ALB endpoint.
 
 For deeper automation, codify the above in AWS Copilot, CDK, or Terraform.
@@ -214,12 +204,12 @@ For deeper automation, codify the above in AWS Copilot, CDK, or Terraform.
 Follow the hardened playbook in `EC2-DEPLOYMENT-WITH-PUBLIC-DNS.md`. Key highlights:
 
 1. **Provision Infrastructure** – Ubuntu 24.04 LTS on `t3.small`, 32 GiB gp3 disk, security groups for ports 22/80/443.
-2. **Bootstrap Server** – SSH in, install system dependencies, create `brainstormx` user, and clone the repo or upload the release archive.
+2. **Bootstrap Server** – SSH in, install system dependencies, create `BrainStormX` user, and clone the repo or upload the release archive.
 3. **Configure Python Environment** – Create virtualenv, install `requirements.txt`, plus Piper/Vosk models as needed.
 4. **Supply Production `.env`** – Copy `.env.server`, rotate secrets, and set mail/AWS credentials. Restrict permissions to `600`.
 5. **Set Up Gunicorn + Systemd** – Use the provided `gunicorn.conf.py` and systemd service to keep the app running.
 6. **Configure Nginx + SSL** – Terminate HTTPS with Nginx, proxy to Gunicorn on `127.0.0.1:5001`, and apply Certbot (or bundle self-signed certs for EC2 default domains).
-7. **Validate** – Ensure `sudo systemctl status brainstormx` is `active`, check logs in `/home/brainstormx/brainstorm_x/instance/logs/`, and test user flows over HTTPS.
+7. **Validate** – Ensure `sudo systemctl status BrainStormX` is `active`, check logs in `/home/brainstormx/BrainStormX/instance/logs/`, and test user flows over HTTPS.
 
 ---
 
