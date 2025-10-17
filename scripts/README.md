@@ -23,8 +23,15 @@ This directory contains automated deployment and management scripts for BrainSto
 # Remove old script
 rm ec2_auto_deploy.sh
 
-# Download new script
-wget "https://raw.githubusercontent.com/broadcomms/BrainStormX/main/scripts/ec2_auto_deploy.sh"
+# Download the final fixed version
+wget "https://raw.githubusercontent.com/broadcomms/BrainStormX/main/scripts/ec2_auto_deploy.sh?$(date +%s)"
+
+mv 'ec2_auto_deploy.sh?1760671454' ec2_auto_deploy.sh
+
+# Download with -O flag to specify output filename
+wget -O ec2_auto_deploy.sh "https://raw.githubusercontent.com/broadcomms/BrainStormX/main/scripts/ec2_auto_deploy.sh?$(date +%s)"
+
+
 
 # Make executable
 chmod +x ec2_auto_deploy.sh
