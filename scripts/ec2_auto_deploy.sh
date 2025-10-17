@@ -22,7 +22,7 @@ WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
 # Configuration variables
-SCRIPT_VERSION="1.2.0"
+SCRIPT_VERSION="1.3.0"
 APP_USER="brainstormx"
 APP_DIR="/home/${APP_USER}/BrainStormX"
 REPO_URL="https://github.com/broadcomms/BrainStormX.git"
@@ -1017,6 +1017,160 @@ EOF
     print_success "Deployment report generated: ${REPORT_FILE}"
 }
 
+# Reset function to clean up previous installations
+reset_instance() {
+    print_header "RESETTING EC2 INSTANCE"
+    
+    print_step "Checking for existing BrainStormX installation..."
+    
+    # Stop and disable services if they exist
+    if systemctl is-active --quiet brainstormx 2>/dev/null; then
+        print_step "Stopping BrainStormX service..."
+        systemctl stop brainstormx || true
+        systemctl disable brainstormx || true
+        print_success "BrainStormX service stopped"
+    fi
+    
+    if systemctl is-active --quiet nginx 2>/dev/null; then
+        print_step "Stopping Nginx service..."
+        systemctl stop nginx || true
+        print_success "Nginx service stopped"
+    fi
+    
+    # Remove systemd service files
+    if [[ -f /etc/systemd/system/brainstormx.service ]]; then
+        print_step "Removing systemd service files..."
+        rm -f /etc/systemd/system/brainstormx.service
+        systemctl daemon-reload
+        print_success "SystemD service files removed"
+    fi
+    
+    # Remove Nginx configuration
+    if [[ -f /etc/nginx/sites-available/brainstormx ]]; then
+        print_step "Removing Nginx configuration..."
+        rm -f /etc/nginx/sites-available/brainstormx
+        rm -f /etc/nginx/sites-enabled/brainstormx
+        # Restore default Nginx site if it doesn't exist
+        if [[ ! -f /etc/nginx/sites-enabled/default ]] && [[ -f /etc/nginx/sites-available/default ]]; then
+            ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+        fi
+        # Test Nginx configuration and restart if valid
+        if nginx -t > /dev/null 2>&1; then
+            systemctl restart nginx > /dev/null 2>&1 || true
+        fi
+        print_success "Nginx configuration removed and service restored"
+    fi
+    
+    # Remove SSL certificates
+    if [[ -f /etc/ssl/certs/brainstormx-selfsigned.crt ]]; then
+        print_step "Removing SSL certificates..."
+        rm -f /etc/ssl/certs/brainstormx-selfsigned.crt
+        rm -f /etc/ssl/private/brainstormx-selfsigned.key
+        print_success "SSL certificates removed"
+    fi
+    
+    # Remove application directory and user
+    if [[ -d "${APP_DIR}" ]]; then
+        print_step "Removing application directory..."
+        rm -rf "${APP_DIR}"
+        print_success "Application directory removed"
+    fi
+    
+    if id "${APP_USER}" &>/dev/null; then
+        print_step "Removing application user..."
+        # Remove user's cron jobs
+        sudo -u "${APP_USER}" crontab -r 2>/dev/null || true
+        # Remove user and home directory
+        userdel -r "${APP_USER}" 2>/dev/null || true
+        print_success "Application user removed"
+    fi
+    
+    # Remove log rotation configuration
+    if [[ -f /etc/logrotate.d/brainstormx ]]; then
+        print_step "Removing log rotation configuration..."
+        rm -f /etc/logrotate.d/brainstormx
+        print_success "Log rotation configuration removed"
+    fi
+    
+    # Reset firewall to default state
+    print_step "Resetting firewall to default state..."
+    ufw --force reset > /dev/null 2>&1 || true
+    ufw default deny incoming > /dev/null 2>&1 || true
+    ufw default allow outgoing > /dev/null 2>&1 || true
+    ufw allow ssh > /dev/null 2>&1 || true
+    print_success "Firewall reset to default state"
+    
+    # Clean up temporary files
+    print_step "Cleaning up temporary files..."
+    rm -f /tmp/brainstormx_* 2>/dev/null || true
+    rm -f "${LOG_FILE}" 2>/dev/null || true
+    print_success "Temporary files cleaned"
+    
+    # Remove any leftover Python packages (optional - keeps system packages)
+    # This is commented out to avoid breaking system Python installations
+    # print_step "Cleaning Python package cache..."
+    # pip3 cache purge 2>/dev/null || true
+    
+    print_success "Instance reset completed - ready for fresh installation"
+    echo ""
+}
+
+# Check for existing installation
+check_existing_installation() {
+    local has_existing=false
+    
+    # Check for various signs of existing installation
+    if [[ -d "${APP_DIR}" ]] || \
+       [[ -f /etc/systemd/system/brainstormx.service ]] || \
+       [[ -f /etc/nginx/sites-available/brainstormx ]] || \
+       id "${APP_USER}" &>/dev/null; then
+        has_existing=true
+    fi
+    
+    if [[ "$has_existing" == true ]]; then
+        echo -e "${YELLOW}"
+        echo "=============================================================================="
+        echo "             EXISTING BRAINSTORMX INSTALLATION DETECTED"
+        echo "=============================================================================="
+        echo -e "${NC}"
+        echo "An existing BrainStormX installation has been found on this instance."
+        echo "You have the following options:"
+        echo ""
+        echo -e "${WHITE}1) Reset and reinstall${NC} - Remove existing installation and start fresh"
+        echo -e "${WHITE}2) Continue anyway${NC} - Attempt installation over existing setup (not recommended)"
+        echo -e "${WHITE}3) Exit${NC} - Cancel installation"
+        echo ""
+        
+        while true; do
+            read -p "Please select an option (1/2/3): " -n 1 -r EXISTING_CHOICE
+            echo ""
+            
+            case $EXISTING_CHOICE in
+                1)
+                    echo -e "${CYAN}Resetting instance for fresh installation...${NC}"
+                    reset_instance
+                    return 0
+                    ;;
+                2)
+                    echo -e "${YELLOW}⚠ Warning: Continuing with existing installation may cause conflicts.${NC}"
+                    read -p "Are you sure you want to continue? (y/N): " -n 1 -r CONFIRM
+                    echo ""
+                    if [[ $CONFIRM =~ ^[Yy]$ ]]; then
+                        return 0
+                    fi
+                    ;;
+                3)
+                    echo "Installation cancelled."
+                    exit 0
+                    ;;
+                *)
+                    echo -e "${RED}Invalid option. Please select 1, 2, or 3.${NC}"
+                    ;;
+            esac
+        done
+    fi
+}
+
 # Main deployment function
 main() {
     echo -e "${GREEN}"
@@ -1027,6 +1181,10 @@ main() {
     echo "This script will completely set up BrainStormX on this Ubuntu EC2 instance."
     echo "The process will take approximately 10-15 minutes depending on network speed."
     echo ""
+    
+    # Check for existing installation first
+    check_existing_installation
+    
     echo "What this script will do:"
     echo "  ✓ Collect your AWS and email configuration"
     echo "  ✓ Install all system dependencies"
@@ -1037,10 +1195,10 @@ main() {
     echo "  ✓ Set up systemd services and firewall"
     echo "  ✓ Configure backups and log rotation"
     echo ""
-    read -p "Do you want to proceed? (y/N): " -n 1 -r
+    read -p "Do you want to proceed with the installation? (y/N): " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "Deployment cancelled."
+        echo "Installation cancelled."
         exit 0
     fi
     
@@ -1095,11 +1253,65 @@ main() {
     echo -e "  • Check services: ${WHITE}sudo systemctl status brainstormx nginx${NC}"
     echo -e "  • View logs: ${WHITE}sudo journalctl -u brainstormx -f${NC}"
     echo -e "  • Restart: ${WHITE}sudo systemctl restart brainstormx nginx${NC}"
+    echo -e "  • Reset instance: ${WHITE}sudo ./ec2_auto_deploy.sh --reset${NC}"
     echo ""
     
     echo -e "${GREEN}For support, contact: patrick@broadcomms.net${NC}"
     echo -e "${GREEN}Deployment completed at: $(date)${NC}"
 }
 
-# Run main function
-main "$@"
+# Parse command line arguments
+case "${1:-}" in
+    --reset|reset|-r)
+        echo -e "${GREEN}"
+        echo "=============================================================================="
+        echo "             BrainStormX EC2 Instance Reset Tool v${SCRIPT_VERSION}"
+        echo "=============================================================================="
+        echo -e "${NC}"
+        echo "This will completely remove any existing BrainStormX installation."
+        echo -e "${YELLOW}⚠ WARNING: This action cannot be undone!${NC}"
+        echo ""
+        echo "The following will be removed:"
+        echo "  • BrainStormX application and data"
+        echo "  • Application user and home directory"
+        echo "  • Nginx and SSL configuration"
+        echo "  • SystemD services and cron jobs"
+        echo "  • Firewall rules (reset to default)"
+        echo ""
+        read -p "Are you sure you want to reset this instance? (y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            detect_ec2_metadata
+            reset_instance
+            echo -e "${GREEN}✅ Instance reset completed successfully!${NC}"
+            echo -e "${CYAN}You can now run the deployment script again for a fresh installation.${NC}"
+        else
+            echo "Reset cancelled."
+        fi
+        exit 0
+        ;;
+    --help|help|-h)
+        echo -e "${GREEN}BrainStormX EC2 Deployment Script v${SCRIPT_VERSION}${NC}"
+        echo ""
+        echo "Usage:"
+        echo "  $0                 - Run full deployment"
+        echo "  $0 --reset         - Reset instance (remove existing installation)"
+        echo "  $0 --help          - Show this help message"
+        echo ""
+        echo "Examples:"
+        echo "  sudo $0                    # Normal installation"
+        echo "  sudo $0 --reset           # Reset instance before reinstalling"
+        echo ""
+        echo "For support, contact: patrick@broadcomms.net"
+        exit 0
+        ;;
+    "")
+        # No arguments, run main deployment
+        main "$@"
+        ;;
+    *)
+        echo -e "${RED}Error: Unknown argument '$1'${NC}"
+        echo "Use '$0 --help' for usage information."
+        exit 1
+        ;;
+esac
