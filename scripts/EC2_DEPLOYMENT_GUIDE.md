@@ -22,7 +22,7 @@ ssh -i "instance/brainstorm_x_vm_sshkey.pem" ubuntu@ec2-13-222-58-210.compute-1.
 ### Step 3: Download and Run Deployment Script
 ```bash
 # Download the deployment script
-wget https://raw.githubusercontent.com/broadcomms/BrainStormX/scripts/ec2_auto_deploy.sh
+wget https://raw.githubusercontent.com/broadcomms/BrainStormX/main/scripts/ec2_auto_deploy.sh
 
 # Make it executable
 chmod +x ec2_auto_deploy.sh
