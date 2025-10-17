@@ -49,6 +49,25 @@ chmod +x ec2_auto_deploy.sh
 sudo ./ec2_auto_deploy.sh
 ```
 
+### [`domain_ssl_setup.sh`](./domain_ssl_setup.sh)
+**Custom domain and SSL certificate configuration script**
+
+- **Purpose**: Configures custom domain with Let's Encrypt SSL certificates
+- **Duration**: 5-10 minutes
+- **Requirements**: Run after `ec2_auto_deploy.sh`, domain DNS configured
+- **What it does**:
+  - Configures custom domain (e.g., brainstormx.ca)
+  - Obtains valid SSL certificates from Let's Encrypt
+  - Updates Nginx configuration for the new domain
+  - Sets up automatic certificate renewal
+  - Verifies complete domain and SSL setup
+
+**Usage:**
+```bash
+# After basic deployment and DNS configuration
+sudo ./domain_ssl_setup.sh
+```
+
 ### [`validate_deployment.sh`](./validate_deployment.sh)
 **Post-deployment validation and health check script**
 
@@ -80,6 +99,17 @@ Comprehensive documentation covering:
 - Troubleshooting guide
 - Security recommendations
 - Backup and recovery procedures
+
+### [`DOMAIN_SETUP_README.md`](./DOMAIN_SETUP_README.md)
+**Complete guide for domain and SSL configuration**
+
+Detailed documentation covering:
+- Prerequisites and DNS configuration
+- Step-by-step domain setup process
+- SSL certificate management
+- Troubleshooting domain issues
+- Performance and security recommendations
+- Monitoring and maintenance procedures
 
 ## 🛠️ Script Features
 
@@ -134,10 +164,26 @@ sudo ./validate_deployment.sh
 # https://your-ec2-dns.amazonaws.com
 ```
 
+### Custom Domain Deployment
+```bash
+# 1. Complete basic deployment first (steps 1-5 above)
+
+# 2. Configure DNS A record for your domain
+# Point brainstormx.ca to your EC2 public IP
+
+# 3. Download and run domain setup script
+wget "https://raw.githubusercontent.com/broadcomms/BrainStormX/main/scripts/domain_ssl_setup.sh?$(date +%s)"
+chmod +x domain_ssl_setup.sh
+sudo ./domain_ssl_setup.sh
+
+# 4. Access via your custom domain
+# https://brainstormx.ca
+```
+
 ### Post-Deployment Configuration
 ```bash
 # Configure AWS credentials
-sudo nano /home/brainstormx/brainstorm_x/.env
+sudo nano /home/brainstormx/BrainStormX/.env
 
 # Restart services after config changes
 sudo systemctl restart brainstormx nginx
